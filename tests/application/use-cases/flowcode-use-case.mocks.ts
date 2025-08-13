@@ -1,14 +1,15 @@
 import { BehaviorSubject, Subject } from 'rxjs';
 import { DomainMessage, DomainOption, CommandDefinition } from '../../../src/presentation/view-models/console/console-use-case.js';
 import { DomainTokenUsage, DomainWorkerInfo } from '../../../src/presentation/view-models/shared-use-case.js';
-import { MessageReader, MessageWriter } from '../../../src/application/interfaces/message-store.js';
+import { MessagePublisher, MessageWriter } from '../../../src/application/interfaces/message-store.js';
 import { CommandDispatcher, CommandResult } from '../../../src/application/interfaces/command-provider.js';
 import { PromptHandler } from '../../../src/application/interfaces/prompt-handler.js';
 
 /**
- * Mock MessageReader for testing
+ * Mock MessagePublisher for testing (exposes messageHistory$ stream only + read helpers used by tests)
+ * Implements the newly separated MessagePublisher responsibilities.
  */
-export class MockMessageReader implements MessageReader {
+export class MockMessagePublisher implements MessagePublisher {
   private messages: DomainMessage[] = [];
   private readonly messageHistorySubject = new BehaviorSubject<DomainMessage[]>([]);
 
@@ -24,9 +25,12 @@ export class MockMessageReader implements MessageReader {
     return this.messages.filter(msg => msg.type === type);
   }
 
-  async searchByRegex(pattern: string, limit?: number): Promise<DomainMessage[]> {
+  async searchByRegex(pattern: string, limit?: number, type?: DomainMessage['type']): Promise<DomainMessage[]> {
     const regex = new RegExp(pattern, 'i');
-    const results = this.messages.filter(msg => regex.test(msg.content));
+    let results = this.messages.filter(msg => regex.test(msg.content));
+    if (type) {
+      results = results.filter(msg => msg.type === type);
+    }
     return limit ? results.slice(0, limit) : results;
   }
 
@@ -82,7 +86,9 @@ export class MockMessageWriter implements MessageWriter {
     this.updateMessageCalled = true;
     const index = this.storedMessages.findIndex(msg => msg.id === messageId);
     if (index >= 0) {
-      this.storedMessages[index] = { ...this.storedMessages[index], ...updates };
+  const existing = this.storedMessages[index];
+  const updated = { ...existing, ...updates, type: existing.type } as DomainMessage; // preserve discriminant
+  this.storedMessages[index] = updated;
     }
   }
 

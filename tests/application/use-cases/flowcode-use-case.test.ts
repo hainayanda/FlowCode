@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { firstValueFrom, take, skip } from 'rxjs';
 import { FlowCodeUseCase } from '../../../src/application/use-cases/flowcode-use-case.js';
 import {
-  MockMessageReader,
+  MockMessagePublisher,
   MockMessageWriter,
   MockCommandDispatcher,
   MockPromptHandler,
@@ -11,19 +11,19 @@ import {
 
 describe('FlowCodeUseCase', () => {
   let useCase: FlowCodeUseCase;
-  let mockMessageReader: MockMessageReader;
+  let mockMessagePublisher: MockMessagePublisher;
   let mockMessageWriter: MockMessageWriter;
   let mockCommandDispatcher: MockCommandDispatcher;
   let mockPromptHandler: MockPromptHandler;
 
   beforeEach(() => {
-    mockMessageReader = new MockMessageReader();
+  mockMessagePublisher = new MockMessagePublisher();
     mockMessageWriter = new MockMessageWriter();
     mockCommandDispatcher = new MockCommandDispatcher();
     mockPromptHandler = new MockPromptHandler();
 
     useCase = new FlowCodeUseCase(
-      mockMessageReader,
+  mockMessagePublisher,
       mockMessageWriter,
       mockCommandDispatcher,
       mockPromptHandler
@@ -34,7 +34,7 @@ describe('FlowCodeUseCase', () => {
     mockMessageWriter.reset();
     mockCommandDispatcher.reset();
     mockPromptHandler.reset();
-    mockMessageReader.clear();
+  mockMessagePublisher.clear();
   });
 
   describe('Initialization', () => {
@@ -189,7 +189,7 @@ describe('FlowCodeUseCase', () => {
     it('should merge message streams from multiple sources', async () => {
       // Set up message history
       const historyMessage = createTestDomainMessage('ai-response', 'Previous AI response');
-      mockMessageReader.addMessage(historyMessage);
+  mockMessagePublisher.addMessage(historyMessage);
 
       // Set up message promises
       const messagePromises = Promise.all([
@@ -218,7 +218,7 @@ describe('FlowCodeUseCase', () => {
       const message1 = createTestDomainMessage('user-input', 'First message');
       const message2 = createTestDomainMessage('ai-response', 'AI response');
       
-      mockMessageReader.setMessages([message1, message2]);
+  mockMessagePublisher.setMessages([message1, message2]);
 
       // Get first message from the flattened stream
       const firstMessage = await firstValueFrom(useCase.messages$);
@@ -228,7 +228,7 @@ describe('FlowCodeUseCase', () => {
     });
 
     it('should handle empty message history', async () => {
-      mockMessageReader.setMessages([]);
+  mockMessagePublisher.setMessages([]);
 
       // Should handle empty arrays gracefully - no messages should be emitted from history
       // We'll emit from dispatcher to test the other streams still work
