@@ -7,12 +7,6 @@ import { DomainMessage } from '../../presentation/view-models/console/console-us
 export interface MessageReader {
 
   /**
-   * Observable stream of current message history (emits on every store operation)
-   * Contains all renderable messages sorted by timestamp
-   */
-  messageHistory$: Observable<DomainMessage[]>;
-  
-  /**
    * Get message history with optional limit
    */
   getMessageHistory(limit?: number): Promise<DomainMessage[]>;
@@ -23,14 +17,22 @@ export interface MessageReader {
   getMessagesByType(type: DomainMessage['type']): Promise<DomainMessage[]>;
   
   /**
-   * Search messages by regex pattern
+   * Search messages by regex pattern with optional type filtering
    */
-  searchByRegex(pattern: string, limit?: number): Promise<DomainMessage[]>;
+  searchByRegex(pattern: string, limit?: number, type?: DomainMessage['type']): Promise<DomainMessage[]>;
   
   /**
    * Get message by ID
    */
   getMessageById(messageId: string): Promise<DomainMessage | null>;
+}
+
+export interface MessagePublisher { 
+  /**
+   * Observable stream of current message history (emits on every store operation)
+   * Contains all renderable messages sorted by timestamp
+   */
+  messageHistory$: Observable<DomainMessage[]>;
 }
 
 /**
@@ -57,4 +59,13 @@ export interface MessageWriter {
    */
   clearHistory(): Promise<void>;
 
+}
+
+export interface MessageStore extends MessageWriter, MessageReader {
+  initialize(): Promise<void>;
+
+  getAllMessages(): Promise<DomainMessage[]>;
+}
+
+export interface MessageStorePublisher extends MessageStore, MessagePublisher {
 }

@@ -11,7 +11,7 @@ import {
   DomainTokenUsage, 
   DomainWorkerInfo 
 } from '../../presentation/view-models/shared-use-case.js';
-import { MessageReader, MessageWriter } from '../interfaces/message-store.js';
+import { MessagePublisher, MessageWriter } from '../interfaces/message-store.js';
 import { CommandDispatcher } from '../interfaces/command-provider.js';
 import { PromptHandler } from '../interfaces/prompt-handler.js';
 
@@ -23,7 +23,7 @@ import { PromptHandler } from '../interfaces/prompt-handler.js';
 export class FlowCodeUseCase implements TUIUseCase {
   
   constructor(
-    private readonly messageReader: MessageReader,
+    private readonly messagePublisher: MessagePublisher,
     private readonly messageWriter: MessageWriter,
     private readonly commandDispatcher: CommandDispatcher,
     private readonly promptHandler: PromptHandler
@@ -72,7 +72,7 @@ export class FlowCodeUseCase implements TUIUseCase {
   get messages$(): Observable<DomainMessage> {
     // Merge all message sources and flatten messageHistory$ array to individual messages
     return merge(
-      this.messageReader.messageHistory$.pipe(
+      this.messagePublisher.messageHistory$.pipe(
         switchMap(messages => messages) // Flatten array to individual messages
       ),
       this.commandDispatcher.systemMessages$,
