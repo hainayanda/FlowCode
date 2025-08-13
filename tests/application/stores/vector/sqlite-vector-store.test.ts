@@ -29,7 +29,7 @@ describe('SQLiteVectorStore', () => {
 
   describe('initialization', () => {
     it('should initialize successfully', async () => {
-      const newStore = new SQLiteVectorStore();
+      const newStore = new SQLiteVectorStore('/tmp/test-flowcode.db');
       await expect(newStore.initialize()).resolves.not.toThrow();
       await newStore.close();
     });

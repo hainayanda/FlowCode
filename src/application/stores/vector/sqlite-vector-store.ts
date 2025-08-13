@@ -12,9 +12,8 @@ export class SQLiteVectorStore implements VectorStore {
   private dbPath: string;
   private initialized = false;
 
-  constructor(dbPath?: string) {
-    // Default to .flowcode/vectors.db in current working directory
-    this.dbPath = dbPath || path.join(process.cwd(), '.flowcode', 'vectors.db');
+  constructor(dbPath: string) {
+    this.dbPath = dbPath;
   }
 
   /**
