@@ -22,8 +22,10 @@
   "dependencies": {
     "@types/blessed": "^0.1.25",
     "@types/node": "^24.2.1",
+    "better-sqlite3": "^12.2.0",
     "blessed": "^0.1.81",
-    "rxjs": "^7.8.2"
+    "rxjs": "^7.8.2",
+    "sqlite-vss": "^0.1.2"
   },
   "devDependencies": {
     "@vitest/ui": "^3.2.4",
