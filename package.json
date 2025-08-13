@@ -1,0 +1,37 @@
+{
+  "name": "flowcode",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist/main.js",
+  "bin": {
+    "flowcode": "dist/main.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/main.ts",
+    "start": "tsx src/main.ts",
+    "test": "npm run test:unit",
+    "test:unit": "vitest",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest --coverage",
+    "test:console": "tsx ui-tests/console-test.ts",
+    "test:ui": "tsx ui-tests/tui-test.ts",
+    "lint": "eslint src --ext .ts",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@types/blessed": "^0.1.25",
+    "@types/node": "^24.2.1",
+    "blessed": "^0.1.81",
+    "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "@vitest/ui": "^3.2.4",
+    "tsx": "^4.20.3",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
