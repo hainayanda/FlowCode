@@ -1,5 +1,7 @@
 import * as fs from 'fs/promises';
-import { ToolDefinition, ToolCall, ToolResult, Toolbox } from '../interfaces/toolbox.js';
+import { Observable, EMPTY } from 'rxjs';
+import { ToolDefinition, ToolCall, ToolResult, Toolbox, ToolboxMessage } from '../interfaces/toolbox.js';
+import { EmbeddingService } from '../interfaces/embedding-service.js';
 
 /**
  * File content result
@@ -18,6 +20,13 @@ export class FileTools implements Toolbox {
   
   readonly id = 'file_tools';
   readonly description = 'File operations toolbox for reading, writing, and modifying files';
+
+  /**
+   * Individual toolboxes don't emit messages - this is handled by ToolboxService
+   */
+  readonly messages$: Observable<ToolboxMessage> = EMPTY;
+
+  constructor(public readonly embeddingService: EmbeddingService) {}
 
   getTools(): ToolDefinition[] {
     return [

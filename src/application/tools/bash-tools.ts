@@ -1,6 +1,8 @@
 import { spawn, exec } from 'child_process';
 import { promisify } from 'util';
-import { ToolDefinition, ToolCall, ToolResult, Toolbox } from '../interfaces/toolbox.js';
+import { Observable, EMPTY } from 'rxjs';
+import { ToolDefinition, ToolCall, ToolResult, Toolbox, ToolboxMessage } from '../interfaces/toolbox.js';
+import { EmbeddingService } from '../interfaces/embedding-service.js';
 
 const execAsync = promisify(exec);
 
@@ -32,6 +34,13 @@ export class BashTools implements Toolbox {
 
   readonly id = 'bash_tools';
   readonly description = 'Bash command execution toolbox for running shell commands';
+
+  /**
+   * Individual toolboxes don't emit messages - this is handled by ToolboxService
+   */
+  readonly messages$: Observable<ToolboxMessage> = EMPTY;
+
+  constructor(public readonly embeddingService: EmbeddingService) {}
 
   getTools(): ToolDefinition[] {
     return [

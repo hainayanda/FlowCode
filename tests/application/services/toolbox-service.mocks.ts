@@ -1,4 +1,5 @@
-import { Toolbox, ToolDefinition, ToolCall, ToolResult, PermissionLevel } from '../../../src/application/interfaces/toolbox.js';
+import { Observable, EMPTY } from 'rxjs';
+import { Toolbox, ToolDefinition, ToolCall, ToolResult, PermissionLevel, ToolboxMessage } from '../../../src/application/interfaces/toolbox.js';
 import { SettingsStore, SettingsConfig } from '../../../src/application/interfaces/settings-store.js';
 
 /**
@@ -14,6 +15,11 @@ export class MockToolbox implements Toolbox {
     public readonly id: string,
     public readonly description: string
   ) {}
+
+  /**
+   * Mock toolboxes don't emit messages - this is handled by ToolboxService
+   */
+  readonly messages$: Observable<ToolboxMessage> = EMPTY;
 
   getTools(): ToolDefinition[] {
     return this.mockTools;

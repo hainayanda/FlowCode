@@ -9,6 +9,21 @@ export interface ToolResult {
 }
 
 /**
+ * Toolbox message types for UI status updates
+ */
+export type ToolboxMessageStatus = 'executing' | 'failing' | 'succeed';
+
+export interface ToolboxMessage {
+  id: string;
+  toolCall: ToolCall;
+  status: ToolboxMessageStatus;
+  message: string;
+  timestamp: Date;
+  result?: any;
+  error?: string;
+}
+
+/**
  * Tool parameter definition
  */
 export interface ToolParameter {
@@ -57,6 +72,16 @@ export interface Toolbox {
   readonly description: string;
 
   /**
+   * Observable stream of toolbox status messages
+   */
+  readonly messages$: import('rxjs').Observable<ToolboxMessage>;
+
+  /**
+   * Embedding service for vector operations
+   */
+  readonly embeddingService: import('../interfaces/embedding-service.js').EmbeddingService;
+
+  /**
    * Get list of tools this toolbox supports
    */
   getTools(): ToolDefinition[];
@@ -67,7 +92,7 @@ export interface Toolbox {
   supportsTool(toolName: string): boolean;
 
   /**
-   * Execute a tool call
+   * Execute a tool call with status updates
    */
   executeTool(toolCall: ToolCall): Promise<ToolResult>;
 }

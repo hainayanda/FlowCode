@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { firstValueFrom, filter, take } from 'rxjs';
+import { firstValueFrom, filter, take, toArray, timeout } from 'rxjs';
 import { ToolboxService } from '../../../src/application/services/toolbox-service.js';
-import { PermissionLevel } from '../../../src/application/interfaces/toolbox.js';
+import { PermissionLevel, ToolboxMessage } from '../../../src/application/interfaces/toolbox.js';
 import { DomainOption } from '../../../src/presentation/view-models/console/console-use-case.js';
 import {
   MockToolbox,
@@ -44,6 +44,10 @@ describe('ToolboxService', () => {
 
     it('should expose options observable', () => {
       expect(toolboxService.options$).toBeDefined();
+    });
+
+    it('should expose messages observable', () => {
+      expect(toolboxService.messages$).toBeDefined();
     });
   });
 
@@ -291,6 +295,164 @@ describe('ToolboxService', () => {
     it('should handle responding to permission when no request is pending', async () => {
       // Should not throw error
       await expect(toolboxService.respondToPermissionChoice(0)).resolves.toBeUndefined();
+    });
+  });
+
+  describe('Toolbox Messages', () => {
+    it('should emit executing, succeed messages for successful tool execution', async () => {
+      mockFileToolbox.setTools([createTestToolDefinition('read_file', 'none')]);
+      mockFileToolbox.setResult({ success: true, data: 'file content', message: 'File read successfully' });
+
+      // Collect messages
+      const messagesPromise = firstValueFrom(
+        toolboxService.messages$.pipe(
+          take(2),
+          toArray(),
+          timeout(1000)
+        )
+      );
+
+      // Execute tool
+      const resultPromise = toolboxService.executeTool(
+        createTestToolCall('file_tools.read_file', { filePath: '/test/file.txt' })
+      );
+
+      const messages = await messagesPromise;
+      const result = await resultPromise;
+
+      expect(result.success).toBe(true);
+      expect(messages).toHaveLength(2);
+
+      // First message: executing
+      expect(messages[0].status).toBe('executing');
+      expect(messages[0].message).toBe('Executing tool...');
+      expect(messages[0].toolCall.name).toBe('file_tools.read_file');
+
+      // Second message: succeed
+      expect(messages[1].status).toBe('succeed');
+      expect(messages[1].message).toBe('File read successfully');
+      expect(messages[1].result).toBe('file content');
+
+      // Should have same operation ID
+      expect(messages[0].id).toBe(messages[1].id);
+    });
+
+    it('should emit executing, failing messages for failed tool execution', async () => {
+      mockFileToolbox.setTools([createTestToolDefinition('read_file', 'none')]);
+      mockFileToolbox.setResult({ success: false, error: 'File not found' });
+
+      // Collect messages
+      const messagesPromise = firstValueFrom(
+        toolboxService.messages$.pipe(
+          take(2),
+          toArray(),
+          timeout(1000)
+        )
+      );
+
+      // Execute tool
+      const resultPromise = toolboxService.executeTool(
+        createTestToolCall('file_tools.read_file', { filePath: '/nonexistent.txt' })
+      );
+
+      const messages = await messagesPromise;
+      const result = await resultPromise;
+
+      expect(result.success).toBe(false);
+      expect(messages).toHaveLength(2);
+
+      // First message: executing
+      expect(messages[0].status).toBe('executing');
+      expect(messages[0].message).toBe('Executing tool...');
+
+      // Second message: failing
+      expect(messages[1].status).toBe('failing');
+      expect(messages[1].message).toBe('File not found');
+      expect(messages[1].error).toBe('File not found');
+
+      // Should have same operation ID
+      expect(messages[0].id).toBe(messages[1].id);
+    });
+
+    it('should emit failing message for permission denied', async () => {
+      mockFileToolbox.setTools([createTestToolDefinition('append_to_file', 'loose')]);
+      mockSettingsStore.setPermissionResult(false);
+
+      // Start execution and deny permission immediately
+      const executionPromise = toolboxService.executeTool(
+        createTestToolCall('file_tools.append_to_file')
+      );
+
+      // Wait for permission request
+      await firstValueFrom(
+        toolboxService.options$.pipe(
+          filter(opt => opt !== null),
+          take(1)
+        )
+      );
+
+      // Collect messages after permission denial
+      const messagesPromise = firstValueFrom(
+        toolboxService.messages$.pipe(
+          filter(msg => msg.status === 'failing'),
+          take(1),
+          timeout(1000)
+        )
+      );
+
+      // Deny permission
+      await toolboxService.respondToPermissionChoice(1);
+
+      const message = await messagesPromise;
+      const result = await executionPromise;
+
+      expect(result.success).toBe(false);
+      expect(message.status).toBe('failing');
+      expect(message.message).toBe('Permission denied');
+    });
+
+    it('should emit failing message for unknown toolbox', async () => {
+      const messagesPromise = firstValueFrom(
+        toolboxService.messages$.pipe(
+          take(2),
+          toArray(),
+          timeout(1000)
+        )
+      );
+
+      const resultPromise = toolboxService.executeTool(
+        createTestToolCall('unknown_toolbox.some_tool')
+      );
+
+      const messages = await messagesPromise;
+      const result = await resultPromise;
+
+      expect(result.success).toBe(false);
+      expect(messages).toHaveLength(2);
+      expect(messages[0].status).toBe('executing');
+      expect(messages[1].status).toBe('failing');
+      expect(messages[1].message).toBe('Toolbox not found: unknown_toolbox');
+    });
+
+    it('should include toolCall information in all messages', async () => {
+      mockFileToolbox.setTools([createTestToolDefinition('read_file', 'none')]);
+      mockFileToolbox.setResult({ success: true, data: 'content' });
+
+      const messagePromise = firstValueFrom(
+        toolboxService.messages$.pipe(
+          take(1),
+          timeout(1000)
+        )
+      );
+
+      const toolCall = createTestToolCall('file_tools.read_file', { filePath: '/test.txt', encoding: 'utf8' });
+      toolboxService.executeTool(toolCall);
+
+      const message = await messagePromise;
+
+      expect(message.toolCall.name).toBe('file_tools.read_file');
+      expect(message.toolCall.parameters).toEqual({ filePath: '/test.txt', encoding: 'utf8' });
+      expect(message.timestamp).toBeInstanceOf(Date);
     });
   });
 });

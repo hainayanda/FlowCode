@@ -1,5 +1,5 @@
 import { CommandDispatcher, CommandProvider, CommandResult } from '../interfaces/command-provider.js';
-import { DomainMessage, CommandDefinition } from '../../presentation/view-models/console/console-use-case.js';
+import { CommandDefinition } from '../../presentation/view-models/console/console-use-case.js';
 import { MessageWriter } from '../interfaces/message-store.js';
 
 /**

@@ -1,6 +1,8 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { ToolDefinition, ToolCall, ToolResult, Toolbox } from '../interfaces/toolbox.js';
+import { Observable, EMPTY } from 'rxjs';
+import { ToolDefinition, ToolCall, ToolResult, Toolbox, ToolboxMessage } from '../interfaces/toolbox.js';
+import { EmbeddingService } from '../interfaces/embedding-service.js';
 
 /**
  * File system entry information
@@ -29,6 +31,13 @@ export class WorkspaceTools implements Toolbox {
 
   readonly id = 'workspace_tools';
   readonly description = 'Workspace operations toolbox for file system navigation and management';
+
+  /**
+   * Individual toolboxes don't emit messages - this is handled by ToolboxService
+   */
+  readonly messages$: Observable<ToolboxMessage> = EMPTY;
+
+  constructor(public readonly embeddingService: EmbeddingService) {}
 
   getTools(): ToolDefinition[] {
     return [

@@ -1,4 +1,5 @@
-import { ToolDefinition, ToolCall, ToolResult, Toolbox } from '../interfaces/toolbox.js';
+import { Observable, EMPTY } from 'rxjs';
+import { ToolDefinition, ToolCall, ToolResult, Toolbox, ToolboxMessage } from '../interfaces/toolbox.js';
 import { WebSearchService, WebSearchOptions, WebSearchResponse, SearXNGInstance } from '../interfaces/web-search.js';
 
 /**
@@ -189,6 +190,11 @@ export class SearXNGSearchService implements WebSearchService {
 export class WebSearchTools implements Toolbox {
   readonly id = 'web_search_tools';
   readonly description = 'Web search toolbox using SearXNG for privacy-respecting search';
+
+  /**
+   * Individual toolboxes don't emit messages - this is handled by ToolboxService
+   */
+  readonly messages$: Observable<ToolboxMessage> = EMPTY;
 
   private searchService: WebSearchService;
 

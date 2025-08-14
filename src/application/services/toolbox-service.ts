@@ -1,7 +1,8 @@
-import { BehaviorSubject, Observable, firstValueFrom } from 'rxjs';
-import { Toolbox, ToolDefinition, ToolCall, ToolResult, PermissionLevel } from '../interfaces/toolbox.js';
-import { SettingsStore, SettingsConfig } from '../interfaces/settings-store.js';
+import { BehaviorSubject, Observable, Subject } from 'rxjs';
+import { Toolbox, ToolDefinition, ToolCall, ToolResult, PermissionLevel, ToolboxMessage } from '../interfaces/toolbox.js';
+import { SettingsStore } from '../interfaces/settings-store.js';
 import { DomainOption } from '../../presentation/view-models/console/console-use-case.js';
+import { EmbeddingService } from '../interfaces/embedding-service.js';
 
 /**
  * Permission request result
@@ -22,12 +23,14 @@ export class ToolboxService implements Toolbox {
   readonly description = 'Aggregates multiple toolboxes with unified permission handling';
   
   private readonly optionsSubject = new BehaviorSubject<DomainOption | null>(null);
+  private readonly messagesSubject = new Subject<ToolboxMessage>();
   private pendingPermissionRequest: PermissionRequest | null = null;
   private permissionResolver: ((granted: boolean) => void) | null = null;
 
   constructor(
     private readonly toolboxes: Toolbox[],
-    private readonly settingsStore: SettingsStore
+    private readonly settingsStore: SettingsStore,
+    public readonly embeddingService: EmbeddingService
   ) {}
 
   /**
@@ -35,6 +38,13 @@ export class ToolboxService implements Toolbox {
    */
   get options$(): Observable<DomainOption | null> {
     return this.optionsSubject.asObservable();
+  }
+
+  /**
+   * Observable stream of toolbox status messages
+   */
+  get messages$(): Observable<ToolboxMessage> {
+    return this.messagesSubject.asObservable();
   }
 
   getTools(): ToolDefinition[] {
@@ -59,46 +69,74 @@ export class ToolboxService implements Toolbox {
   }
 
   async executeTool(toolCall: ToolCall): Promise<ToolResult> {
+    const operationId = this.generateOperationId();
+    
+    // Emit executing status
+    this.emitToolboxMessage(operationId, toolCall, 'executing', 'Executing tool...');
+    
     const [toolboxId, actualToolName] = this.parseToolName(toolCall.name);
     const toolbox = this.findToolbox(toolboxId);
     
     if (!toolbox) {
+      const error = `Toolbox not found: ${toolboxId}`;
+      this.emitToolboxMessage(operationId, toolCall, 'failing', error);
       return {
         success: false,
-        error: `Toolbox not found: ${toolboxId}`
+        error
       };
     }
 
     const tool = toolbox.getTools().find(t => t.name === actualToolName);
     if (!tool) {
+      const error = `Tool not found: ${actualToolName} in toolbox ${toolboxId}`;
+      this.emitToolboxMessage(operationId, toolCall, 'failing', error);
       return {
         success: false,
-        error: `Tool not found: ${actualToolName} in toolbox ${toolboxId}`
+        error
       };
     }
 
     // Check permissions before execution
-    const permissionGranted = await this.checkPermission({
-      toolboxId,
-      toolName: actualToolName,
-      parameters: toolCall.parameters,
-      permissionLevel: tool.permission
-    });
+    try {
+      const permissionGranted = await this.checkPermission({
+        toolboxId,
+        toolName: actualToolName,
+        parameters: toolCall.parameters,
+        permissionLevel: tool.permission
+      });
 
-    if (!permissionGranted) {
+      if (!permissionGranted) {
+        const error = 'Permission denied';
+        this.emitToolboxMessage(operationId, toolCall, 'failing', error);
+        return {
+          success: false,
+          error
+        };
+      }
+
+      // Execute the tool call with the original tool name
+      const originalToolCall = {
+        ...toolCall,
+        name: actualToolName
+      };
+
+      const result = await toolbox.executeTool(originalToolCall);
+      
+      if (result.success) {
+        this.emitToolboxMessage(operationId, toolCall, 'succeed', result.message || 'Tool executed successfully', result.data);
+      } else {
+        this.emitToolboxMessage(operationId, toolCall, 'failing', result.error || 'Tool execution failed', undefined, result.error);
+      }
+      
+      return result;
+    } catch (error) {
+      const errorMessage = `Tool execution error: ${error}`;
+      this.emitToolboxMessage(operationId, toolCall, 'failing', errorMessage, undefined, String(error));
       return {
         success: false,
-        error: 'Permission denied'
+        error: errorMessage
       };
     }
-
-    // Execute the tool call with the original tool name
-    const originalToolCall = {
-      ...toolCall,
-      name: actualToolName
-    };
-
-    return await toolbox.executeTool(originalToolCall);
   }
 
   /**
@@ -260,5 +298,30 @@ export class ToolboxService implements Toolbox {
       // Log error but don't fail the operation
       console.error('Failed to save permission:', error);
     }
+  }
+
+  private generateOperationId(): string {
+    return `tool_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+  }
+
+  private emitToolboxMessage(
+    id: string,
+    toolCall: ToolCall,
+    status: 'executing' | 'failing' | 'succeed',
+    message: string,
+    result?: any,
+    error?: string
+  ): void {
+    const toolboxMessage: ToolboxMessage = {
+      id,
+      toolCall,
+      status,
+      message,
+      timestamp: new Date(),
+      result,
+      error
+    };
+    
+    this.messagesSubject.next(toolboxMessage);
   }
 }
