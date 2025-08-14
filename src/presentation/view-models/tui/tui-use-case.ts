@@ -1,6 +1,6 @@
 import { Observable } from 'rxjs';
 import { ConsoleUseCase } from '../console/console-use-case.js';
-import { DomainTokenUsage, DomainWorkerInfo } from '../shared-use-case.js';
+import { DomainTokenUsage, DomainWorkerInfo } from '../../model/use-case-models.js';
 
 /**
  * Use case interface for TUI ViewModel

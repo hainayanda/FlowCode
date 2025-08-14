@@ -110,9 +110,6 @@ export class MockMessageWriter implements MessageWriter {
  * Mock CommandDispatcher for testing
  */
 export class MockCommandDispatcher implements CommandDispatcher {
-  private readonly systemMessagesSubject = new Subject<DomainMessage>();
-  private readonly errorMessagesSubject = new Subject<DomainMessage>();
-
   public executeCalled = false;
   public lastCommand = '';
   public lastArgs: string[] = [];
@@ -141,23 +138,7 @@ export class MockCommandDispatcher implements CommandDispatcher {
     );
   }
 
-  get systemMessages$() {
-    return this.systemMessagesSubject.asObservable();
-  }
-
-  get errorMessages$() {
-    return this.errorMessagesSubject.asObservable();
-  }
-
   // Test helpers
-  emitSystemMessage(message: DomainMessage): void {
-    this.systemMessagesSubject.next(message);
-  }
-
-  emitErrorMessage(message: DomainMessage): void {
-    this.errorMessagesSubject.next(message);
-  }
-
   reset(): void {
     this.executeCalled = false;
     this.lastCommand = '';

@@ -1,5 +1,5 @@
 import { Observable } from 'rxjs';
-import { DomainTokenUsage, DomainWorkerInfo } from '../../presentation/view-models/shared-use-case.js';
+import { DomainTokenUsage, DomainWorkerInfo } from '../../presentation/model/use-case-models.js';
 import { DomainOption } from '../../presentation/view-models/console/console-use-case.js';
 
 /**

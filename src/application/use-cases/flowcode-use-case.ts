@@ -10,7 +10,7 @@ import {
 import { 
   DomainTokenUsage, 
   DomainWorkerInfo 
-} from '../../presentation/view-models/shared-use-case.js';
+} from '../../presentation/model/use-case-models.js';
 import { MessagePublisher, MessageWriter } from '../interfaces/message-store.js';
 import { CommandDispatcher } from '../interfaces/command-provider.js';
 import { PromptHandler } from '../interfaces/prompt-handler.js';
@@ -71,13 +71,9 @@ export class FlowCodeUseCase implements TUIUseCase {
   // Reactive streams (shared by both Console and TUI)
   get messages$(): Observable<DomainMessage> {
     // Merge all message sources and flatten messageHistory$ array to individual messages
-    return merge(
-      this.messagePublisher.messageHistory$.pipe(
+    return this.messagePublisher.messageHistory$.pipe(
         switchMap(messages => messages) // Flatten array to individual messages
-      ),
-      this.commandDispatcher.systemMessages$,
-      this.commandDispatcher.errorMessages$
-    );
+      );
   }
 
   get options$(): Observable<DomainOption> {

@@ -1,5 +1,4 @@
-import { Observable } from 'rxjs';
-import { DomainMessage, CommandDefinition } from '../../presentation/view-models/console/console-use-case.js';
+import { CommandDefinition } from '../../presentation/view-models/console/console-use-case.js';
 
 /**
  * Command execution result
@@ -42,13 +41,4 @@ export interface CommandProvider extends CommandHandler {
  * Command dispatcher interface - orchestrates multiple command providers
  */
 export interface CommandDispatcher extends CommandProvider {
-  /**
-   * Stream of system messages (success, info, etc.)
-   */
-  systemMessages$: Observable<DomainMessage>;
-  
-  /**
-   * Stream of error messages
-   */
-  errorMessages$: Observable<DomainMessage>;
 }
