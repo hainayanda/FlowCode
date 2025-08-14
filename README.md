@@ -71,7 +71,6 @@ FlowCode uses a hybrid approach combining structured config with flexible prompt
     "temperature": 0.1,
     "summarize_threshold": 15,
     "preserve_recent_messages": 5,
-    "include_worker_outputs": true,
     "enabled": true,
     "provider": "anthropic"
   },
@@ -79,24 +78,43 @@ FlowCode uses a hybrid approach combining structured config with flexible prompt
     "code-worker": {
       "description": "General programming and business logic",
       "model": "claude-3-5-sonnet-20241022",
-      "provider": "anthropic"
+      "provider": "anthropic",
+      "enabled": true
     },
     "test-worker": {
       "description": "Testing and quality assurance",
       "model": "claude-3-5-sonnet-20241022",
-      "provider": "anthropic"
+      "provider": "anthropic",
+      "enabled": true
     },
     "ui-worker": {
       "description": "Frontend components and user interfaces",
       "model": "claude-3-5-haiku-20241022",
-      "provider": "anthropic"
+      "provider": "anthropic",
+      "enabled": true
     },
     "security-worker": {
       "description": "Frontend components and user interfaces",
       "model": "claude-3-5-haiku-20241022",
-      "provider": "anthropic"
+      "provider": "anthropic",
+      "enabled": true
     }
   }
+}
+```
+
+### Basic Settings
+
+```json
+"permissions": {
+    "allow": [
+      "execute_command(command:npm run build)",
+      "execute_command(command:npm install)",
+      "execute_command(command:npm run start)",
+      "execute_command(command:npm run start)",
+      "append_to_file(*)", // for any param
+    ],
+    "deny": [],
 }
 ```
 
