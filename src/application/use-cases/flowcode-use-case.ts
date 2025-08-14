@@ -1,6 +1,5 @@
-import { Observable, merge } from 'rxjs';
+import { Observable } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
-import { ConsoleUseCase } from '../../presentation/view-models/console/console-use-case.js';
 import { TUIUseCase } from '../../presentation/view-models/tui/tui-use-case.js';
 import { 
   DomainMessage, 

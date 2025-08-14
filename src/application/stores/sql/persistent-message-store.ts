@@ -1,8 +1,6 @@
-import { MessageReader, MessageWriter, MessageStore } from '../../interfaces/message-store.js';
+import { MessageStore } from '../../interfaces/message-store.js';
 import { DomainMessage } from '../../../presentation/view-models/console/console-use-case.js';
 import { promises as fs } from 'fs';
-import { join } from 'path';
-import { homedir } from 'os';
 
 /**
  * SQLite-based persistent message store implementation

@@ -11,7 +11,11 @@ describe('SQLiteVectorStore', () => {
     // Create a temporary database path for testing
     testDbPath = path.join(__dirname, 'test-vectors.db');
     store = new SQLiteVectorStore(testDbPath);
+    // Suppress console warnings during tests
+    const originalWarn = console.warn;
+    console.warn = () => {};
     await store.initialize();
+    console.warn = originalWarn;
   });
 
   afterEach(async () => {
@@ -30,7 +34,11 @@ describe('SQLiteVectorStore', () => {
   describe('initialization', () => {
     it('should initialize successfully', async () => {
       const newStore = new SQLiteVectorStore('/tmp/test-flowcode.db');
+      // Suppress console warnings during tests
+      const originalWarn = console.warn;
+      console.warn = () => {};
       await expect(newStore.initialize()).resolves.not.toThrow();
+      console.warn = originalWarn;
       await newStore.close();
     });
 
@@ -42,7 +50,11 @@ describe('SQLiteVectorStore', () => {
       const customPath = path.join(__dirname, 'custom-flowcode', 'vectors.db');
       const customStore = new SQLiteVectorStore(customPath);
       
+      // Suppress console warnings during tests
+      const originalWarn = console.warn;
+      console.warn = () => {};
       await customStore.initialize();
+      console.warn = originalWarn;
       expect(fs.existsSync(customPath)).toBe(true);
       
       await customStore.close();
@@ -82,7 +94,11 @@ describe('SQLiteVectorStore', () => {
 
       expect(await store.getVectorCount()).toBe(1); // Should still be 1
       
+      // Suppress console warnings during tests
+      const originalWarn = console.warn;
+      console.warn = () => {};
       const results = await store.searchSimilar([0.4, 0.5, 0.6], 1);
+      console.warn = originalWarn;
       expect(results).toHaveLength(1);
       expect(results[0].metadata.content).toBe('updated');
     });
@@ -106,7 +122,11 @@ describe('SQLiteVectorStore', () => {
 
       expect(await store.getVectorCount()).toBe(1);
       
+      // Suppress console warnings during tests
+      const originalWarn = console.warn;
+      console.warn = () => {};
       const results = await store.searchSimilar([0.4, 0.5, 0.6], 1);
+      console.warn = originalWarn;
       expect(results[0].metadata.version).toBe(2);
     });
 
@@ -147,7 +167,11 @@ describe('SQLiteVectorStore', () => {
 
     it('should search similar vectors', async () => {
       const queryVector = [1, 0, 0];
+      // Suppress console warnings during tests
+      const originalWarn = console.warn;
+      console.warn = () => {};
       const results = await store.searchSimilar(queryVector, 4);
+      console.warn = originalWarn;
 
       expect(results).toHaveLength(4);
       // Without vss extension, results are ordered by creation time (most recent first)
@@ -157,21 +181,33 @@ describe('SQLiteVectorStore', () => {
 
     it('should respect limit parameter', async () => {
       const queryVector = [1, 0, 0];
+      // Suppress console warnings during tests
+      const originalWarn = console.warn;
+      console.warn = () => {};
       const results = await store.searchSimilar(queryVector, 2);
+      console.warn = originalWarn;
 
       expect(results).toHaveLength(2);
     });
 
     it('should handle empty store', async () => {
       await store.clearAll();
+      // Suppress console warnings during tests
+      const originalWarn = console.warn;
+      console.warn = () => {};
       const results = await store.searchSimilar([1, 0, 0], 10);
+      console.warn = originalWarn;
       expect(results).toHaveLength(0);
     });
 
     it('should handle search without vss extension gracefully', async () => {
       // This test verifies the fallback behavior when sqlite-vss is not available
       const queryVector = [1, 0, 0];
+      // Suppress console warnings during tests
+      const originalWarn = console.warn;
+      console.warn = () => {};
       const results = await store.searchSimilar(queryVector, 4);
+      console.warn = originalWarn;
 
       // Should return results even if similarity search is not available
       expect(results).toBeDefined();
@@ -190,12 +226,16 @@ describe('SQLiteVectorStore', () => {
 
       // Create new instance with same database
       const newStore = new SQLiteVectorStore(testDbPath);
+      // Suppress console warnings during tests
+      const originalWarn = console.warn;
+      console.warn = () => {};
       await newStore.initialize();
 
       expect(await newStore.hasVector('persistent-test')).toBe(true);
       expect(await newStore.getVectorCount()).toBe(1);
 
       const results = await newStore.searchSimilar([0.1, 0.2, 0.3], 1);
+      console.warn = originalWarn;
       expect(results[0].metadata.persistent).toBe(true);
 
       await newStore.close();
@@ -207,14 +247,22 @@ describe('SQLiteVectorStore', () => {
       const invalidPath = '/root/invalid/path/vectors.db';
       const invalidStore = new SQLiteVectorStore(invalidPath);
       
+      // Suppress console warnings during tests
+      const originalWarn = console.warn;
+      console.warn = () => {};
       // Should throw meaningful error
       await expect(invalidStore.initialize()).rejects.toThrow();
+      console.warn = originalWarn;
     });
 
     it('should handle corrupted vector data', async () => {
       // This is a more complex test that would require manually corrupting the database
       // For now, we'll test that the store handles empty results gracefully
+      // Suppress console warnings during tests
+      const originalWarn = console.warn;
+      console.warn = () => {};
       const results = await store.searchSimilar([], 1);
+      console.warn = originalWarn;
       expect(results).toBeDefined();
     });
   });
@@ -235,7 +283,11 @@ describe('SQLiteVectorStore', () => {
 
       await store.storeVector('complex-meta', vector, complexMetadata);
       
+      // Suppress console warnings during tests
+      const originalWarn = console.warn;
+      console.warn = () => {};
       const results = await store.searchSimilar([0.1, 0.2, 0.3], 1);
+      console.warn = originalWarn;
       expect(results[0].metadata.workerId).toBe('code-worker');
       expect(results[0].metadata.nested.confidence).toBe(0.95);
       expect(results[0].metadata.nested.tags).toEqual(['javascript', 'async']);
@@ -254,7 +306,11 @@ describe('SQLiteVectorStore', () => {
       
       // Without vss extension, results are ordered by creation time (most recent first)
       // So we need to search for all and find by metadata
+      // Suppress console warnings during tests
+      const originalWarn = console.warn;
+      console.warn = () => {};
       const allResults = await store.searchSimilar(smallVector, 2);
+      console.warn = originalWarn;
       const smallResult = allResults.find(r => r.metadata.size === 'small');
       const largeResult = allResults.find(r => r.metadata.size === 'large');
       
@@ -268,7 +324,11 @@ describe('SQLiteVectorStore', () => {
 
       await store.storeVector('precise', preciseVector, metadata);
       
+      // Suppress console warnings during tests
+      const originalWarn = console.warn;
+      console.warn = () => {};
       const results = await store.searchSimilar(preciseVector, 1);
+      console.warn = originalWarn;
       
       // Check that precision is maintained (within floating point limits)
       expect(results[0].vector[0]).toBeCloseTo(0.123456789, 6);
