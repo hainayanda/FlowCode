@@ -118,6 +118,25 @@ FlowCode uses a hybrid approach combining structured config with flexible prompt
 }
 ```
 
+### Global Credentials
+
+```json
+{
+  "openai": {
+    "apiKey": "sk-proj-...",
+    "lastUsed": "2025-08-11T06:50:41.652Z"
+  },
+  "moonshot": {
+    "apiKey": "sk-...",
+    "lastUsed": "2025-08-11T06:50:41.653Z"
+  },
+  "anthropic": {
+    "apiKey": "sk-ant-...",
+    "lastUsed": "2025-08-11T09:44:17.385Z"
+  }
+}
+```
+
 ### Custom Worker Prompts
 
 ```markdown

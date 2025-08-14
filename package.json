@@ -17,18 +17,26 @@
     "test:console": "tsx ui-tests/console-test.ts",
     "test:ui": "tsx ui-tests/tui-test.ts",
     "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.60.0",
     "@types/blessed": "^0.1.25",
     "@types/node": "^24.2.1",
     "better-sqlite3": "^12.2.0",
     "blessed": "^0.1.81",
+    "openai": "^5.12.2",
     "rxjs": "^7.8.2",
     "sqlite-vss": "^0.1.2"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@typescript-eslint/eslint-plugin": "^8.39.1",
+    "@typescript-eslint/parser": "^8.39.1",
     "@vitest/ui": "^3.2.4",
+    "eslint": "^9.33.0",
+    "eslint-config-prettier": "^10.1.8",
     "tsx": "^4.20.3",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
