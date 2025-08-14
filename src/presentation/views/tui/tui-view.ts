@@ -1,6 +1,6 @@
 import { Subscription } from 'rxjs';
 import { createRequire } from 'module';
-import { View } from '../View.js';
+import { View } from '../view.js';
 import { TUIViewState, TUIViewListener } from './tui-view-contracts.js';
 import { ConsoleMessage } from '../../model/message.js';
 import { Option } from '../../model/option.js';

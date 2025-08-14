@@ -25,5 +25,5 @@ export interface TUIUseCase extends ConsoleUseCase {
 }
 
 // Re-export types for convenience
-export { DomainTokenUsage, DomainWorkerInfo };
+export type { DomainTokenUsage, DomainWorkerInfo };
 export type { DomainMessage, DomainOption, CommandDefinition } from '../console/console-use-case.js';

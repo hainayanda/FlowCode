@@ -1,6 +1,6 @@
 import { Subscription } from 'rxjs';
 import * as readline from 'readline';
-import { View } from '../View.js';
+import { View } from '../view.js';
 import { ConsoleViewState, ConsoleViewListener } from './console-contracts.js';
 import { ConsoleMessage } from '../../model/message.js';
 import { Option } from '../../model/option.js';

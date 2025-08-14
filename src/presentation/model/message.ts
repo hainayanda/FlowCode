@@ -247,9 +247,9 @@ export class ConsoleMessage implements BaseMessage {
         
         // Show line count summary
         const linesAdded = this.metadata?.totalLinesAdded || 
-          diffs.filter(d => d.type === 'added' || d.type === 'modified').length;
+          diffs.filter((d: DiffLine) => d.type === 'added' || d.type === 'modified').length;
         const linesRemoved = this.metadata?.totalLinesRemoved || 
-          diffs.filter(d => d.type === 'removed' || d.type === 'modified').length;
+          diffs.filter((d: DiffLine) => d.type === 'removed' || d.type === 'modified').length;
         
         if (linesAdded > 0 || linesRemoved > 0) {
           result += `\n${gray}`;
