@@ -67,6 +67,11 @@ FlowCode uses a hybrid approach combining structured config with flexible prompt
     "enabled": true,
     "provider": "anthropic"
   },
+  "embedding": {
+    "model": "text-embedding-3-small",
+    "enabled": true,
+    "provider": "openai"
+  },
   "workers": {
     "code-worker": {
       "description": "General programming and business logic",
