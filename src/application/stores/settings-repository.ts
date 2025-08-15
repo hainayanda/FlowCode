@@ -23,7 +23,7 @@ export class SettingsRepository implements SettingsReader, SettingsWriter {
   async getAllowedPermissions(): Promise<string[]> {
     try {
       const settings = await this.getSettings();
-      return (settings as any).permissions?.allow || [];
+      return settings.permissions?.allow || [];
     } catch {
       return [];
     }
@@ -32,7 +32,7 @@ export class SettingsRepository implements SettingsReader, SettingsWriter {
   async getDeniedPermissions(): Promise<string[]> {
     try {
       const settings = await this.getSettings();
-      return (settings as any).permissions?.deny || [];
+      return settings.permissions?.deny || [];
     } catch {
       return [];
     }
@@ -43,12 +43,12 @@ export class SettingsRepository implements SettingsReader, SettingsWriter {
       const settings = await this.getSettings();
       
       // Check if explicitly denied first
-      if (this.matchesAnyPattern(permissionPattern, (settings as any).permissions?.deny || [])) {
+      if (this.matchesAnyPattern(permissionPattern, settings.permissions?.deny || [])) {
         return false;
       }
 
       // Check if explicitly allowed
-      if (this.matchesAnyPattern(permissionPattern, (settings as any).permissions?.allow || [])) {
+      if (this.matchesAnyPattern(permissionPattern, settings.permissions?.allow || [])) {
         return true;
       }
 
@@ -75,7 +75,7 @@ export class SettingsRepository implements SettingsReader, SettingsWriter {
   // SettingsWriter implementation
   async writeSettings(settings: SettingsConfig): Promise<boolean> {
     try {
-      await this.updateSettings(settings as any);
+      await this.updateSettings(settings);
       return true;
     } catch {
       return false;

@@ -3,6 +3,28 @@ import { DomainMessage } from '../../../presentation/view-models/console/console
 import { promises as fs } from 'fs';
 
 /**
+ * Database row interface for SQLite operations
+ */
+interface DatabaseRow {
+  id: string;
+  type: string;
+  content: string;
+  timestamp: string;
+  metadata: string | null;
+}
+
+/**
+ * Serialized message for database storage
+ */
+interface SerializedMessage {
+  id: string;
+  type: string;
+  content: string;
+  timestamp: string;
+  metadata: string | null;
+}
+
+/**
  * SQLite-based persistent message store implementation
  * Handles session-based storage in ~/.flowcode/session/ directory
  */
@@ -69,7 +91,7 @@ export class PersistentMessageStore implements MessageStore {
     const likePattern = `%${pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}%`;
     
     let query = 'SELECT * FROM messages WHERE content LIKE ?';
-    const params: any[] = [likePattern];
+    const params: unknown[] = [likePattern];
     
     if (type) {
       query += ' AND type = ?';
@@ -187,7 +209,7 @@ export class PersistentMessageStore implements MessageStore {
     await this.executeQuery(createTableQuery);
   }
 
-  private serializeMessage(message: DomainMessage): any {
+  private serializeMessage(message: DomainMessage): SerializedMessage {
     const hasMetadata = 'metadata' in message && message.metadata !== undefined;
     return {
       id: message.id,
@@ -198,7 +220,7 @@ export class PersistentMessageStore implements MessageStore {
     };
   }
 
-  private deserializeMessage(row: any): DomainMessage {
+  private deserializeMessage(row: DatabaseRow): DomainMessage {
     const base = {
       id: row.id,
       content: row.content,
@@ -283,7 +305,7 @@ export class PersistentMessageStore implements MessageStore {
     };
   }
 
-  private async executeQuery(query: string, params: any[] = []): Promise<any[]> {
+  private async executeQuery(query: string, params: unknown[] = []): Promise<DatabaseRow[]> {
     // Mock implementation - in real implementation, this would execute SQL
     console.log(`Mock SQL: ${query}`, params);
     return [];

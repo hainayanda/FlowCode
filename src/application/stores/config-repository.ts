@@ -1,6 +1,6 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { ConfigWriter, ConfigReader, FlowCodeConfig } from '../interfaces/config-store';
+import { ConfigWriter, ConfigReader, FlowCodeConfig, TaskmasterConfig, SummarizerConfig, EmbeddingConfig, WorkerConfig } from '../interfaces/config-store.js';
 
 export interface VectorProviderConfig {
   provider: string;
@@ -26,37 +26,37 @@ export class ConfigRepository implements ConfigReader, ConfigWriter {
     }
   }
 
-  async getTaskmasterConfig(): Promise<any> {
+  async getTaskmasterConfig(): Promise<TaskmasterConfig> {
     const config = await this.getConfig();
     return config.taskmaster;
   }
 
-  async getSummarizerConfig(): Promise<any> {
+  async getSummarizerConfig(): Promise<SummarizerConfig> {
     const config = await this.getConfig();
     return config.summarizer;
   }
 
-  async getEmbeddingConfig(): Promise<any> {
+  async getEmbeddingConfig(): Promise<EmbeddingConfig> {
     const config = await this.getConfig();
     return config.embedding;
   }
 
-  async getWorkerConfig(workerName: string): Promise<any> {
+  async getWorkerConfig(workerName: string): Promise<WorkerConfig | null> {
     const config = await this.getConfig();
     return config.workers[workerName] || null;
   }
 
-  async getAllWorkers(): Promise<Record<string, any>> {
+  async getAllWorkers(): Promise<Record<string, WorkerConfig>> {
     const config = await this.getConfig();
     return config.workers;
   }
 
-  async getEnabledWorkers(): Promise<Record<string, any>> {
+  async getEnabledWorkers(): Promise<Record<string, WorkerConfig>> {
     const config = await this.getConfig();
-    const enabledWorkers: Record<string, any> = {};
+    const enabledWorkers: Record<string, WorkerConfig> = {};
     
     for (const [name, worker] of Object.entries(config.workers)) {
-      if ((worker as any).enabled) {
+      if (worker.enabled) {
         enabledWorkers[name] = worker;
       }
     }
@@ -88,7 +88,7 @@ export class ConfigRepository implements ConfigReader, ConfigWriter {
   }
 
 
-  async updateTaskmasterConfig(taskmasterConfig: any): Promise<void> {
+  async updateTaskmasterConfig(taskmasterConfig: TaskmasterConfig): Promise<void> {
     try {
       const config = await this.getConfig();
       config.taskmaster = taskmasterConfig;
@@ -98,7 +98,7 @@ export class ConfigRepository implements ConfigReader, ConfigWriter {
     }
   }
 
-  async updateSummarizerConfig(summarizerConfig: any): Promise<void> {
+  async updateSummarizerConfig(summarizerConfig: SummarizerConfig): Promise<void> {
     try {
       const config = await this.getConfig();
       config.summarizer = summarizerConfig;
@@ -108,7 +108,7 @@ export class ConfigRepository implements ConfigReader, ConfigWriter {
     }
   }
 
-  async updateEmbeddingConfig(embeddingConfig: any): Promise<void> {
+  async updateEmbeddingConfig(embeddingConfig: EmbeddingConfig): Promise<void> {
     try {
       const config = await this.getConfig();
       config.embedding = embeddingConfig;
@@ -118,7 +118,7 @@ export class ConfigRepository implements ConfigReader, ConfigWriter {
     }
   }
 
-  async updateWorkerConfig(workerName: string, workerConfig: any): Promise<void> {
+  async updateWorkerConfig(workerName: string, workerConfig: WorkerConfig): Promise<void> {
     try {
       const config = await this.getConfig();
       config.workers[workerName] = workerConfig;
@@ -139,16 +139,18 @@ export class ConfigRepository implements ConfigReader, ConfigWriter {
   // Vector provider methods
   async getVectorProviderConfig(): Promise<VectorProviderConfig> {
     const config = await this.getConfig();
-    if (!(config as any).vectorProvider) {
+    const extendedConfig = config as FlowCodeConfig & { vectorProvider?: VectorProviderConfig };
+    if (!extendedConfig.vectorProvider) {
       throw new Error('Vector provider configuration not found in config');
     }
-    return (config as any).vectorProvider;
+    return extendedConfig.vectorProvider;
   }
 
   async updateVectorProviderConfig(vectorProvider: VectorProviderConfig): Promise<void> {
     const config = await this.getConfig();
-    (config as any).vectorProvider = vectorProvider;
-    await this.writeConfig(config);
+    const extendedConfig = config as FlowCodeConfig & { vectorProvider?: VectorProviderConfig };
+    extendedConfig.vectorProvider = vectorProvider;
+    await this.writeConfig(extendedConfig);
   }
 
 }

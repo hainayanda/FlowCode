@@ -4,6 +4,16 @@ import * as path from 'path';
 import { VectorStore, VectorResult } from '../../interfaces/vector-store.js';
 
 /**
+ * Database row interface for vector search results
+ */
+interface VectorRow {
+  id: string;
+  vector: Buffer;
+  metadata: string;
+  distance?: number;
+}
+
+/**
  * SQLite-based persistent vector store using sqlite-vss for similarity search
  * Stores vectors in .flowcode/vectors.db
  */
@@ -142,7 +152,7 @@ export class SQLiteVectorStore implements VectorStore {
         LIMIT ?
       `);
       
-      const rows = stmt.all(queryBuffer, limit);
+      const rows = stmt.all(queryBuffer, limit) as VectorRow[];
       return this.mapRowsToVectorResults(rows);
       
     } catch (error) {
@@ -156,7 +166,7 @@ export class SQLiteVectorStore implements VectorStore {
         LIMIT ?
       `);
       
-      const rows = stmt.all(limit);
+      const rows = stmt.all(limit) as VectorRow[];
       return this.mapRowsToVectorResults(rows);
     }
   }
@@ -240,7 +250,7 @@ export class SQLiteVectorStore implements VectorStore {
     }
   }
 
-  private mapRowsToVectorResults(rows: any[]): VectorResult[] {
+  private mapRowsToVectorResults(rows: VectorRow[]): VectorResult[] {
     return rows.map(row => ({
       id: row.id,
       vector: this.bufferToVector(row.vector),
