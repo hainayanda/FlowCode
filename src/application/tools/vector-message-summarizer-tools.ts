@@ -1,9 +1,10 @@
-import { Observable, EMPTY } from 'rxjs';
-import { ToolDefinition, ToolCall, ToolResult, Toolbox, ToolboxMessage } from '../interfaces/toolbox.js';
+import { Observable, Subject } from 'rxjs';
+import { ToolDefinition, ToolCall, ToolResult, Toolbox } from '../interfaces/toolbox.js';
 import { EmbeddingService } from '../interfaces/embedding-service.js';
 import { MessageVectorReader, RankedMessage } from '../interfaces/message-embedded-store.js';
 import { SummarizerAgent, SummaryResult } from '../interfaces/summarizer-agent.js';
 import { AgentMessage } from '../interfaces/agent.js';
+import { DomainMessage, PlainMessage } from '../../presentation/view-models/console/console-use-case.js';
 
 /**
  * Vector-based message summarization result interface
@@ -25,10 +26,12 @@ export class VectorMessageSummarizerTools implements Toolbox {
   readonly id = 'vector_message_summarizer_tools';
   readonly description = 'Vector-based message summarization toolbox for semantic similarity-based summaries';
 
+  private readonly domainMessagesSubject = new Subject<DomainMessage>();
+  
   /**
-   * Individual toolboxes don't emit messages - this is handled by ToolboxService
+   * Observable stream of domain messages for rich UI updates
    */
-  readonly messages$: Observable<ToolboxMessage> = EMPTY;
+  readonly domainMessages$: Observable<DomainMessage> = this.domainMessagesSubject.asObservable();
 
   constructor(
     public readonly embeddingService: EmbeddingService,
@@ -80,6 +83,9 @@ export class VectorMessageSummarizerTools implements Toolbox {
             toolCall.parameters.limit,
             toolCall.parameters.minRelevanceScore
           );
+          
+          this.publishMessage(`Message summarization completed: ${semanticResult.messagesFound} messages processed`);
+          
           return { 
             success: true, 
             data: semanticResult,
@@ -92,6 +98,9 @@ export class VectorMessageSummarizerTools implements Toolbox {
             toolCall.parameters.limit,
             toolCall.parameters.minRelevanceScore
           );
+          
+          this.publishMessage(`Message summarization completed: ${similarResult.messagesFound} messages processed`);
+          
           return { 
             success: true, 
             data: similarResult,
@@ -100,6 +109,9 @@ export class VectorMessageSummarizerTools implements Toolbox {
 
         case 'check_vector_summarization_availability':
           const available = await this.checkVectorSummarizationAvailability();
+          
+          this.publishMessage(`Vector summarization availability checked: ${available ? 'available' : 'not available'}`);
+          
           return { 
             success: true, 
             data: { available, searchType: 'vector' },
@@ -184,7 +196,7 @@ export class VectorMessageSummarizerTools implements Toolbox {
       content: rm.message.content,
       timestamp: rm.message.timestamp,
       metadata: {
-        ...rm.message.metadata,
+        ...('metadata' in rm.message ? rm.message.metadata : {}),
         relevanceScore: rm.relevanceScore
       }
     }));
@@ -205,5 +217,20 @@ export class VectorMessageSummarizerTools implements Toolbox {
       default:
         return 'system';
     }
+  }
+
+  private publishMessage(content: string): void {
+    const message: PlainMessage = {
+      id: this.generateMessageId(),
+      type: 'system',
+      content,
+      timestamp: new Date()
+    };
+    
+    this.domainMessagesSubject.next(message);
+  }
+
+  private generateMessageId(): string {
+    return `vector_summarizer_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }
 }

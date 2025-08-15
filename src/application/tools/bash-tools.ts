@@ -1,8 +1,9 @@
 import { spawn, exec } from 'child_process';
 import { promisify } from 'util';
-import { Observable, EMPTY } from 'rxjs';
-import { ToolDefinition, ToolCall, ToolResult, Toolbox, ToolboxMessage } from '../interfaces/toolbox.js';
+import { Observable, Subject } from 'rxjs';
+import { ToolDefinition, ToolCall, ToolResult, Toolbox } from '../interfaces/toolbox.js';
 import { EmbeddingService } from '../interfaces/embedding-service.js';
+import { DomainMessage, PlainMessage } from '../../presentation/view-models/console/console-use-case.js';
 
 const execAsync = promisify(exec);
 
@@ -35,10 +36,12 @@ export class BashTools implements Toolbox {
   readonly id = 'bash_tools';
   readonly description = 'Bash command execution toolbox for running shell commands';
 
+  private readonly domainMessagesSubject = new Subject<DomainMessage>();
+  
   /**
-   * Individual toolboxes don't emit messages - this is handled by ToolboxService
+   * Observable stream of domain messages for rich UI updates
    */
-  readonly messages$: Observable<ToolboxMessage> = EMPTY;
+  readonly domainMessages$: Observable<DomainMessage> = this.domainMessagesSubject.asObservable();
 
   constructor(public readonly embeddingService: EmbeddingService) {}
 
@@ -93,6 +96,9 @@ export class BashTools implements Toolbox {
             environment: toolCall.parameters.environment,
             shell: toolCall.parameters.shell
           });
+          
+          this.publishCommandMessage(toolCall.parameters.command, result);
+          
           return { success: result.success, data: result };
 
         case 'execute_command_with_streaming':
@@ -109,10 +115,23 @@ export class BashTools implements Toolbox {
               shell: toolCall.parameters.shell
             }
           );
+          
+          this.publishCommandMessage(toolCall.parameters.command, streamResult);
+          
           return { success: streamResult.success, data: streamResult };
 
         case 'is_command_available':
           const isAvailable = await this.isCommandAvailable(toolCall.parameters.command);
+          
+          const message: PlainMessage = {
+            id: this.generateMessageId(),
+            type: 'system',
+            content: `Command '${toolCall.parameters.command}' is ${isAvailable ? 'available' : 'not available'}`,
+            timestamp: new Date()
+          };
+          
+          this.domainMessagesSubject.next(message);
+          
           return { success: true, data: { available: isAvailable } };
 
         default:
@@ -230,5 +249,25 @@ export class BashTools implements Toolbox {
     } catch {
       return false;
     }
+  }
+
+  private publishCommandMessage(command: string, result: BashCommandResult): void {
+    const isSuccess = result.success;
+    const outputPreview = result.stdout.length > 0 
+      ? result.stdout.substring(0, 100) + (result.stdout.length > 100 ? '...' : '')
+      : result.stderr.substring(0, 100) + (result.stderr.length > 100 ? '...' : '');
+
+    const message: PlainMessage = {
+      id: this.generateMessageId(),
+      type: 'system',
+      content: `${isSuccess ? '✓' : '✗'} Command executed: ${command}${outputPreview ? `\n${outputPreview}` : ''}`,
+      timestamp: new Date()
+    };
+    
+    this.domainMessagesSubject.next(message);
+  }
+
+  private generateMessageId(): string {
+    return `bash_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }
 }

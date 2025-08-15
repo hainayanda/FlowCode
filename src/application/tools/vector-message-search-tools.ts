@@ -1,7 +1,8 @@
-import { Observable, EMPTY } from 'rxjs';
-import { ToolDefinition, ToolCall, ToolResult, Toolbox, ToolboxMessage } from '../interfaces/toolbox.js';
+import { Observable, Subject } from 'rxjs';
+import { ToolDefinition, ToolCall, ToolResult, Toolbox } from '../interfaces/toolbox.js';
 import { EmbeddingService } from '../interfaces/embedding-service.js';
 import { MessageVectorReader, RankedMessage } from '../interfaces/message-embedded-store.js';
+import { DomainMessage, PlainMessage } from '../../presentation/view-models/console/console-use-case.js';
 
 /**
  * Vector message search result interface
@@ -30,10 +31,12 @@ export class VectorMessageSearchTools implements Toolbox {
   readonly id = 'vector_message_search_tools';
   readonly description = 'Vector-based message history search toolbox for semantic and similarity search';
 
+  private readonly domainMessagesSubject = new Subject<DomainMessage>();
+  
   /**
-   * Individual toolboxes don't emit messages - this is handled by ToolboxService
+   * Observable stream of domain messages for rich UI updates
    */
-  readonly messages$: Observable<ToolboxMessage> = EMPTY;
+  readonly domainMessages$: Observable<DomainMessage> = this.domainMessagesSubject.asObservable();
 
   constructor(
     public readonly embeddingService: EmbeddingService,
@@ -81,6 +84,9 @@ export class VectorMessageSearchTools implements Toolbox {
             toolCall.parameters.query,
             toolCall.parameters.limit
           );
+          
+          this.publishMessage(`Semantic search completed: ${semanticResult.totalFound} results found`);
+          
           return { 
             success: true, 
             data: semanticResult,
@@ -92,6 +98,9 @@ export class VectorMessageSearchTools implements Toolbox {
             toolCall.parameters.messageId,
             toolCall.parameters.limit
           );
+          
+          this.publishMessage(`Similarity search completed: ${similarResult.totalFound} results found`);
+          
           return { 
             success: true, 
             data: similarResult,
@@ -100,6 +109,9 @@ export class VectorMessageSearchTools implements Toolbox {
 
         case 'check_vector_search_availability':
           const availabilityResult = await this.checkVectorSearchAvailability();
+          
+          this.publishMessage(`Vector search availability checked: ${availabilityResult.available ? 'available' : 'not available'}`);
+          
           return { 
             success: true, 
             data: availabilityResult,
@@ -146,5 +158,20 @@ export class VectorMessageSearchTools implements Toolbox {
       available,
       searchType: 'vector'
     };
+  }
+
+  private publishMessage(content: string): void {
+    const message: PlainMessage = {
+      id: this.generateMessageId(),
+      type: 'system',
+      content,
+      timestamp: new Date()
+    };
+    
+    this.domainMessagesSubject.next(message);
+  }
+
+  private generateMessageId(): string {
+    return `vector_search_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }
 }

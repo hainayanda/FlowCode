@@ -1,8 +1,9 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { Observable, EMPTY } from 'rxjs';
-import { ToolDefinition, ToolCall, ToolResult, Toolbox, ToolboxMessage } from '../interfaces/toolbox.js';
+import { Observable, Subject } from 'rxjs';
+import { ToolDefinition, ToolCall, ToolResult, Toolbox } from '../interfaces/toolbox.js';
 import { EmbeddingService } from '../interfaces/embedding-service.js';
+import { DomainMessage, PlainMessage } from '../../presentation/view-models/console/console-use-case.js';
 
 /**
  * File system entry information
@@ -32,10 +33,12 @@ export class WorkspaceTools implements Toolbox {
   readonly id = 'workspace_tools';
   readonly description = 'Workspace operations toolbox for file system navigation and management';
 
+  private readonly domainMessagesSubject = new Subject<DomainMessage>();
+  
   /**
-   * Individual toolboxes don't emit messages - this is handled by ToolboxService
+   * Observable stream of domain messages for rich UI updates
    */
-  readonly messages$: Observable<ToolboxMessage> = EMPTY;
+  readonly domainMessages$: Observable<DomainMessage> = this.domainMessagesSubject.asObservable();
 
   constructor(public readonly embeddingService: EmbeddingService) {}
 
@@ -114,10 +117,16 @@ export class WorkspaceTools implements Toolbox {
             toolCall.parameters.path,
             toolCall.parameters.includeHidden
           );
+          
+          this.publishMessage(`Listed directory ${toolCall.parameters.path}: ${listing.entries.length} entries`);
+          
           return { success: true, data: listing };
 
         case 'get_current_path':
           const currentPath = await this.getCurrentPath();
+          
+          this.publishMessage(`Current directory: ${currentPath}`);
+          
           return { success: true, data: { currentPath } };
 
         case 'delete_file_or_directory':
@@ -125,6 +134,9 @@ export class WorkspaceTools implements Toolbox {
             toolCall.parameters.path,
             toolCall.parameters.recursive
           );
+          
+          this.publishMessage(`${deleteResult ? '✓ Deleted' : '✗ Failed to delete'} ${toolCall.parameters.path}`);
+          
           return { 
             success: deleteResult, 
             message: deleteResult ? 'Deleted successfully' : 'Failed to delete' 
@@ -135,6 +147,9 @@ export class WorkspaceTools implements Toolbox {
             toolCall.parameters.filePath,
             toolCall.parameters.content
           );
+          
+          this.publishMessage(`${createFileResult ? '✓ Created file' : '✗ Failed to create file'} ${toolCall.parameters.filePath}`);
+          
           return { 
             success: createFileResult, 
             message: createFileResult ? 'File created successfully' : 'Failed to create file' 
@@ -145,6 +160,9 @@ export class WorkspaceTools implements Toolbox {
             toolCall.parameters.directoryPath,
             toolCall.parameters.recursive
           );
+          
+          this.publishMessage(`${createDirResult ? '✓ Created directory' : '✗ Failed to create directory'} ${toolCall.parameters.directoryPath}`);
+          
           return { 
             success: createDirResult, 
             message: createDirResult ? 'Directory created successfully' : 'Failed to create directory' 
@@ -152,10 +170,16 @@ export class WorkspaceTools implements Toolbox {
 
         case 'exists':
           const existsResult = await this.exists(toolCall.parameters.path);
+          
+          this.publishMessage(`Path ${toolCall.parameters.path} ${existsResult ? 'exists' : 'does not exist'}`);
+          
           return { success: true, data: { exists: existsResult } };
 
         case 'get_info':
           const info = await this.getInfo(toolCall.parameters.path);
+          
+          this.publishMessage(`Retrieved info for ${toolCall.parameters.path}`);
+          
           return { success: true, data: { info } };
 
         default:
@@ -280,5 +304,20 @@ export class WorkspaceTools implements Toolbox {
     } catch {
       return null;
     }
+  }
+
+  private publishMessage(content: string): void {
+    const message: PlainMessage = {
+      id: this.generateMessageId(),
+      type: 'system',
+      content,
+      timestamp: new Date()
+    };
+    
+    this.domainMessagesSubject.next(message);
+  }
+
+  private generateMessageId(): string {
+    return `workspace_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }
 }

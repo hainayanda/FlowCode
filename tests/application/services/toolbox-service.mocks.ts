@@ -1,6 +1,8 @@
 import { Observable, EMPTY } from 'rxjs';
-import { Toolbox, ToolDefinition, ToolCall, ToolResult, PermissionLevel, ToolboxMessage } from '../../../src/application/interfaces/toolbox.js';
+import { Toolbox, ToolDefinition, ToolCall, ToolResult, PermissionLevel } from '../../../src/application/interfaces/toolbox.js';
 import { SettingsStore, SettingsConfig } from '../../../src/application/interfaces/settings-store.js';
+import { DomainMessage } from '../../../src/presentation/view-models/console/console-use-case.js';
+import { EmbeddingService } from '../../../src/application/interfaces/embedding-service.js';
 
 /**
  * Mock Toolbox for testing
@@ -16,10 +18,12 @@ export class MockToolbox implements Toolbox {
     public readonly description: string
   ) {}
 
+  readonly embeddingService: EmbeddingService | null = null;
+
   /**
-   * Mock toolboxes don't emit messages - this is handled by ToolboxService
+   * Mock toolboxes don't emit messages
    */
-  readonly messages$: Observable<ToolboxMessage> = EMPTY;
+  readonly domainMessages$: Observable<DomainMessage> = EMPTY;
 
   getTools(): ToolDefinition[] {
     return this.mockTools;

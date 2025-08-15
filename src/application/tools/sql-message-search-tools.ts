@@ -1,8 +1,8 @@
-import { Observable, EMPTY } from 'rxjs';
-import { ToolDefinition, ToolCall, ToolResult, Toolbox, ToolboxMessage } from '../interfaces/toolbox.js';
+import { Observable, Subject } from 'rxjs';
+import { ToolDefinition, ToolCall, ToolResult, Toolbox } from '../interfaces/toolbox.js';
 import { EmbeddingService } from '../interfaces/embedding-service.js';
 import { MessageReader } from '../interfaces/message-store.js';
-import { DomainMessage } from '../../presentation/view-models/console/console-use-case.js';
+import { DomainMessage, PlainMessage } from '../../presentation/view-models/console/console-use-case.js';
 
 /**
  * SQL message search result interface
@@ -23,10 +23,12 @@ export class SqlMessageSearchTools implements Toolbox {
   readonly id = 'sql_message_search_tools';
   readonly description = 'SQL-based message history search toolbox for regex and type-based queries';
 
+  private readonly domainMessagesSubject = new Subject<DomainMessage>();
+  
   /**
-   * Individual toolboxes don't emit messages - this is handled by ToolboxService
+   * Observable stream of domain messages for rich UI updates
    */
-  readonly messages$: Observable<ToolboxMessage> = EMPTY;
+  readonly domainMessages$: Observable<DomainMessage> = this.domainMessagesSubject.asObservable();
 
   constructor(
     public readonly embeddingService: EmbeddingService,
@@ -85,6 +87,9 @@ export class SqlMessageSearchTools implements Toolbox {
             toolCall.parameters.limit,
             toolCall.parameters.messageType
           );
+          
+          this.publishMessage(`Message search completed: ${regexResult.totalFound} results found`);
+          
           return { 
             success: true, 
             data: regexResult,
@@ -93,6 +98,9 @@ export class SqlMessageSearchTools implements Toolbox {
 
         case 'get_message_history':
           const historyResult = await this.getMessageHistory(toolCall.parameters.limit);
+          
+          this.publishMessage(`Message history retrieved: ${historyResult.totalFound} messages found`);
+          
           return { 
             success: true, 
             data: historyResult,
@@ -101,6 +109,9 @@ export class SqlMessageSearchTools implements Toolbox {
 
         case 'get_messages_by_type':
           const typeResult = await this.getMessagesByType(toolCall.parameters.messageType);
+          
+          this.publishMessage(`Message type search completed: ${typeResult.totalFound} messages found`);
+          
           return { 
             success: true, 
             data: typeResult,
@@ -110,11 +121,15 @@ export class SqlMessageSearchTools implements Toolbox {
         case 'get_message_by_id':
           const messageResult = await this.getMessageById(toolCall.parameters.messageId);
           if (messageResult.messages.length === 0) {
+            this.publishMessage(`Message lookup failed: ID '${toolCall.parameters.messageId}' not found`);
             return {
               success: false,
               message: `Message with ID '${toolCall.parameters.messageId}' not found`
             };
           }
+          
+          this.publishMessage(`Message lookup completed: found message with ID '${toolCall.parameters.messageId}'`);
+          
           return { 
             success: true, 
             data: messageResult,
@@ -180,5 +195,20 @@ export class SqlMessageSearchTools implements Toolbox {
       searchType: 'sql',
       query: `id: ${messageId}`
     };
+  }
+
+  private publishMessage(content: string): void {
+    const message: PlainMessage = {
+      id: this.generateMessageId(),
+      type: 'system',
+      content,
+      timestamp: new Date()
+    };
+    
+    this.domainMessagesSubject.next(message);
+  }
+
+  private generateMessageId(): string {
+    return `sql_search_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }
 }

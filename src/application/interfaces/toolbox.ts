@@ -1,5 +1,16 @@
+import { Observable } from 'rxjs';
+import { type EmbeddingService } from './embedding-service.js';
+import { type DomainMessage } from '../../presentation/view-models/console/console-use-case.js';
+
 /**
  * Tool execution result
+ * 
+ * Tools can emit rich messages through their messages$ Observable stream.
+ * Each tool should publish DomainMessages to provide user feedback:
+ * - File operations: FileOperationMessage with diffs and line counts
+ * - Workspace analysis: PlainMessage with analysis results  
+ * - Web searches: PlainMessage with search results
+ * - Other tools: PlainMessage with completion status
  */
 export interface ToolResult {
   success: boolean;
@@ -8,20 +19,6 @@ export interface ToolResult {
   error?: string;
 }
 
-/**
- * Toolbox message types for UI status updates
- */
-export type ToolboxMessageStatus = 'executing' | 'failing' | 'succeed';
-
-export interface ToolboxMessage {
-  id: string;
-  toolCall: ToolCall;
-  status: ToolboxMessageStatus;
-  message: string;
-  timestamp: Date;
-  result?: any;
-  error?: string;
-}
 
 /**
  * Tool parameter definition
@@ -58,9 +55,19 @@ export interface ToolCall {
 }
 
 /**
+ * Domain message publisher interface for tools
+ */
+export interface DomainMessagePublisher {
+  /**
+   * Observable stream of domain messages for rich UI updates
+   */
+  readonly domainMessages$: Observable<DomainMessage>;
+}
+
+/**
  * Base toolbox interface
  */
-export interface Toolbox {
+export interface Toolbox extends DomainMessagePublisher {
   /**
    * Unique identifier for this toolbox
    */
@@ -71,15 +78,11 @@ export interface Toolbox {
    */
   readonly description: string;
 
-  /**
-   * Observable stream of toolbox status messages
-   */
-  readonly messages$: import('rxjs').Observable<ToolboxMessage>;
 
   /**
    * Embedding service for vector operations
    */
-  readonly embeddingService: import('../interfaces/embedding-service.js').EmbeddingService;
+  readonly embeddingService: EmbeddingService;
 
   /**
    * Get list of tools this toolbox supports

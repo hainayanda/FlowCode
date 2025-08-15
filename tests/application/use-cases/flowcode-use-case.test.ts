@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { firstValueFrom, take, skip } from 'rxjs';
 import { FlowCodeUseCase } from '../../../src/application/use-cases/flowcode-use-case.js';
 import {
@@ -261,14 +261,20 @@ describe('FlowCodeUseCase', () => {
 
   describe('Error Handling', () => {
     it('should handle message storage failures gracefully', async () => {
-      // Mock storage failure
-      mockMessagePublisher.storeMessage = vi.fn().mockRejectedValue(new Error('Storage failed'));
+      // Mock storage failure by overriding the method to reject
+      const originalStoreMessage = mockMessagePublisher.storeMessage;
+      mockMessagePublisher.storeMessage = async () => {
+        throw new Error('Storage failed');
+      };
       
       // Should not throw error
       await expect(useCase.processAIInput('test input')).resolves.not.toThrow();
       
       // Should still forward to prompt handler
       expect(mockPromptHandler.processUserInputCalled).toBe(true);
+      
+      // Restore original method
+      mockMessagePublisher.storeMessage = originalStoreMessage;
     });
 
     it('should handle command execution with dispatcher', async () => {

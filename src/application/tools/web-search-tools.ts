@@ -1,6 +1,8 @@
-import { Observable, EMPTY } from 'rxjs';
-import { ToolDefinition, ToolCall, ToolResult, Toolbox, ToolboxMessage } from '../interfaces/toolbox.js';
+import { Observable, Subject } from 'rxjs';
+import { ToolDefinition, ToolCall, ToolResult, Toolbox } from '../interfaces/toolbox.js';
+import { DomainMessage, PlainMessage } from '../../presentation/view-models/console/console-use-case.js';
 import { WebSearchService, WebSearchOptions, WebSearchResponse, SearXNGInstance } from '../interfaces/web-search.js';
+import { EmbeddingService } from '../interfaces/embedding-service.js';
 
 /**
  * Raw search result from SearXNG API
@@ -212,14 +214,16 @@ export class WebSearchTools implements Toolbox {
   readonly id = 'web_search_tools';
   readonly description = 'Web search toolbox using SearXNG for privacy-respecting search';
 
+  private readonly domainMessagesSubject = new Subject<DomainMessage>();
+  
   /**
-   * Individual toolboxes don't emit messages - this is handled by ToolboxService
+   * Observable stream of domain messages for rich UI updates
    */
-  readonly messages$: Observable<ToolboxMessage> = EMPTY;
+  readonly domainMessages$: Observable<DomainMessage> = this.domainMessagesSubject.asObservable();
 
   private searchService: WebSearchService;
 
-  constructor(searchService?: WebSearchService) {
+  constructor(public readonly embeddingService: EmbeddingService, searchService?: WebSearchService) {
     this.searchService = searchService || new SearXNGSearchService();
   }
 
@@ -281,18 +285,30 @@ export class WebSearchTools implements Toolbox {
               maxResults: toolCall.parameters.maxResults
             }
           );
+          
+          this.publishMessage(`Web search for "${toolCall.parameters.query}" found ${searchResult.results.length} results`);
+          
           return { success: true, data: searchResult };
 
         case 'get_search_engines':
           const engines = await this.searchService.getAvailableEngines();
+          
+          this.publishMessage(`Retrieved ${engines.length} available search engines`);
+          
           return { success: true, data: { engines } };
 
         case 'get_search_categories':
           const categories = await this.searchService.getAvailableCategories();
+          
+          this.publishMessage(`Retrieved ${categories.length} available search categories`);
+          
           return { success: true, data: { categories } };
 
         case 'check_search_availability':
           const isAvailable = await this.searchService.isAvailable();
+          
+          this.publishMessage(`Web search service is ${isAvailable ? 'available' : 'unavailable'}`);
+          
           return { success: true, data: { available: isAvailable } };
 
         default:
@@ -304,5 +320,20 @@ export class WebSearchTools implements Toolbox {
         error: `Web search tool execution failed: ${error instanceof Error ? error.message : String(error)}`
       };
     }
+  }
+
+  private publishMessage(content: string): void {
+    const message: PlainMessage = {
+      id: this.generateMessageId(),
+      type: 'system',
+      content,
+      timestamp: new Date()
+    };
+    
+    this.domainMessagesSubject.next(message);
+  }
+
+  private generateMessageId(): string {
+    return `websearch_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }
 }

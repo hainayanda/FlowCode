@@ -1,7 +1,8 @@
 import * as fs from 'fs/promises';
-import { Observable, EMPTY } from 'rxjs';
-import { ToolDefinition, ToolCall, ToolResult, Toolbox, ToolboxMessage } from '../interfaces/toolbox.js';
+import { Observable, Subject } from 'rxjs';
+import { ToolDefinition, ToolCall, ToolResult, Toolbox } from '../interfaces/toolbox.js';
 import { EmbeddingService } from '../interfaces/embedding-service.js';
+import { DomainMessage, FileOperationMessage, PlainMessage } from '../../presentation/view-models/console/console-use-case.js';
 
 /**
  * File content result
@@ -21,10 +22,13 @@ export class FileTools implements Toolbox {
   readonly id = 'file_tools';
   readonly description = 'File operations toolbox for reading, writing, and modifying files';
 
+
+  private readonly domainMessagesSubject = new Subject<DomainMessage>();
+
   /**
-   * Individual toolboxes don't emit messages - this is handled by ToolboxService
+   * Observable stream of domain messages for rich UI updates
    */
-  readonly messages$: Observable<ToolboxMessage> = EMPTY;
+  readonly domainMessages$: Observable<DomainMessage> = this.domainMessagesSubject.asObservable();
 
   constructor(public readonly embeddingService: EmbeddingService) {}
 
@@ -107,47 +111,115 @@ export class FileTools implements Toolbox {
             toolCall.parameters.startLine,
             toolCall.parameters.lineCount
           );
+          
+          this.publishReadMessage(
+            toolCall.parameters.filePath,
+            fileContent.startLine,
+            fileContent.endLine,
+            fileContent.totalLines
+          );
+          
           return { success: true, data: fileContent };
 
         case 'append_to_file':
+          const beforeAppendContent = await this.getFileContent(toolCall.parameters.filePath);
           const appendResult = await this.appendToFile(
             toolCall.parameters.filePath,
             toolCall.parameters.content
           );
+          
+          if (appendResult) {
+            const afterAppendContent = await this.getFileContent(toolCall.parameters.filePath);
+            this.publishFileOperationMessage(
+              toolCall.parameters.filePath,
+              'add',
+              beforeAppendContent,
+              afterAppendContent
+            );
+          }
+          
           return { success: appendResult, message: appendResult ? 'Content appended successfully' : 'Failed to append content' };
 
         case 'insert_at_line':
+          const beforeInsertContent = await this.getFileContent(toolCall.parameters.filePath);
           const insertResult = await this.insertAtLine(
             toolCall.parameters.filePath,
             toolCall.parameters.lineNumber,
             toolCall.parameters.content
           );
+          
+          if (insertResult) {
+            const afterInsertContent = await this.getFileContent(toolCall.parameters.filePath);
+            this.publishFileOperationMessage(
+              toolCall.parameters.filePath,
+              'add',
+              beforeInsertContent,
+              afterInsertContent
+            );
+          }
+          
           return { success: insertResult, message: insertResult ? 'Content inserted successfully' : 'Failed to insert content' };
 
         case 'replace_at_line':
+          const beforeReplaceContent = await this.getFileContent(toolCall.parameters.filePath);
           const replaceResult = await this.replaceAtLine(
             toolCall.parameters.filePath,
             toolCall.parameters.lineNumber,
             toolCall.parameters.content
           );
+          
+          if (replaceResult) {
+            const afterReplaceContent = await this.getFileContent(toolCall.parameters.filePath);
+            this.publishFileOperationMessage(
+              toolCall.parameters.filePath,
+              'edit',
+              beforeReplaceContent,
+              afterReplaceContent
+            );
+          }
+          
           return { success: replaceResult, message: replaceResult ? 'Line replaced successfully' : 'Failed to replace line' };
 
         case 'replace_with_regex':
+          const beforeRegexContent = await this.getFileContent(toolCall.parameters.filePath);
           const regexResult = await this.replaceWithRegex(
             toolCall.parameters.filePath,
             toolCall.parameters.lineNumber,
             toolCall.parameters.pattern,
             toolCall.parameters.replacement
           );
+          
+          if (regexResult) {
+            const afterRegexContent = await this.getFileContent(toolCall.parameters.filePath);
+            this.publishFileOperationMessage(
+              toolCall.parameters.filePath,
+              'edit',
+              beforeRegexContent,
+              afterRegexContent
+            );
+          }
+          
           return { success: regexResult, message: regexResult ? 'Regex replacement successful' : 'Regex replacement failed' };
 
         case 'replace_all_with_regex':
+          const beforeReplaceAllContent = await this.getFileContent(toolCall.parameters.filePath);
           const replaceAllResult = await this.replaceAllWithRegex(
             toolCall.parameters.filePath,
             toolCall.parameters.pattern,
             toolCall.parameters.replacement,
             toolCall.parameters.flags
           );
+          
+          if (replaceAllResult.success && replaceAllResult.replaced > 0) {
+            const afterReplaceAllContent = await this.getFileContent(toolCall.parameters.filePath);
+            this.publishFileOperationMessage(
+              toolCall.parameters.filePath,
+              'edit',
+              beforeReplaceAllContent,
+              afterReplaceAllContent
+            );
+          }
+          
           return { 
             success: replaceAllResult.success, 
             data: replaceAllResult,
@@ -259,5 +331,142 @@ export class FileTools implements Toolbox {
     } catch {
       return { replaced: 0, success: false };
     }
+  }
+
+  private async getFileContent(filePath: string): Promise<string[]> {
+    try {
+      const content = await fs.readFile(filePath, 'utf-8');
+      return content.split('\n');
+    } catch {
+      return [];
+    }
+  }
+
+  private publishReadMessage(filePath: string, startLine: number, endLine: number, totalLines: number): void {
+    const message: PlainMessage = {
+      id: this.generateMessageId(),
+      type: 'system',
+      content: `Read ${filePath} lines ${startLine}-${endLine} (total: ${totalLines})`,
+      timestamp: new Date()
+    };
+    
+    this.domainMessagesSubject.next(message);
+  }
+
+  private publishFileOperationMessage(
+    filePath: string,
+    operation: 'edit' | 'add' | 'delete',
+    beforeLines: string[],
+    afterLines: string[]
+  ): void {
+    const diffs = this.generateDiffs(beforeLines, afterLines);
+    const contextDiffs = this.addContext(diffs, beforeLines, afterLines);
+    
+    const message: FileOperationMessage = {
+      id: this.generateMessageId(),
+      type: 'file-operation',
+      content: `${operation === 'edit' ? 'Modified' : operation === 'add' ? 'Added to' : 'Deleted from'} ${filePath}`,
+      timestamp: new Date(),
+      metadata: {
+        filePath,
+        fileOperation: operation,
+        diffs: contextDiffs,
+        totalLinesAdded: contextDiffs.filter(d => d.type === 'added').length,
+        totalLinesRemoved: contextDiffs.filter(d => d.type === 'removed').length
+      }
+    };
+    
+    this.domainMessagesSubject.next(message);
+  }
+
+  private generateDiffs(beforeLines: string[], afterLines: string[]): Array<{
+    lineNumber: number;
+    type: 'unchanged' | 'added' | 'removed' | 'modified';
+    oldContent?: string;
+    newContent?: string;
+  }> {
+    const diffs: Array<{
+      lineNumber: number;
+      type: 'unchanged' | 'added' | 'removed' | 'modified';
+      oldContent?: string;
+      newContent?: string;
+    }> = [];
+
+    const maxLength = Math.max(beforeLines.length, afterLines.length);
+    
+    for (let i = 0; i < maxLength; i++) {
+      const oldLine = beforeLines[i];
+      const newLine = afterLines[i];
+      
+      if (oldLine === undefined && newLine !== undefined) {
+        diffs.push({
+          lineNumber: i + 1,
+          type: 'added',
+          newContent: newLine
+        });
+      } else if (oldLine !== undefined && newLine === undefined) {
+        diffs.push({
+          lineNumber: i + 1,
+          type: 'removed',
+          oldContent: oldLine
+        });
+      } else if (oldLine !== newLine) {
+        diffs.push({
+          lineNumber: i + 1,
+          type: 'modified',
+          oldContent: oldLine,
+          newContent: newLine
+        });
+      } else {
+        diffs.push({
+          lineNumber: i + 1,
+          type: 'unchanged',
+          oldContent: oldLine,
+          newContent: newLine
+        });
+      }
+    }
+    
+    return diffs;
+  }
+
+  private addContext(diffs: Array<{
+    lineNumber: number;
+    type: 'unchanged' | 'added' | 'removed' | 'modified';
+    oldContent?: string;
+    newContent?: string;
+  }>, _beforeLines: string[], _afterLines: string[]): Array<{
+    lineNumber: number;
+    type: 'unchanged' | 'added' | 'removed' | 'modified';
+    oldContent?: string;
+    newContent?: string;
+  }> {
+    const changedLines = diffs.filter(d => d.type !== 'unchanged');
+    if (changedLines.length === 0) return diffs;
+    
+    const result: Array<{
+      lineNumber: number;
+      type: 'unchanged' | 'added' | 'removed' | 'modified';
+      oldContent?: string;
+      newContent?: string;
+    }> = [];
+    
+    const firstChangedLine = Math.min(...changedLines.map(d => d.lineNumber));
+    const lastChangedLine = Math.max(...changedLines.map(d => d.lineNumber));
+    
+    const startContext = Math.max(0, firstChangedLine - 3);
+    const endContext = Math.min(diffs.length - 1, lastChangedLine + 3);
+    
+    for (let i = startContext; i <= endContext; i++) {
+      if (diffs[i]) {
+        result.push(diffs[i]);
+      }
+    }
+    
+    return result;
+  }
+
+  private generateMessageId(): string {
+    return `file_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }
 }

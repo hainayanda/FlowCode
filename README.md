@@ -23,7 +23,7 @@ flowcode --worker ui-worker "create responsive dashboard"
 
 FlowCode uses a **Taskmaster** that analyzes your tasks and routes them to specialized **Workers**:
 
-```
+```text
 User Task → Taskmaster → Best Worker → AI Response
 ```
 
@@ -41,7 +41,7 @@ User Task → Taskmaster → Best Worker → AI Response
 
 FlowCode uses a hybrid approach combining structured config with flexible prompts:
 
-```
+```text
 .flowcode/
 ├── config.json            # Routing rules and model
 ├── settings.json          # Flowcode settings
@@ -167,26 +167,15 @@ flowcode "optimize database queries"  # → performance-worker
 flowcode "create login form"          # → ui-worker
 ```
 
-### Single Mode  
-
-Direct interaction bypassing routing (no workers):
-
-```bash
-flowcode --mode single
-flowcode "help me with this code"  # → Direct interaction
-```
-
 ## Commands
 
 ```bash
 # Worker management
 flowcode workers list
 flowcode workers info security-worker
-flowcode run --worker security-worker "review this auth code"
 
 # Configuration & routing
 flowcode config validate .flowcode/taskmaster.yml
-flowcode routing test "create API endpoint" --json
 ```
 
 ## Examples

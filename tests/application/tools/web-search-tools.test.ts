@@ -7,6 +7,36 @@ import {
   SearXNGInstance 
 } from '../../../src/application/interfaces/web-search.js';
 import { ToolCall } from '../../../src/application/interfaces/toolbox.js';
+import { EmbeddingService } from '../../../src/application/interfaces/embedding-service.js';
+
+/**
+ * Mock EmbeddingService for testing
+ */
+class MockEmbeddingService implements EmbeddingService {
+  async generateEmbedding(_text: string): Promise<number[]> {
+    return new Array(1536).fill(0);
+  }
+
+  async isAvailable(): Promise<boolean> {
+    return true;
+  }
+
+  getEmbeddingDimension(): number {
+    return 1536;
+  }
+
+  async validateConfig(): Promise<boolean> {
+    return true;
+  }
+
+  getProvider(): string {
+    return 'mock';
+  }
+
+  getModel(): string {
+    return 'mock-model';
+  }
+}
 
 /**
  * Mock WebSearchService for testing
@@ -94,10 +124,12 @@ class MockWebSearchService implements WebSearchService {
 describe('WebSearchTools', () => {
   let webSearchTools: WebSearchTools;
   let mockSearchService: MockWebSearchService;
+  let mockEmbeddingService: MockEmbeddingService;
 
   beforeEach(() => {
     mockSearchService = new MockWebSearchService();
-    webSearchTools = new WebSearchTools(mockSearchService);
+    mockEmbeddingService = new MockEmbeddingService();
+    webSearchTools = new WebSearchTools(mockEmbeddingService, mockSearchService);
   });
 
   afterEach(() => {

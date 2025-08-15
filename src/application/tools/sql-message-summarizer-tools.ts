@@ -1,10 +1,10 @@
-import { Observable, EMPTY } from 'rxjs';
-import { ToolDefinition, ToolCall, ToolResult, Toolbox, ToolboxMessage } from '../interfaces/toolbox.js';
+import { Observable, Subject } from 'rxjs';
+import { ToolDefinition, ToolCall, ToolResult, Toolbox } from '../interfaces/toolbox.js';
 import { EmbeddingService } from '../interfaces/embedding-service.js';
 import { MessageReader } from '../interfaces/message-store.js';
 import { SummarizerAgent, SummaryResult } from '../interfaces/summarizer-agent.js';
 import { AgentMessage } from '../interfaces/agent.js';
-import { DomainMessage } from '../../presentation/view-models/console/console-use-case.js';
+import { DomainMessage, PlainMessage } from '../../presentation/view-models/console/console-use-case.js';
 
 /**
  * SQL-based message summarization result interface
@@ -25,10 +25,12 @@ export class SqlMessageSummarizerTools implements Toolbox {
   readonly id = 'sql_message_summarizer_tools';
   readonly description = 'SQL-based message summarization toolbox for regex-based and filtered message summaries';
 
+  private readonly domainMessagesSubject = new Subject<DomainMessage>();
+  
   /**
-   * Individual toolboxes don't emit messages - this is handled by ToolboxService
+   * Observable stream of domain messages for rich UI updates
    */
-  readonly messages$: Observable<ToolboxMessage> = EMPTY;
+  readonly domainMessages$: Observable<DomainMessage> = this.domainMessagesSubject.asObservable();
 
   constructor(
     public readonly embeddingService: EmbeddingService,
@@ -77,6 +79,9 @@ export class SqlMessageSummarizerTools implements Toolbox {
       switch (toolCall.name) {
         case 'summarize_all_messages':
           const allResult = await this.summarizeAllMessages(toolCall.parameters.limit);
+          
+          this.publishMessage(`Message summarization completed: ${allResult.messagesFound} messages processed`);
+          
           return { 
             success: true, 
             data: allResult,
@@ -89,6 +94,9 @@ export class SqlMessageSummarizerTools implements Toolbox {
             toolCall.parameters.limit,
             toolCall.parameters.messageType
           );
+          
+          this.publishMessage(`Message summarization completed: ${regexResult.messagesFound} messages processed`);
+          
           return { 
             success: true, 
             data: regexResult,
@@ -100,6 +108,9 @@ export class SqlMessageSummarizerTools implements Toolbox {
             toolCall.parameters.messageType,
             toolCall.parameters.limit
           );
+          
+          this.publishMessage(`Message summarization completed: ${typeResult.messagesFound} messages processed`);
+          
           return { 
             success: true, 
             data: typeResult,
@@ -188,7 +199,7 @@ export class SqlMessageSummarizerTools implements Toolbox {
       type: this.mapDomainTypeToAgentType(msg.type),
       content: msg.content,
       timestamp: msg.timestamp,
-      metadata: msg.metadata
+      metadata: 'metadata' in msg ? msg.metadata : undefined
     }));
   }
 
@@ -207,5 +218,20 @@ export class SqlMessageSummarizerTools implements Toolbox {
       default:
         return 'system';
     }
+  }
+
+  private publishMessage(content: string): void {
+    const message: PlainMessage = {
+      id: this.generateMessageId(),
+      type: 'system',
+      content,
+      timestamp: new Date()
+    };
+    
+    this.domainMessagesSubject.next(message);
+  }
+
+  private generateMessageId(): string {
+    return `sql_summarizer_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }
 }

@@ -6,14 +6,21 @@ export interface InitializationOptions {
   taskmasterModel: string;
   taskmasterApiKey?: string;
   workers: WorkerConfig[];
-  useSummarizer: boolean;
-  useEmbedding: boolean;
+  summarizer?: {
+    provider: string;
+    model: string;
+  };
+  embedding?: {
+    provider: string;
+    model: string;
+  };
   generateMarkdownFiles: boolean;
 }
 
 export interface WorkerConfig {
   name: string;
   model: string;
+  description: string;
   apiKey?: string;
 }
 
