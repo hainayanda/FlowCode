@@ -40,7 +40,7 @@ const mockState = {
   options$: new BehaviorSubject(null),
 };
 
-let tui: any;
+let tui: TUIView;
 let currentSuggestionIndex = -1;
 
 // Simple mock listener

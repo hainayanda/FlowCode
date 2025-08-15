@@ -48,7 +48,7 @@ const mockState = {
 };
 
 // Create TUI reference for proper cleanup
-let tui: any;
+let tui: TUIView;
 
 // Simple mock listener
 const mockListener = {
