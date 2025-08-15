@@ -74,7 +74,12 @@ describe('SessionService', () => {
       const result = await service.initializeSession();
 
       expect(result.isSuccess).toBe(true);
-      expect(result.value).toBe('abcd1234efgh');
+      expect(result.value).toEqual({
+        name: 'abcd1234efgh',
+        createdDate: expect.any(String),
+        lastActiveDate: expect.any(String),
+        vectorProvider: mockVectorProvider
+      });
       expect(fs.mkdir).toHaveBeenCalledWith(mockSessionPaths.sessionDir, { recursive: true });
       expect(fs.writeFile).toHaveBeenCalledWith(
         mockSessionPaths.configPath,
