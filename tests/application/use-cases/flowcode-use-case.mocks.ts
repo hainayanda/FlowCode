@@ -1,22 +1,33 @@
 import { BehaviorSubject, Subject } from 'rxjs';
 import { DomainMessage, DomainOption, CommandDefinition } from '../../../src/presentation/view-models/console/console-use-case.js';
-import { DomainTokenUsage, DomainWorkerInfo } from '../../../src/presentation/view-models/shared-use-case.js';
-import { MessagePublisher, MessageWriter } from '../../../src/application/interfaces/message-store.js';
+import { DomainTokenUsage, DomainWorkerInfo } from '../../../src/presentation/model/use-case-models.js';
+import { MessageStorePublisher, MessageWriter } from '../../../src/application/interfaces/message-store.js';
 import { CommandDispatcher, CommandResult } from '../../../src/application/interfaces/command-provider.js';
 import { PromptHandler } from '../../../src/application/interfaces/prompt-handler.js';
+import { Initializer, InitializationState, InitializationStep, InitializationOptions } from '../../../src/application/interfaces/initializer.js';
+import { Result } from '../../../src/application/shared/result.js';
 
 /**
- * Mock MessagePublisher for testing (exposes messageHistory$ stream only + read helpers used by tests)
- * Implements the newly separated MessagePublisher responsibilities.
+ * Mock MessageStorePublisher for testing (full implementation of the complete interface)
+ * Implements MessageStorePublisher which includes MessageStore + MessagePublisher responsibilities.
  */
-export class MockMessagePublisher implements MessagePublisher {
+export class MockMessagePublisher implements MessageStorePublisher {
   private messages: DomainMessage[] = [];
   private readonly messageHistorySubject = new BehaviorSubject<DomainMessage[]>([]);
+  
+  // Track method calls for testing
+  public initializeCalled = false;
+  public storeMessageCalled = false;
+  public storeMessagesCalled = false;
+  public updateMessageCalled = false;
+  public clearHistoryCalled = false;
 
+  // MessagePublisher interface
   get messageHistory$() {
     return this.messageHistorySubject.asObservable();
   }
 
+  // MessageReader interface  
   async getMessageHistory(limit?: number): Promise<DomainMessage[]> {
     return limit ? this.messages.slice(-limit) : this.messages;
   }
@@ -38,6 +49,53 @@ export class MockMessagePublisher implements MessagePublisher {
     return this.messages.find(msg => msg.id === messageId) || null;
   }
 
+  // MessageWriter interface
+  async storeMessage(message: DomainMessage): Promise<void> {
+    this.storeMessageCalled = true;
+    
+    // Replace if same ID exists (for streaming)
+    const existingIndex = this.messages.findIndex(msg => msg.id === message.id);
+    if (existingIndex >= 0) {
+      this.messages[existingIndex] = message;
+    } else {
+      this.messages.push(message);
+    }
+    this.messageHistorySubject.next([...this.messages]);
+  }
+
+  async storeMessages(messages: DomainMessage[]): Promise<void> {
+    this.storeMessagesCalled = true;
+    for (const message of messages) {
+      await this.storeMessage(message);
+    }
+  }
+
+  async updateMessage(messageId: string, updates: Partial<DomainMessage>): Promise<void> {
+    this.updateMessageCalled = true;
+    const index = this.messages.findIndex(msg => msg.id === messageId);
+    if (index >= 0) {
+      const existing = this.messages[index];
+      const updated = { ...existing, ...updates, type: existing.type } as DomainMessage;
+      this.messages[index] = updated;
+      this.messageHistorySubject.next([...this.messages]);
+    }
+  }
+
+  async clearHistory(): Promise<void> {
+    this.clearHistoryCalled = true;
+    this.messages = [];
+    this.messageHistorySubject.next([]);
+  }
+
+  // MessageStore interface
+  async initialize(): Promise<void> {
+    this.initializeCalled = true;
+  }
+
+  async getAllMessages(): Promise<DomainMessage[]> {
+    return [...this.messages];
+  }
+
   // Test helpers
   setMessages(messages: DomainMessage[]): void {
     this.messages = messages;
@@ -52,6 +110,12 @@ export class MockMessagePublisher implements MessagePublisher {
   clear(): void {
     this.messages = [];
     this.messageHistorySubject.next([]);
+    // Reset call tracking
+    this.initializeCalled = false;
+    this.storeMessageCalled = false;
+    this.storeMessagesCalled = false;
+    this.updateMessageCalled = false;
+    this.clearHistoryCalled = false;
   }
 }
 
@@ -236,12 +300,131 @@ export class MockPromptHandler implements PromptHandler {
 }
 
 /**
+ * Mock Initializer for testing
+ */
+export class MockInitializer implements Initializer {
+  private readonly messagesSubject = new Subject<DomainMessage>();
+  private readonly optionsSubject = new Subject<DomainOption>();
+  private readonly completionSubject = new Subject<{ state: InitializationState; error?: string }>();
+  private currentState = InitializationState.NotStarted;
+  
+  public startCalled = false;
+  public processResponseCalled = false;
+  public processOptionSelectionCalled = false;
+  public createProjectStructureCalled = false;
+  public generateMarkdownFilesCalled = false;
+  public validateCurrentDirectoryCalled = false;
+  public isCurrentDirectoryInitializedCalled = false;
+  public resetCalled = false;
+  public lastResponse = '';
+  public lastOptionIndex = -1;
+  public mockIsInitialized = false;
+
+  get messages$() {
+    return this.messagesSubject.asObservable();
+  }
+
+  get options$() {
+    return this.optionsSubject.asObservable();
+  }
+
+  get completion$() {
+    return this.completionSubject.asObservable();
+  }
+
+  getState(): InitializationState {
+    return this.currentState;
+  }
+
+  start(): Result<void, string> {
+    this.startCalled = true;
+    this.currentState = InitializationState.InProgress;
+    return Result.success(undefined);
+  }
+
+  processResponse(response: string): Result<void, string> {
+    this.processResponseCalled = true;
+    this.lastResponse = response;
+    return Result.success(undefined);
+  }
+
+  processOptionSelection(optionIndex: number): Result<void, string> {
+    this.processOptionSelectionCalled = true;
+    this.lastOptionIndex = optionIndex;
+    return Result.success(undefined);
+  }
+
+  async createProjectStructure(): Promise<Result<void, string>> {
+    this.createProjectStructureCalled = true;
+    return Result.success(undefined);
+  }
+
+  async generateMarkdownFiles(_options: InitializationOptions): Promise<Result<void, string>> {
+    this.generateMarkdownFilesCalled = true;
+    return Result.success(undefined);
+  }
+
+  getInitializationSteps(): InitializationStep[] {
+    return [
+      { name: 'setup', description: 'Setup project', completed: false },
+      { name: 'config', description: 'Configure settings', completed: false }
+    ];
+  }
+
+  validateCurrentDirectory(): Result<void, string> {
+    this.validateCurrentDirectoryCalled = true;
+    return Result.success(undefined);
+  }
+
+  isCurrentDirectoryInitialized(): boolean {
+    this.isCurrentDirectoryInitializedCalled = true;
+    return this.mockIsInitialized;
+  }
+
+  reset(): void {
+    this.resetCalled = true;
+    this.currentState = InitializationState.NotStarted;
+  }
+
+  // Test helpers
+  setState(state: InitializationState): void {
+    this.currentState = state;
+  }
+
+  emitMessage(message: DomainMessage): void {
+    this.messagesSubject.next(message);
+  }
+
+  emitOption(option: DomainOption): void {
+    this.optionsSubject.next(option);
+  }
+
+  emitCompletion(state: InitializationState, error?: string): void {
+    this.completionSubject.next({ state, error });
+  }
+
+  resetTracking(): void {
+    this.startCalled = false;
+    this.processResponseCalled = false;
+    this.processOptionSelectionCalled = false;
+    this.createProjectStructureCalled = false;
+    this.generateMarkdownFilesCalled = false;
+    this.validateCurrentDirectoryCalled = false;
+    this.isCurrentDirectoryInitializedCalled = false;
+    this.resetCalled = false;
+    this.lastResponse = '';
+    this.lastOptionIndex = -1;
+    this.mockIsInitialized = false;
+  }
+}
+
+/**
  * Helper function to create test domain messages
  */
 export function createTestDomainMessage(
   type: DomainMessage['type'],
   content: string,
-  metadata?: any
+  metadata?: Record<string, unknown>
 ): DomainMessage {
   const base = {
     id: `test-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,

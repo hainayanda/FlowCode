@@ -3,38 +3,38 @@ import { firstValueFrom, take, skip } from 'rxjs';
 import { FlowCodeUseCase } from '../../../src/application/use-cases/flowcode-use-case.js';
 import {
   MockMessagePublisher,
-  MockMessageWriter,
   MockCommandDispatcher,
   MockPromptHandler,
+  MockInitializer,
   createTestDomainMessage
 } from './flowcode-use-case.mocks.js';
 
 describe('FlowCodeUseCase', () => {
   let useCase: FlowCodeUseCase;
   let mockMessagePublisher: MockMessagePublisher;
-  let mockMessageWriter: MockMessageWriter;
   let mockCommandDispatcher: MockCommandDispatcher;
   let mockPromptHandler: MockPromptHandler;
+  let mockInitializer: MockInitializer;
 
   beforeEach(() => {
-  mockMessagePublisher = new MockMessagePublisher();
-    mockMessageWriter = new MockMessageWriter();
+    mockMessagePublisher = new MockMessagePublisher();
     mockCommandDispatcher = new MockCommandDispatcher();
     mockPromptHandler = new MockPromptHandler();
+    mockInitializer = new MockInitializer();
 
     useCase = new FlowCodeUseCase(
-  mockMessagePublisher,
-      mockMessageWriter,
+      mockMessagePublisher,
       mockCommandDispatcher,
-      mockPromptHandler
+      mockPromptHandler,
+      mockInitializer
     );
   });
 
   afterEach(() => {
-    mockMessageWriter.reset();
     mockCommandDispatcher.reset();
     mockPromptHandler.reset();
-  mockMessagePublisher.clear();
+    mockInitializer.resetTracking();
+    mockMessagePublisher.clear();
   });
 
   describe('Initialization', () => {
@@ -61,10 +61,11 @@ describe('FlowCodeUseCase', () => {
       await useCase.processAIInput(input);
 
       // Should store user message
-      expect(mockMessageWriter.storeMessageCalled).toBe(true);
-      expect(mockMessageWriter.storedMessages).toHaveLength(1);
+      expect(mockMessagePublisher.storeMessageCalled).toBe(true);
+      const allMessages = await mockMessagePublisher.getAllMessages();
+      expect(allMessages).toHaveLength(1);
       
-      const userMessage = mockMessageWriter.storedMessages[0];
+      const userMessage = allMessages[0];
       expect(userMessage.type).toBe('user-input');
       expect(userMessage.content).toBe(input);
       expect(userMessage.timestamp).toBeInstanceOf(Date);
@@ -79,7 +80,7 @@ describe('FlowCodeUseCase', () => {
       await useCase.processAIInput('first input');
       await useCase.processAIInput('second input');
 
-      const messages = mockMessageWriter.storedMessages;
+      const messages = await mockMessagePublisher.getAllMessages();
       expect(messages).toHaveLength(2);
       expect(messages[0].id).not.toBe(messages[1].id);
       expect(messages[0].id).toMatch(/^msg_\d+_\w+$/);
@@ -88,19 +89,20 @@ describe('FlowCodeUseCase', () => {
   });
 
   describe('Command Processing', () => {
-    it('should store user message and forward to command dispatcher', async () => {
-      const command = 'init';
-      const args = ['project-name', '--type=react'];
+    it('should store user message and forward to command dispatcher for non-init commands', async () => {
+      const command = 'config';
+      const args = ['set', 'theme=dark'];
 
       await useCase.processCommand(command, args);
 
       // Should store user command message
-      expect(mockMessageWriter.storeMessageCalled).toBe(true);
-      expect(mockMessageWriter.storedMessages).toHaveLength(1);
+      expect(mockMessagePublisher.storeMessageCalled).toBe(true);
+      const allMessages = await mockMessagePublisher.getAllMessages();
+      expect(allMessages).toHaveLength(1);
       
-      const userMessage = mockMessageWriter.storedMessages[0];
+      const userMessage = allMessages[0];
       expect(userMessage.type).toBe('user-input');
-      expect(userMessage.content).toBe('init project-name --type=react');
+      expect(userMessage.content).toBe('config set theme=dark');
       expect(userMessage.timestamp).toBeInstanceOf(Date);
 
       // Should forward to command dispatcher
@@ -112,7 +114,8 @@ describe('FlowCodeUseCase', () => {
     it('should handle commands without arguments', async () => {
       await useCase.processCommand('help');
 
-      const userMessage = mockMessageWriter.storedMessages[0];
+      const allMessages = await mockMessagePublisher.getAllMessages();
+      const userMessage = allMessages[0];
       expect(userMessage.content).toBe('help');
 
       expect(mockCommandDispatcher.lastCommand).toBe('help');
@@ -122,8 +125,31 @@ describe('FlowCodeUseCase', () => {
     it('should handle commands with empty args array', async () => {
       await useCase.processCommand('config', []);
 
-      const userMessage = mockMessageWriter.storedMessages[0];
+      const allMessages = await mockMessagePublisher.getAllMessages();
+      const userMessage = allMessages[0];
       expect(userMessage.content).toBe('config');
+    });
+
+    it('should handle init command specially through initializer', async () => {
+      const command = 'init';
+      const args = ['my-project'];
+
+      await useCase.processCommand(command, args);
+
+      // Should store user command message
+      expect(mockMessagePublisher.storeMessageCalled).toBe(true);
+      const allMessages = await mockMessagePublisher.getAllMessages();
+      expect(allMessages).toHaveLength(1);
+      
+      const userMessage = allMessages[0];
+      expect(userMessage.type).toBe('user-input');
+      expect(userMessage.content).toBe('init my-project');
+
+      // Should NOT forward to command dispatcher (init is special)
+      expect(mockCommandDispatcher.executeCalled).toBe(false);
+
+      // Should handle through initializer
+      expect(mockInitializer.isCurrentDirectoryInitializedCalled).toBe(true);
     });
   });
 
@@ -236,7 +262,7 @@ describe('FlowCodeUseCase', () => {
   describe('Error Handling', () => {
     it('should handle message storage failures gracefully', async () => {
       // Mock storage failure
-      mockMessageWriter.storeMessage = vi.fn().mockRejectedValue(new Error('Storage failed'));
+      mockMessagePublisher.storeMessage = vi.fn().mockRejectedValue(new Error('Storage failed'));
       
       // Should not throw error
       await expect(useCase.processAIInput('test input')).resolves.not.toThrow();
@@ -261,10 +287,11 @@ describe('FlowCodeUseCase', () => {
       // Process AI input
       await useCase.processAIInput('create user service');
       
-      // Should store user message
-      expect(mockMessageWriter.storedMessages).toHaveLength(1);
-      expect(mockMessageWriter.storedMessages[0].type).toBe('user-input');
-      expect(mockMessageWriter.storedMessages[0].content).toBe('create user service');
+      // Should store user message  
+      const allMessages = await mockMessagePublisher.getAllMessages();
+      expect(allMessages).toHaveLength(1);
+      expect(allMessages[0].type).toBe('user-input');
+      expect(allMessages[0].content).toBe('create user service');
       
       // Should forward to prompt handler
       expect(mockPromptHandler.processUserInputCalled).toBe(true);
@@ -273,17 +300,18 @@ describe('FlowCodeUseCase', () => {
 
     it('should handle complete command workflow', async () => {
       // Process command
-      await useCase.processCommand('init', ['my-project']);
+      await useCase.processCommand('config', ['validate']);
       
       // Should store command message
-      expect(mockMessageWriter.storedMessages).toHaveLength(1);
-      expect(mockMessageWriter.storedMessages[0].type).toBe('user-input');
-      expect(mockMessageWriter.storedMessages[0].content).toBe('init my-project');
+      const allMessages = await mockMessagePublisher.getAllMessages();
+      expect(allMessages).toHaveLength(1);
+      expect(allMessages[0].type).toBe('user-input');
+      expect(allMessages[0].content).toBe('config validate');
       
       // Should forward to dispatcher
       expect(mockCommandDispatcher.executeCalled).toBe(true);
-      expect(mockCommandDispatcher.lastCommand).toBe('init');
-      expect(mockCommandDispatcher.lastArgs).toEqual(['my-project']);
+      expect(mockCommandDispatcher.lastCommand).toBe('config');
+      expect(mockCommandDispatcher.lastArgs).toEqual(['validate']);
     });
 
     it('should handle choice workflow', async () => {
