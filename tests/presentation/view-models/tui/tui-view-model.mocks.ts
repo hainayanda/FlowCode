@@ -34,6 +34,15 @@ export class MockTUIRouter implements TUIRouter {
  * Mock TUIUseCase for testing (extends ConsoleUseCase with TUI-specific streams)
  */
 export class MockTUIUseCase implements TUIUseCase {
+
+  public processAIInputCalled = false;
+  public processCommandCalled = false;
+  public lastAIInput = '';
+  public lastCommand = '';
+  public lastCommandArgs: string[] = [];
+  public currentOptions: string[] = [];
+  public lastSelectedIndex = -1;
+  
   private readonly messagesSubject = new Subject<DomainMessage>();
   private readonly optionsSubject = new Subject<DomainOption>();
   private readonly tokenUsageSubject = new BehaviorSubject<DomainTokenUsage>({ used: 0, limit: 10000 });
@@ -44,14 +53,6 @@ export class MockTUIUseCase implements TUIUseCase {
     status: 'idle' 
   });
   private readonly isLoadingSubject = new BehaviorSubject<boolean>(false);
-
-  public processAIInputCalled = false;
-  public processCommandCalled = false;
-  public lastAIInput = '';
-  public lastCommand = '';
-  public lastCommandArgs: string[] = [];
-  public currentOptions: string[] = [];
-  public lastSelectedIndex = -1;
 
   private readonly mockCommands: CommandDefinition[] = [
     { name: 'init', description: 'Initialize project', aliases: ['i'] },

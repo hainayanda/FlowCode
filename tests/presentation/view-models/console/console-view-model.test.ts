@@ -197,8 +197,8 @@ describe('ConsoleViewModel', () => {
       
       expect(message.type).toBe('worker');
       expect(message.content).toBe('AI response');
-      expect(message.metadata?.workerId).toBe('code-worker');
-      expect(message.metadata?.isStreaming).toBe(true);
+      expect((message.metadata as any)?.workerId).toBe('code-worker');
+      expect((message.metadata as any)?.isStreaming).toBe(true);
     });
 
     it('should transform thinking messages correctly', async () => {
@@ -211,7 +211,7 @@ describe('ConsoleViewModel', () => {
       
       expect(message.type).toBe('thinking');
       expect(message.content).toBe('Processing...');
-      expect(message.metadata?.workerId).toBe('taskmaster');
+      expect((message.metadata as any)?.workerId).toBe('taskmaster');
     });
 
     it('should transform error messages correctly', async () => {
@@ -225,8 +225,8 @@ describe('ConsoleViewModel', () => {
       
       expect(message.type).toBe('error');
       expect(message.content).toBe('Something went wrong');
-      expect(message.metadata?.errorCode).toBe('ERR_001');
-      expect(message.metadata?.recoverable).toBe(true);
+      expect((message.metadata as any)?.errorCode).toBe('ERR_001');
+      expect((message.metadata as any)?.recoverable).toBe(true);
     });
 
     it('should transform file operation messages correctly', async () => {
@@ -242,10 +242,10 @@ describe('ConsoleViewModel', () => {
       
       expect(message.type).toBe('file');
       expect(message.content).toBe('File edited');
-      expect(message.metadata?.filePath).toBe('/src/test.ts');
-      expect(message.metadata?.fileOperation).toBe('edit');
-      expect(message.metadata?.totalLinesAdded).toBe(5);
-      expect(message.metadata?.totalLinesRemoved).toBe(2);
+      expect((message.metadata as any)?.filePath).toBe('/src/test.ts');
+      expect((message.metadata as any)?.fileOperation).toBe('edit');
+      expect((message.metadata as any)?.totalLinesAdded).toBe(5);
+      expect((message.metadata as any)?.totalLinesRemoved).toBe(2);
     });
   });
 

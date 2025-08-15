@@ -32,9 +32,7 @@ export class MockConsoleRouter implements ConsoleRouter {
  * Mock ConsoleUseCase for testing
  */
 export class MockConsoleUseCase implements ConsoleUseCase {
-  private readonly messagesSubject = new Subject<DomainMessage>();
-  private readonly optionsSubject = new Subject<DomainOption>();
-
+  
   public processAIInputCalled = false;
   public processCommandCalled = false;
   public lastAIInput = '';
@@ -42,6 +40,9 @@ export class MockConsoleUseCase implements ConsoleUseCase {
   public lastCommandArgs: string[] = [];
   public currentOptions: string[] = [];
   public lastSelectedIndex = -1;
+
+  private readonly messagesSubject = new Subject<DomainMessage>();
+  private readonly optionsSubject = new Subject<DomainOption>();
 
   private readonly mockCommands: CommandDefinition[] = [
     { name: 'init', description: 'Initialize project', aliases: ['i'] },
