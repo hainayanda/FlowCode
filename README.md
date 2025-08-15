@@ -29,15 +29,13 @@ User Task → Taskmaster → Best Worker → AI Response
 
 ### Built-in Workers
 
-- **code-worker**: General programming and business logic
-- **api-worker**: Backend services and REST APIs  
-- **ui-worker**: Frontend components and interfaces
-- **test-worker**: Testing and QA automation
-- **security-worker**: Security analysis and compliance
-- **performance-worker**: Optimization and bottlenecks
-- **architect-worker**: System design and architecture
-- **data-worker**: Database and analytics
-- **devops-worker**: Infrastructure and deployment
+- **code-worker**: Write General programming and business logic
+- **chore-worker**: Write simple rename, move files, and any chore tasks
+- **api-worker**: Write Backend services and REST APIs  
+- **ui-worker**: Write Frontend components and interfaces
+- **unit-test-worker**: Write Testing and QA automation
+- **performance-worker**: Write Optimization and bottlenecks
+- **architect-worker**: Write System design and architecture
 
 ## Configuration
 
@@ -57,10 +55,6 @@ FlowCode uses a hybrid approach combining structured config with flexible prompt
 ```json
 {
   "version": "1.0",
-  "project": {
-    "name": "FlowCode Test Project",
-    "description": "Testing FlowCode architecture with DI"
-  },
   "taskmaster": {
     "model": "claude-3-5-sonnet-20241022",
     "temperature": 0.2,
@@ -69,8 +63,6 @@ FlowCode uses a hybrid approach combining structured config with flexible prompt
   "summarizer": {
     "model": "claude-3-5-haiku-20241022",
     "temperature": 0.1,
-    "summarize_threshold": 15,
-    "preserve_recent_messages": 5,
     "enabled": true,
     "provider": "anthropic"
   },
