@@ -1,7 +1,5 @@
-import js from '@eslint/js';
 import tseslint from '@typescript-eslint/eslint-plugin';
 import tsparser from '@typescript-eslint/parser';
-import prettier from 'eslint-config-prettier';
 
 export default [
   {
@@ -38,6 +36,40 @@ export default [
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-non-null-assertion': 'off',
       '@typescript-eslint/no-empty-object-type': 'off',
+      '@typescript-eslint/member-ordering': ['error', {
+        default: [
+          // Static properties first
+          'public-static-field',
+          'private-static-field',
+
+          // Readonly properties
+          'public-readonly-field',
+          'private-readonly-field',
+
+          // Instance properties
+          'public-instance-field',
+          'private-instance-field',
+          
+          // Public getters
+          'public-get',
+          'public-set',
+          
+          // Private getters
+          'private-get',
+          'private-set',
+
+          // Static methods
+          'public-static-method',
+          'private-static-method',
+
+          // Constructor
+          'constructor',
+          
+          // Instance methods
+          'public-instance-method',
+          'private-instance-method'
+        ]
+      }],
       'prefer-const': 'warn',
       'no-var': 'error',
       'no-console': 'off',
