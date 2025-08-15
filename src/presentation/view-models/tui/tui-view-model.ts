@@ -381,12 +381,7 @@ export class TUIViewModel implements TUIViewState, TUIViewListener {
           domainMessage.id,
           'system',
           choiceText,
-          domainMessage.timestamp,
-          {
-            choices: domainMessage.metadata.choices,
-            selectedIndex: domainMessage.metadata.selectedIndex,
-            prompt: domainMessage.metadata.prompt
-          }
+          domainMessage.timestamp
         );
 
       default:
