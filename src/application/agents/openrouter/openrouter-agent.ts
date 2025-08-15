@@ -1,13 +1,13 @@
 import OpenAI from 'openai';
 import { Observable, Observer } from 'rxjs';
 import { BaseAgent } from '../base-agent.js';
-import { AgentInput, AgentResponse, ToolCall, ToolDefinition } from '../../interfaces/agent.js';
+import { AgentConfig, AgentInput, AgentResponse, ToolCall, ToolDefinition } from '../../interfaces/agent.js';
 import { Toolbox } from '../../interfaces/toolbox.js';
 
 export class OpenRouterAgent extends BaseAgent {
   private client: OpenAI;
 
-  constructor(config: any, toolbox: Toolbox) {
+  constructor(config: AgentConfig, toolbox: Toolbox) {
     super(config, toolbox);
     // OpenRouter uses OpenAI-compatible API
     this.client = new OpenAI({
@@ -147,7 +147,7 @@ export class OpenRouterAgent extends BaseAgent {
     try {
       // Test the API key by making a simple request
       await this.client.chat.completions.create({
-        model: 'openai/gpt-3.5-turbo',
+        model: this.config.model,
         max_tokens: 1,
         messages: [{ role: 'user', content: 'test' }]
       });

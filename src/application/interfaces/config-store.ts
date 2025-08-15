@@ -63,14 +63,13 @@ export interface ConfigReader {
  * Writer interface for configuration operations
  */
 export interface ConfigWriter {
-  writeConfig(config: FlowCodeConfig): Promise<boolean>;
-  initializeConfig(): Promise<boolean>;
-  updateProjectConfig(projectConfig: ProjectConfig): Promise<boolean>;
-  updateTaskmasterConfig(taskmasterConfig: TaskmasterConfig): Promise<boolean>;
-  updateSummarizerConfig(summarizerConfig: SummarizerConfig): Promise<boolean>;
-  updateEmbeddingConfig(embeddingConfig: EmbeddingConfig): Promise<boolean>;
-  updateWorkerConfig(workerName: string, workerConfig: WorkerConfig): Promise<boolean>;
-  ensureConfigDirectory(): Promise<boolean>;
+  writeConfig(config: FlowCodeConfig): Promise<void>;
+  updateProjectConfig(projectConfig: ProjectConfig): Promise<void>;
+  updateTaskmasterConfig(taskmasterConfig: TaskmasterConfig): Promise<void>;
+  updateSummarizerConfig(summarizerConfig: SummarizerConfig): Promise<void>;
+  updateEmbeddingConfig(embeddingConfig: EmbeddingConfig): Promise<void>;
+  updateWorkerConfig(workerName: string, workerConfig: WorkerConfig): Promise<void>;
+  ensureConfigDirectory(): Promise<void>;
 }
 
 /**

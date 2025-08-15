@@ -83,20 +83,20 @@ export class SettingsService implements SettingsStore {
     }
   }
 
-  async initializeSettings(): Promise<boolean> {
+  async ensureSettingsDirectory(): Promise<boolean> {
     try {
-      await this.ensureSettingsDirectory();
-      const defaultSettings = this.getDefaultSettings();
-      await fs.writeFile(this.workspaceSettingsFile, JSON.stringify(defaultSettings, null, 2));
+      await fs.mkdir(this.workspaceSettingsDir, { recursive: true });
       return true;
     } catch {
       return false;
     }
   }
 
-  async ensureSettingsDirectory(): Promise<boolean> {
+  async initializeSettings(): Promise<boolean> {
     try {
-      await fs.mkdir(this.workspaceSettingsDir, { recursive: true });
+      await this.ensureSettingsDirectory();
+      const defaultSettings = this.getDefaultSettings();
+      await fs.writeFile(this.workspaceSettingsFile, JSON.stringify(defaultSettings, null, 2));
       return true;
     } catch {
       return false;

@@ -1,13 +1,13 @@
 import OpenAI from 'openai';
 import { Observable, Observer } from 'rxjs';
 import { BaseAgent } from '../base-agent.js';
-import { AgentInput, AgentResponse, ToolCall, ToolDefinition } from '../../interfaces/agent.js';
+import { AgentConfig, AgentInput, AgentResponse, ToolCall, ToolDefinition } from '../../interfaces/agent.js';
 import { Toolbox } from '../../interfaces/toolbox.js';
 
 export class GeminiAgent extends BaseAgent {
   private client: OpenAI;
 
-  constructor(config: any, toolbox: Toolbox) {
+  constructor(config: AgentConfig, toolbox: Toolbox) {
     super(config, toolbox);
     // Google Gemini uses OpenAI-compatible API
     this.client = new OpenAI({

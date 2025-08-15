@@ -22,8 +22,8 @@ export class CredentialService implements CredentialStore {
     try {
       const content = await fs.readFile(this.credentialsFile, 'utf-8');
       return JSON.parse(content);
-    } catch {
-      return this.getDefaultCredentials();
+    } catch (error) {
+      throw new Error(`Failed to read credentials file: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -57,75 +57,57 @@ export class CredentialService implements CredentialStore {
 
   // CredentialWriter implementation
 
-  async writeCredentials(credentials: CredentialsConfig): Promise<boolean> {
+  async writeCredentials(credentials: CredentialsConfig): Promise<void> {
     try {
       await this.ensureCredentialsDirectory();
       await fs.writeFile(this.credentialsFile, JSON.stringify(credentials, null, 2));
-      return true;
-    } catch {
-      return false;
+    } catch (error) {
+      throw new Error(`Failed to write credentials file: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  async initializeCredentials(): Promise<boolean> {
-    try {
-      await this.ensureCredentialsDirectory();
-      const defaultCredentials = this.getDefaultCredentials();
-      await fs.writeFile(this.credentialsFile, JSON.stringify(defaultCredentials, null, 2));
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  async setProviderCredential(provider: string, credential: ProviderCredential): Promise<boolean> {
+  async setProviderCredential(provider: string, credential: ProviderCredential): Promise<void> {
     try {
       const credentials = await this.getCredentials();
       credentials[provider as keyof CredentialsConfig] = credential;
-      return await this.writeCredentials(credentials);
-    } catch {
-      return false;
+      await this.writeCredentials(credentials);
+    } catch (error) {
+      throw new Error(`Failed to set credential for provider '${provider}': ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  async updateLastUsed(provider: string): Promise<boolean> {
+  async updateLastUsed(provider: string): Promise<void> {
     try {
       const credentials = await this.getCredentials();
       const existingCredential = credentials[provider as keyof CredentialsConfig];
       
       if (!existingCredential) {
-        return false;
+        throw new Error(`Provider '${provider}' not found in credentials`);
       }
 
       existingCredential.lastUsed = new Date().toISOString();
-      return await this.writeCredentials(credentials);
-    } catch {
-      return false;
+      await this.writeCredentials(credentials);
+    } catch (error) {
+      throw new Error(`Failed to update last used for provider '${provider}': ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  async removeProviderCredential(provider: string): Promise<boolean> {
+  async removeProviderCredential(provider: string): Promise<void> {
     try {
       const credentials = await this.getCredentials();
       delete credentials[provider as keyof CredentialsConfig];
-      return await this.writeCredentials(credentials);
-    } catch {
-      return false;
+      await this.writeCredentials(credentials);
+    } catch (error) {
+      throw new Error(`Failed to remove credential for provider '${provider}': ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  async ensureCredentialsDirectory(): Promise<boolean> {
+  async ensureCredentialsDirectory(): Promise<void> {
     try {
       await fs.mkdir(this.credentialsDir, { recursive: true });
-      return true;
-    } catch {
-      return false;
+    } catch (error) {
+      throw new Error(`Failed to create credentials directory: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  // Private helper methods
-
-  private getDefaultCredentials(): CredentialsConfig {
-    return {};
-  }
 }

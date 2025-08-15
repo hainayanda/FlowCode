@@ -263,7 +263,6 @@ export class ConsoleViewModel implements ConsoleViewState, ConsoleViewListener {
 
   private handleError(error: unknown): void {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    console.error(`[ConsoleViewModel Error]: ${errorMessage}`);
     
     // Create an error message for display
     const errorConsoleMessage = ConsoleMessage.create(

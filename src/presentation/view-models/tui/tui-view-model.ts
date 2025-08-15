@@ -512,7 +512,6 @@ export class TUIViewModel implements TUIViewState, TUIViewListener {
 
   private handleError(error: unknown): void {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    console.error(`[TUIViewModel Error]: ${errorMessage}`);
     
     // Create an error message for display
     const errorConsoleMessage = ConsoleMessage.create(

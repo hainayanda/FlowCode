@@ -29,12 +29,11 @@ export interface CredentialReader {
  * Writer interface for credential operations
  */
 export interface CredentialWriter {
-  writeCredentials(credentials: CredentialsConfig): Promise<boolean>;
-  initializeCredentials(): Promise<boolean>;
-  setProviderCredential(provider: string, credential: ProviderCredential): Promise<boolean>;
-  updateLastUsed(provider: string): Promise<boolean>;
-  removeProviderCredential(provider: string): Promise<boolean>;
-  ensureCredentialsDirectory(): Promise<boolean>;
+  writeCredentials(credentials: CredentialsConfig): Promise<void>;
+  setProviderCredential(provider: string, credential: ProviderCredential): Promise<void>;
+  updateLastUsed(provider: string): Promise<void>;
+  removeProviderCredential(provider: string): Promise<void>;
+  ensureCredentialsDirectory(): Promise<void>;
 }
 
 /**

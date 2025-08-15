@@ -56,11 +56,6 @@ export interface SettingsWriter {
   writeSettings(settings: SettingsConfig): Promise<boolean>;
 
   /**
-   * Initialize settings file with default configuration
-   */
-  initializeSettings(): Promise<boolean>;
-
-  /**
    * Create .flowcode directory if it doesn't exist
    */
   ensureSettingsDirectory(): Promise<boolean>;

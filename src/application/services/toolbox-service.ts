@@ -295,8 +295,15 @@ export class ToolboxService implements Toolbox {
         await this.settingsStore.writeSettings(settings);
       }
     } catch (error) {
-      // Log error but don't fail the operation
-      console.error('Failed to save permission:', error);
+      // Emit error message but don't fail the operation
+      this.emitToolboxMessage(
+        this.generateOperationId(),
+        { name: 'save_permission', parameters: { toolboxId, toolName } },
+        'failing',
+        'Failed to save permission setting',
+        undefined,
+        error instanceof Error ? error.message : String(error)
+      );
     }
   }
 

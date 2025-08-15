@@ -395,8 +395,6 @@ describe('TUIViewModel', () => {
 
   describe('Error Handling', () => {
     it('should handle message stream errors gracefully', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      
       const messagePromise = firstValueFrom(viewModel.messages$);
       
       mockUseCase.emitError(new Error('Stream error'));
@@ -404,21 +402,19 @@ describe('TUIViewModel', () => {
       
       expect(message.type).toBe('error');
       expect(message.content).toContain('Stream error');
-      expect(consoleSpy).toHaveBeenCalledWith('[TUIViewModel Error]: Stream error');
-      
-      consoleSpy.mockRestore();
     });
 
     it('should handle input processing errors', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      
       // Mock use case to throw error
       mockUseCase.processAIInput = vi.fn().mockRejectedValue(new Error('Processing failed'));
       
+      const messagePromise = firstValueFrom(viewModel.messages$);
+      
       await viewModel.onEnter('test input');
       
-      expect(consoleSpy).toHaveBeenCalledWith('[TUIViewModel Error]: Processing failed');
-      consoleSpy.mockRestore();
+      const message = await messagePromise;
+      expect(message.type).toBe('error');
+      expect(message.content).toContain('Processing failed');
     });
   });
 

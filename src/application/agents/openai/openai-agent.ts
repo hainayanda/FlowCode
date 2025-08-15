@@ -1,13 +1,13 @@
 import OpenAI from 'openai';
 import { Observable, Observer } from 'rxjs';
 import { BaseAgent } from '../base-agent.js';
-import { AgentInput, AgentResponse, ToolCall, ToolDefinition } from '../../interfaces/agent.js';
+import { AgentConfig, AgentInput, AgentResponse, ToolCall, ToolDefinition } from '../../interfaces/agent.js';
 import { Toolbox } from '../../interfaces/toolbox.js';
 
 export class OpenAIAgent extends BaseAgent {
   private client: OpenAI;
 
-  constructor(config: any, toolbox: Toolbox) {
+  constructor(config: AgentConfig, toolbox: Toolbox) {
     super(config, toolbox);
     this.client = new OpenAI({
       apiKey: config.apiKey,

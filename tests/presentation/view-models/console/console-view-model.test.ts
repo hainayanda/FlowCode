@@ -268,9 +268,6 @@ describe('ConsoleViewModel', () => {
 
   describe('Error Handling', () => {
     it('should handle message stream errors gracefully', async () => {
-      // Spy on console.error
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      
       const messagePromise = firstValueFrom(viewModel.messages$);
       
       mockUseCase.emitError(new Error('Stream error'));
@@ -278,21 +275,19 @@ describe('ConsoleViewModel', () => {
       
       expect(message.type).toBe('error');
       expect(message.content).toContain('Stream error');
-      expect(consoleSpy).toHaveBeenCalledWith('[ConsoleViewModel Error]: Stream error');
-      
-      consoleSpy.mockRestore();
     });
 
     it('should handle input processing errors', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      
       // Mock use case to throw error
       mockUseCase.processAIInput = vi.fn().mockRejectedValue(new Error('Processing failed'));
       
+      const messagePromise = firstValueFrom(viewModel.messages$);
+      
       await viewModel.onUserInput('test input');
       
-      expect(consoleSpy).toHaveBeenCalledWith('[ConsoleViewModel Error]: Processing failed');
-      consoleSpy.mockRestore();
+      const message = await messagePromise;
+      expect(message.type).toBe('error');
+      expect(message.content).toContain('Processing failed');
     });
   });
 

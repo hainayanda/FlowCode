@@ -87,6 +87,11 @@ export interface AgentConfig {
   baseUrl?: string;
   // Azure-specific properties
   resourceName?: string;
+
+  // OpenRouter-specific properties
+  referer?: string;
+  appName?: string;
+
   deploymentName?: string;
   apiVersion?: string;
 }

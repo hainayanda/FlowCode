@@ -20,8 +20,8 @@ export class ConfigService implements ConfigStore {
     try {
       const content = await fs.readFile(this.configFile, 'utf-8');
       return JSON.parse(content);
-    } catch {
-      return this.getDefaultConfig();
+    } catch (error) {
+      throw new Error(`Failed to read config file: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -72,7 +72,8 @@ export class ConfigService implements ConfigStore {
     try {
       await fs.access(this.configFile);
       return true;
-    } catch {
+    } catch (error) {
+      console.error('Error checking config file existence:', error);
       return false;
     }
   }
@@ -83,139 +84,70 @@ export class ConfigService implements ConfigStore {
 
   // ConfigWriter implementation
 
-  async writeConfig(config: FlowCodeConfig): Promise<boolean> {
+  async writeConfig(config: FlowCodeConfig): Promise<void> {
     try {
       await this.ensureConfigDirectory();
       await fs.writeFile(this.configFile, JSON.stringify(config, null, 2));
-      return true;
-    } catch {
-      return false;
+    } catch (error) {
+      throw new Error(`Failed to write config file: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  async initializeConfig(): Promise<boolean> {
-    try {
-      await this.ensureConfigDirectory();
-      const defaultConfig = this.getDefaultConfig();
-      await fs.writeFile(this.configFile, JSON.stringify(defaultConfig, null, 2));
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  async updateProjectConfig(projectConfig: ProjectConfig): Promise<boolean> {
+  async updateProjectConfig(projectConfig: ProjectConfig): Promise<void> {
     try {
       const config = await this.getConfig();
       config.project = projectConfig;
-      return await this.writeConfig(config);
-    } catch {
-      return false;
+      await this.writeConfig(config);
+    } catch (error) {
+      throw new Error(`Failed to update project config: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  async updateTaskmasterConfig(taskmasterConfig: TaskmasterConfig): Promise<boolean> {
+  async updateTaskmasterConfig(taskmasterConfig: TaskmasterConfig): Promise<void> {
     try {
       const config = await this.getConfig();
       config.taskmaster = taskmasterConfig;
-      return await this.writeConfig(config);
-    } catch {
-      return false;
+      await this.writeConfig(config);
+    } catch (error) {
+      throw new Error(`Failed to update taskmaster config: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  async updateSummarizerConfig(summarizerConfig: SummarizerConfig): Promise<boolean> {
+  async updateSummarizerConfig(summarizerConfig: SummarizerConfig): Promise<void> {
     try {
       const config = await this.getConfig();
       config.summarizer = summarizerConfig;
-      return await this.writeConfig(config);
-    } catch {
-      return false;
+      await this.writeConfig(config);
+    } catch (error) {
+      throw new Error(`Failed to update summarizer config: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  async updateEmbeddingConfig(embeddingConfig: EmbeddingConfig): Promise<boolean> {
+  async updateEmbeddingConfig(embeddingConfig: EmbeddingConfig): Promise<void> {
     try {
       const config = await this.getConfig();
       config.embedding = embeddingConfig;
-      return await this.writeConfig(config);
-    } catch {
-      return false;
+      await this.writeConfig(config);
+    } catch (error) {
+      throw new Error(`Failed to update embedding config: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  async updateWorkerConfig(workerName: string, workerConfig: WorkerConfig): Promise<boolean> {
+  async updateWorkerConfig(workerName: string, workerConfig: WorkerConfig): Promise<void> {
     try {
       const config = await this.getConfig();
       config.workers[workerName] = workerConfig;
-      return await this.writeConfig(config);
-    } catch {
-      return false;
+      await this.writeConfig(config);
+    } catch (error) {
+      throw new Error(`Failed to update worker config for '${workerName}': ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  async ensureConfigDirectory(): Promise<boolean> {
+  async ensureConfigDirectory(): Promise<void> {
     try {
       await fs.mkdir(this.configDir, { recursive: true });
-      return true;
-    } catch {
-      return false;
+    } catch (error) {
+      throw new Error(`Failed to create config directory: ${error instanceof Error ? error.message : String(error)}`);
     }
-  }
-
-  // Private helper methods
-
-  private getDefaultConfig(): FlowCodeConfig {
-    return {
-      version: "1.0",
-      project: {
-        name: "FlowCode Project",
-        description: "A FlowCode project with intelligent task routing"
-      },
-      taskmaster: {
-        model: "claude-3-5-sonnet-20241022",
-        temperature: 0.2,
-        provider: "anthropic"
-      },
-      summarizer: {
-        model: "claude-3-5-haiku-20241022",
-        temperature: 0.1,
-        summarize_threshold: 15,
-        preserve_recent_messages: 5,
-        enabled: true,
-        provider: "anthropic"
-      },
-      embedding: {
-        provider: "openai",
-        model: "text-embedding-3-small",
-        enabled: true
-      },
-      workers: {
-        "code-worker": {
-          description: "General programming and business logic",
-          model: "claude-3-5-sonnet-20241022",
-          provider: "anthropic",
-          enabled: true
-        },
-        "test-worker": {
-          description: "Testing and quality assurance",
-          model: "claude-3-5-sonnet-20241022",
-          provider: "anthropic",
-          enabled: true
-        },
-        "ui-worker": {
-          description: "Frontend components and user interfaces",
-          model: "claude-3-5-haiku-20241022",
-          provider: "anthropic",
-          enabled: true
-        },
-        "security-worker": {
-          description: "Security analysis and compliance",
-          model: "claude-3-5-haiku-20241022",
-          provider: "anthropic",
-          enabled: true
-        }
-      }
-    };
   }
 }

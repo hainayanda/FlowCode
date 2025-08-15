@@ -1,13 +1,13 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { Observable, Observer } from 'rxjs';
 import { BaseAgent } from '../base-agent.js';
-import { AgentInput, AgentResponse, ToolCall, ToolDefinition } from '../../interfaces/agent.js';
+import { AgentConfig, AgentInput, AgentResponse, ToolCall, ToolDefinition } from '../../interfaces/agent.js';
 import { Toolbox } from '../../interfaces/toolbox.js';
 
 export class AnthropicAgent extends BaseAgent {
   private client: Anthropic;
 
-  constructor(config: any, toolbox: Toolbox) {
+  constructor(config: AgentConfig, toolbox: Toolbox) {
     super(config, toolbox);
     this.client = new Anthropic({
       apiKey: config.apiKey,
