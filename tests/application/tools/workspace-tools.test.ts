@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { WorkspaceTools } from '../../../src/application/tools/workspace-tools.js';
+import { EmbeddingService } from '../../../src/application/interfaces/embedding-service.js';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
@@ -10,12 +11,35 @@ vi.mock('path');
 const mockFs = vi.mocked(fs);
 const mockPath = vi.mocked(path);
 
+/**
+ * Mock EmbeddingService for testing
+ */
+class MockEmbeddingService implements EmbeddingService {
+  async generateEmbedding(_text: string): Promise<number[]> {
+    return new Array(1536).fill(0);
+  }
+
+  async isAvailable(): Promise<boolean> {
+    return true;
+  }
+
+  getEmbeddingDimension(): number {
+    return 1536;
+  }
+
+  async validateConfig(): Promise<boolean> {
+    return true;
+  }
+}
+
 describe('WorkspaceTools', () => {
   let workspaceTools: WorkspaceTools;
+  let mockEmbeddingService: MockEmbeddingService;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    workspaceTools = new WorkspaceTools();
+    mockEmbeddingService = new MockEmbeddingService();
+    workspaceTools = new WorkspaceTools(mockEmbeddingService);
     
     // Setup path mocks
     mockPath.join.mockImplementation((...paths) => paths.join('/'));

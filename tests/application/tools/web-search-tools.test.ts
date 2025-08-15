@@ -144,7 +144,7 @@ describe('WebSearchTools', () => {
     });
 
     it('should initialize with default SearXNGSearchService when no service provided', () => {
-      const defaultTools = new WebSearchTools();
+      const defaultTools = new WebSearchTools(mockEmbeddingService);
       expect(defaultTools.id).toBe('web_search_tools');
     });
   });
@@ -426,6 +426,7 @@ describe('SearXNGSearchService', () => {
 
       const result = await searchService.search('test query');
       expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(result.results).toEqual([]);
     });
   });
 

@@ -4,7 +4,6 @@ import { SummarizerAgent, SummaryResult } from '../../../src/application/interfa
 import { EmbeddingService } from '../../../src/application/interfaces/embedding-service.js';
 import { MessageVectorReader, RankedMessage } from '../../../src/application/interfaces/message-embedded-store.js';
 import { AgentMessage } from '../../../src/application/interfaces/agent.js';
-import { DomainMessage } from '../../../src/presentation/view-models/console/console-use-case.js';
 import { ToolCall } from '../../../src/application/interfaces/toolbox.js';
 
 // Mock implementations
@@ -32,7 +31,8 @@ class MockMessageVectorReader implements MessageVectorReader {
         id: 'msg2',
         type: 'ai-response',
         content: 'Here is how to implement JWT authentication with proper security',
-        timestamp: new Date('2024-01-01T10:01:00Z')
+        timestamp: new Date('2024-01-01T10:01:00Z'),
+        metadata: { workerId: 'test-worker' }
       },
       relevanceScore: 0.88
     },
@@ -92,12 +92,20 @@ class MockSummarizerAgent implements SummarizerAgent {
 }
 
 class MockEmbeddingService implements EmbeddingService {
-  async generateEmbedding(text: string): Promise<number[]> {
+  async generateEmbedding(_text: string): Promise<number[]> {
     return [0.1, 0.2, 0.3, 0.4, 0.5];
   }
 
   async generateEmbeddings(texts: string[]): Promise<number[][]> {
     return texts.map(() => [0.1, 0.2, 0.3, 0.4, 0.5]);
+  }
+
+  async isAvailable(): Promise<boolean> {
+    return true;
+  }
+
+  getEmbeddingDimension(): number {
+    return 5;
   }
 }
 
