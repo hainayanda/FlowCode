@@ -78,7 +78,7 @@ export class InMemoryVectorStore implements VectorStore {
           metadata: { ...entry.metadata }, // Return a copy
           distance
         });
-      } catch (error) {
+      } catch {
         // Skip vectors with mismatched dimensions
         continue;
       }

@@ -147,7 +147,7 @@ export class VectorStoreRepository implements VectorStore {
         persistentCount,
         syncStatus
       };
-    } catch (error) {
+    } catch {
       return {
         inMemoryCount: await this.inMemoryStore.getVectorCount(),
         persistentCount: 0,

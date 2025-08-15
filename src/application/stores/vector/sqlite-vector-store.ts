@@ -99,7 +99,7 @@ export class SQLiteVectorStore implements VectorStore {
         VALUES ((SELECT rowid FROM vectors WHERE id = ?), ?)
       `);
       indexStmt.run(id, vectorBuffer);
-    } catch (error) {
+    } catch {
       // Vector index not available, continue with basic storage
     }
   }
@@ -180,7 +180,7 @@ export class SQLiteVectorStore implements VectorStore {
       try {
         const indexStmt = this.db!.prepare('DELETE FROM vector_index WHERE rowid = ?');
         indexStmt.run(row.rowid);
-      } catch (error) {
+      } catch {
         // Vector index not available, ignore
       }
     }
@@ -196,7 +196,7 @@ export class SQLiteVectorStore implements VectorStore {
     
     try {
       this.db!.exec('DELETE FROM vector_index');
-    } catch (error) {
+    } catch {
       // Vector index not available, ignore
     }
   }
