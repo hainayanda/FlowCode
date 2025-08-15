@@ -1,34 +1,78 @@
+import { SettingsStore, SettingsConfig } from '../interfaces/settings-store.js';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
-import { SettingsStore, SettingsConfig } from '../interfaces/settings-store.js';
 
 /**
  * Settings service implementation with global and workspace settings support
  */
 export class SettingsService implements SettingsStore {
-  private readonly globalSettingsDir: string;
-  private readonly globalSettingsFile: string;
+  private readonly globalSettingsPath: string;
+  private readonly workspaceSettingsPath: string;
   private readonly workspaceSettingsDir: string;
-  private readonly workspaceSettingsFile: string;
 
   constructor(projectRoot: string = process.cwd()) {
-    // Global settings in user home directory
-    this.globalSettingsDir = path.join(os.homedir(), '.flowcode');
-    this.globalSettingsFile = path.join(this.globalSettingsDir, 'settings.json');
-    
-    // Workspace settings in project directory
+    const homeDir = os.homedir();
+    this.globalSettingsPath = path.join(homeDir, '.flowcode', 'settings.json');
     this.workspaceSettingsDir = path.join(projectRoot, '.flowcode');
-    this.workspaceSettingsFile = path.join(this.workspaceSettingsDir, 'settings.json');
+    this.workspaceSettingsPath = path.join(this.workspaceSettingsDir, 'settings.json');
   }
 
   // SettingsReader implementation
 
   async getSettings(): Promise<SettingsConfig> {
-    const globalSettings = await this.loadSettingsFile(this.globalSettingsFile);
-    const workspaceSettings = await this.loadSettingsFile(this.workspaceSettingsFile);
-    
-    return this.mergeSettings(globalSettings, workspaceSettings);
+    const defaultSettings: SettingsConfig = {
+      permissions: {
+        allow: [],
+        deny: []
+      }
+    };
+
+    try {
+      // Read global settings
+      let globalSettings: SettingsConfig;
+      try {
+        const globalContent = await fs.readFile(this.globalSettingsPath, 'utf-8');
+        globalSettings = JSON.parse(globalContent);
+      } catch {
+        globalSettings = defaultSettings;
+      }
+
+      // Read workspace settings
+      let workspaceSettings: SettingsConfig;
+      try {
+        const workspaceContent = await fs.readFile(this.workspaceSettingsPath, 'utf-8');
+        workspaceSettings = JSON.parse(workspaceContent);
+      } catch {
+        workspaceSettings = defaultSettings;
+      }
+
+      // Merge settings: workspace overrides global
+      const mergedSettings: SettingsConfig = {
+        permissions: {
+          allow: [...globalSettings.permissions.allow, ...workspaceSettings.permissions.allow],
+          deny: [...globalSettings.permissions.deny, ...workspaceSettings.permissions.deny]
+        }
+      };
+
+      // Apply workspace priority: workspace settings override global settings
+      const finalAllow = mergedSettings.permissions.allow.filter(
+        permission => !workspaceSettings.permissions.deny.includes(permission)
+      );
+      
+      const finalDeny = mergedSettings.permissions.deny.filter(
+        permission => !workspaceSettings.permissions.allow.includes(permission)
+      );
+
+      return {
+        permissions: {
+          allow: [...new Set(finalAllow)],
+          deny: [...new Set(finalDeny)]
+        }
+      };
+    } catch {
+      return defaultSettings;
+    }
   }
 
   async getAllowedPermissions(): Promise<string[]> {
@@ -44,123 +88,18 @@ export class SettingsService implements SettingsStore {
   async isPermissionAllowed(permissionPattern: string): Promise<boolean> {
     const settings = await this.getSettings();
     
-    // Check if explicitly denied first
+    // Check explicit deny first (including wildcard matching)
     if (this.matchesAnyPattern(permissionPattern, settings.permissions.deny)) {
       return false;
     }
-
-    // Check if explicitly allowed
+    
+    // Check explicit allow (including wildcard matching)
     if (this.matchesAnyPattern(permissionPattern, settings.permissions.allow)) {
       return true;
     }
-
-    // Default to denied if not explicitly allowed
-    return false;
-  }
-
-  getSettingsPath(): string {
-    return this.workspaceSettingsFile;
-  }
-
-  async settingsExists(): Promise<boolean> {
-    try {
-      await fs.access(this.workspaceSettingsFile);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  // SettingsWriter implementation
-
-  async writeSettings(settings: SettingsConfig): Promise<boolean> {
-    try {
-      await this.ensureSettingsDirectory();
-      await fs.writeFile(this.workspaceSettingsFile, JSON.stringify(settings, null, 2));
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  async ensureSettingsDirectory(): Promise<boolean> {
-    try {
-      await fs.mkdir(this.workspaceSettingsDir, { recursive: true });
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  async initializeSettings(): Promise<boolean> {
-    try {
-      await this.ensureSettingsDirectory();
-      const defaultSettings = this.getDefaultSettings();
-      await fs.writeFile(this.workspaceSettingsFile, JSON.stringify(defaultSettings, null, 2));
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  // Private helper methods
-
-  private async loadSettingsFile(filePath: string): Promise<SettingsConfig> {
-    try {
-      const content = await fs.readFile(filePath, 'utf-8');
-      return JSON.parse(content);
-    } catch {
-      return this.getDefaultSettings();
-    }
-  }
-
-  private mergeSettings(globalSettings: SettingsConfig, workspaceSettings: SettingsConfig): SettingsConfig {
-    // Workspace settings have priority
-    // If workspace denies something, it's denied regardless of global
-    // If workspace allows something, it's allowed regardless of global
     
-    const merged: SettingsConfig = {
-      permissions: {
-        allow: [...globalSettings.permissions.allow],
-        deny: [...globalSettings.permissions.deny]
-      }
-    };
-
-    // Add workspace permissions (workspace has priority)
-    for (const permission of workspaceSettings.permissions.allow) {
-      if (!merged.permissions.allow.includes(permission)) {
-        merged.permissions.allow.push(permission);
-      }
-      // Remove from deny list if it exists there
-      merged.permissions.deny = merged.permissions.deny.filter(p => p !== permission);
-    }
-
-    for (const permission of workspaceSettings.permissions.deny) {
-      if (!merged.permissions.deny.includes(permission)) {
-        merged.permissions.deny.push(permission);
-      }
-      // Remove from allow list if it exists there
-      merged.permissions.allow = merged.permissions.allow.filter(p => p !== permission);
-    }
-
-    // Merge other settings (workspace overrides global)
-    const { permissions: _, ...otherGlobalSettings } = globalSettings;
-    const { permissions: __, ...otherWorkspaceSettings } = workspaceSettings;
-
-    return {
-      ...otherGlobalSettings,
-      ...otherWorkspaceSettings,
-      permissions: merged.permissions
-    };
-  }
-
-  private getDefaultSettings(): SettingsConfig {
-    return {
-      permissions: {
-        allow: [],
-        deny: []
-      }
-    };
+    // Default deny for patterns not explicitly allowed
+    return false;
   }
 
   private matchesAnyPattern(permissionPattern: string, patterns: string[]): boolean {
@@ -183,5 +122,53 @@ export class SettingsService implements SettingsStore {
 
     const regex = new RegExp(`^${patternRegex}$`);
     return regex.test(permissionPattern);
+  }
+
+  getSettingsPath(): string {
+    return this.workspaceSettingsPath;
+  }
+
+  async settingsExists(): Promise<boolean> {
+    try {
+      await fs.access(this.workspaceSettingsPath);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  // SettingsWriter implementation
+
+  async writeSettings(settings: SettingsConfig): Promise<boolean> {
+    try {
+      await this.ensureSettingsDirectory();
+      await fs.writeFile(this.workspaceSettingsPath, JSON.stringify(settings, null, 2));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async ensureSettingsDirectory(): Promise<boolean> {
+    try {
+      await fs.mkdir(this.workspaceSettingsDir, { recursive: true });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async initializeSettings(): Promise<boolean> {
+    const dirCreated = await this.ensureSettingsDirectory();
+    if (!dirCreated) return false;
+    
+    const defaultSettings: SettingsConfig = {
+      permissions: {
+        allow: [],
+        deny: []
+      }
+    };
+    
+    return await this.writeSettings(defaultSettings);
   }
 }
