@@ -1,10 +1,10 @@
 import { BehaviorSubject, Observable, Subscription } from 'rxjs';
-import { InitializerStage, InitializerStageType, InitializerStageContext } from '../../interfaces/initializer-stage.js';
-import { Agent, AgentFactory, AgentConfig } from '../../interfaces/agent.js';
-import { Toolbox } from '../../interfaces/toolbox.js';
-import { Result } from '../../shared/result.js';
-import { DomainMessage, DomainOption } from '../../../presentation/view-models/console/console-use-case.js';
-import { InitializationOptions } from '../../interfaces/initializer.js';
+import { InitializerStage, InitializerStageType, InitializerStageContext } from '../../../interfaces/initializer-stage.js';
+import { Agent, AgentFactory, AgentConfig } from '../../../interfaces/agent.js';
+import { Toolbox } from '../../../interfaces/toolbox.js';
+import { Result } from '../../../shared/result.js';
+import { DomainMessage, DomainOption } from '../../../../presentation/view-models/console/console-use-case.js';
+import { InitializationOptions } from '../../../interfaces/initializer.js';
 
 export class DocGenerationInitializerStage implements InitializerStage {
   readonly stageType = InitializerStageType.DocGeneration;
@@ -30,6 +30,14 @@ export class DocGenerationInitializerStage implements InitializerStage {
   private initOptions: InitializationOptions | null = null;
   private toolboxSubscription: Subscription | null = null;
 
+  get messages$(): Observable<DomainMessage> {
+    return this.messagesSubject.asObservable();
+  }
+
+  get options$(): Observable<DomainOption> {
+    return this.optionsSubject.asObservable();
+  }
+
   constructor(
     private readonly agentFactory: AgentFactory,
     private readonly toolbox: Toolbox
@@ -38,14 +46,6 @@ export class DocGenerationInitializerStage implements InitializerStage {
     this.toolboxSubscription = this.toolbox.domainMessages$.subscribe(message => {
       this.messagesSubject.next(message);
     });
-  }
-
-  get messages$(): Observable<DomainMessage> {
-    return this.messagesSubject.asObservable();
-  }
-
-  get options$(): Observable<DomainOption> {
-    return this.optionsSubject.asObservable();
   }
 
   isCompleted(): boolean {

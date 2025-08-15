@@ -1,14 +1,14 @@
 import { BehaviorSubject, Observable } from 'rxjs';
-import { InitializerStage, InitializerStageType, InitializerStageContext } from '../../interfaces/initializer-stage.js';
-import { EmbeddingAgentFactory } from '../../embedded-agents/base-embedding-agent.js';
-import { CredentialReader } from '../../interfaces/credential-store.js';
-import { Result } from '../../shared/result.js';
-import { DomainMessage, DomainOption } from '../../../presentation/view-models/console/console-use-case.js';
+import { InitializerStage, InitializerStageType, InitializerStageContext } from '../../../interfaces/initializer-stage.js';
+import { AgentFactory } from '../../../interfaces/agent.js';
+import { CredentialReader } from '../../../interfaces/credential-store.js';
+import { Result } from '../../../shared/result.js';
+import { DomainMessage, DomainOption } from '../../../../presentation/view-models/console/console-use-case.js';
 
-export class EmbeddingInitializerStage implements InitializerStage {
-  readonly stageType = InitializerStageType.Embedding;
-  readonly name = 'Embedding Configuration';
-  readonly description = 'Configure vector embeddings for semantic search and context retrieval';
+export class SummarizerInitializerStage implements InitializerStage {
+  readonly stageType = InitializerStageType.Summarizer;
+  readonly name = 'Summarizer Configuration';
+  readonly description = 'Configure summarizer for conversation context management';
 
   private readonly messagesSubject = new BehaviorSubject<DomainMessage>({ 
     id: '1', 
@@ -23,16 +23,12 @@ export class EmbeddingInitializerStage implements InitializerStage {
   });
 
   private completed = false;
-  private currentStep: 'use-embedding' | 'model-selection' | 'api-key' | 'completed' = 'use-embedding';
-  private useEmbedding = false;
+  private currentStep: 'use-summarizer' | 'model-selection' | 'api-key' | 'completed' = 'use-summarizer';
+  private useSummarizer = false;
   private selectedModel: string | null = null;
   private selectedProvider: string | null = null;
   private apiKey: string | null = null;
-
-  constructor(
-    private readonly embeddingAgentFactory: EmbeddingAgentFactory,
-    private readonly credentialReader: CredentialReader
-  ) {}
+  private context: InitializerStageContext | null = null;
 
   get messages$(): Observable<DomainMessage> {
     return this.messagesSubject.asObservable();
@@ -42,19 +38,23 @@ export class EmbeddingInitializerStage implements InitializerStage {
     return this.optionsSubject.asObservable();
   }
 
+  constructor(
+    private readonly agentFactory: AgentFactory,
+    private readonly credentialReader: CredentialReader
+  ) {}
+
   isCompleted(): boolean {
     return this.completed;
   }
 
   canProceedToNext(): boolean {
-    // Can always proceed to next stage - embeddings are optional
-    // If disabled: completed = true, no embedding configured
-    // If enabled: completed = true when model and API key are set
-    return this.completed || this.currentStep === 'use-embedding';
+    // Can always proceed to next stage - summarizer is optional
+    return this.completed || this.currentStep === 'use-summarizer';
   }
 
-  start(_context: InitializerStageContext): Result<void, string> {
-    this.showEmbeddingPrompt();
+  start(context: InitializerStageContext): Result<void, string> {
+    this.context = context;
+    this.showSummarizerPrompt();
     return Result.success(undefined);
   }
 
@@ -69,8 +69,8 @@ export class EmbeddingInitializerStage implements InitializerStage {
 
   processOptionSelection(optionIndex: number): Result<void, string> {
     switch (this.currentStep) {
-      case 'use-embedding':
-        return this.handleEmbeddingChoice(optionIndex);
+      case 'use-summarizer':
+        return this.handleSummarizerChoice(optionIndex);
       case 'model-selection':
         return this.handleModelSelection(optionIndex);
       default:
@@ -79,12 +79,12 @@ export class EmbeddingInitializerStage implements InitializerStage {
   }
 
   getCollectedData(): Record<string, unknown> {
-    if (!this.useEmbedding) {
-      return { embedding: null };
+    if (!this.useSummarizer) {
+      return { summarizer: null };
     }
 
     return {
-      embedding: {
+      summarizer: {
         provider: this.selectedProvider,
         model: this.selectedModel,
         apiKey: this.apiKey
@@ -94,41 +94,42 @@ export class EmbeddingInitializerStage implements InitializerStage {
 
   reset(): void {
     this.completed = false;
-    this.currentStep = 'use-embedding';
-    this.useEmbedding = false;
+    this.currentStep = 'use-summarizer';
+    this.useSummarizer = false;
     this.selectedModel = null;
     this.selectedProvider = null;
     this.apiKey = null;
+    this.context = null;
   }
 
-  private showEmbeddingPrompt(): void {
+  private showSummarizerPrompt(): void {
     this.messagesSubject.next({
       id: Date.now().toString(),
       type: 'system',
-      content: 'Do you want to enable vector embeddings for semantic search and context retrieval?\n\nEmbeddings allow FlowCode to:\n- Find relevant past conversations\n- Understand context better\n- Provide more accurate responses',
+      content: 'Do you want to enable conversation summarizer for context management?\n\nThe summarizer helps maintain conversation context by creating summaries of past interactions when the context window gets large.',
       timestamp: new Date()
     });
 
     this.optionsSubject.next({
-      message: 'Enable embeddings?',
-      choices: ['Yes, enable embeddings', 'No, disable embeddings'],
+      message: 'Enable summarizer?',
+      choices: ['Yes, enable summarizer', 'No, disable summarizer'],
       defaultIndex: 0
     });
   }
 
-  private handleEmbeddingChoice(optionIndex: number): Result<void, string> {
+  private handleSummarizerChoice(optionIndex: number): Result<void, string> {
     // Validate option index (should be 0 for "Yes" or 1 for "No")
     if (optionIndex !== 0 && optionIndex !== 1) {
-      return Result.failure('Option selection not supported at this step.');
+      return Result.failure('Invalid model selection.');
     }
 
-    this.useEmbedding = optionIndex === 0;
+    this.useSummarizer = optionIndex === 0;
 
-    if (this.useEmbedding) {
+    if (this.useSummarizer) {
       this.messagesSubject.next({
         id: Date.now().toString(),
         type: 'system',
-        content: 'Embeddings enabled. Now select a model for generating embeddings.',
+        content: 'Summarizer enabled. Now select a model for the summarizer.',
         timestamp: new Date()
       });
       this.showModelSelection();
@@ -141,36 +142,24 @@ export class EmbeddingInitializerStage implements InitializerStage {
 
   private showModelSelection(): void {
     this.currentStep = 'model-selection';
-    const models = this.embeddingAgentFactory.getModels();
+    const models = this.agentFactory.getModels();
     
-    if (models.length === 0) {
-      this.messagesSubject.next({
-        id: Date.now().toString(),
-        type: 'system',
-        content: 'No embedding models available. Disabling embeddings.',
-        timestamp: new Date()
-      });
-      this.useEmbedding = false;
-      this.completeStage();
-      return;
-    }
-
     this.messagesSubject.next({
       id: Date.now().toString(),
       type: 'system',
-      content: 'Select a model for embeddings (recommended: cost-effective models):',
+      content: 'Select a model for the summarizer (recommended: cost-effective models):',
       timestamp: new Date()
     });
 
     this.optionsSubject.next({
-      message: 'Available embedding models:',
+      message: 'Available models:',
       choices: models.map(model => `${model.alias} (${model.provider})`),
       defaultIndex: 0
     });
   }
 
   private handleModelSelection(optionIndex: number): Result<void, string> {
-    const models = this.embeddingAgentFactory.getModels();
+    const models = this.agentFactory.getModels();
     if (optionIndex < 0 || optionIndex >= models.length) {
       return Result.failure('Invalid model selection.');
     }
@@ -244,9 +233,9 @@ export class EmbeddingInitializerStage implements InitializerStage {
     this.currentStep = 'completed';
     this.completed = true;
 
-    const message = this.useEmbedding 
-      ? `✓ Embeddings configured: ${this.selectedModel} (${this.selectedProvider})`
-      : '✓ Embeddings disabled';
+    const message = this.useSummarizer 
+      ? `✓ Summarizer configured: ${this.selectedModel} (${this.selectedProvider})`
+      : '✓ Summarizer disabled';
 
     this.messagesSubject.next({
       id: Date.now().toString(),

@@ -1,14 +1,16 @@
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
-import { Initializer, InitializationState, InitializationStep } from '../interfaces/initializer.js';
-import { InitializerStage, InitializerStageFactory, InitializerStageType, InitializerStageContext } from '../interfaces/initializer-stage.js';
-import { ConfigWriter } from '../interfaces/config-store.js';
-import { SettingsWriter } from '../interfaces/settings-store.js';
-import { CredentialWriter } from '../interfaces/credential-store.js';
-import { Result } from '../shared/result.js';
-import { DomainMessage, DomainOption } from '../../presentation/view-models/console/console-use-case.js';
+import { InitializationState } from '../../interfaces/initializer.js';
+import { InitializerStage, InitializerStageFactory, InitializerStageType, InitializerStageContext } from '../../interfaces/initializer-stage.js';
+import { ConfigWriter } from '../../interfaces/config-store.js';
+import { SettingsWriter } from '../../interfaces/settings-store.js';
+import { CredentialWriter } from '../../interfaces/credential-store.js';
+import { Result } from '../../shared/result.js';
+import { DomainMessage, DomainOption, CommandDefinition } from '../../../presentation/view-models/console/console-use-case.js';
+import { CommandProvider, CommandResult, InteractiveCommandCapabilities } from '../../interfaces/command-provider.js';
 import * as path from 'path';
 
-export class InitializerService implements Initializer {
+export class InitializerCommandHandler implements CommandProvider, InteractiveCommandCapabilities {
+  // Private properties
   private readonly messagesSubject = new BehaviorSubject<DomainMessage>({ 
     id: '1', 
     type: 'system', 
@@ -21,13 +23,11 @@ export class InitializerService implements Initializer {
     defaultIndex: 0 
   });
   private readonly completionSubject = new Subject<{ state: InitializationState; error?: string }>();
-
   private currentState = InitializationState.NotStarted;
   private currentStageIndex = 0;
   private currentStage: InitializerStage | null = null;
   private context: InitializerStageContext;
   private readonly collectedData = new Map<string, unknown>();
-  
   private readonly stageOrder: InitializerStageType[] = [
     InitializerStageType.TaskmasterModel,
     InitializerStageType.Worker,
@@ -35,6 +35,19 @@ export class InitializerService implements Initializer {
     InitializerStageType.Embedding,
     InitializerStageType.DocGeneration
   ];
+
+  // Public getters
+  get messages$(): Observable<DomainMessage> {
+    return this.messagesSubject.asObservable();
+  }
+
+  get options$(): Observable<DomainOption> {
+    return this.optionsSubject.asObservable();
+  }
+
+  get interactive(): InteractiveCommandCapabilities {
+    return this;
+  }
 
   constructor(
     private readonly rootDirectory: string,
@@ -50,23 +63,100 @@ export class InitializerService implements Initializer {
     };
   }
 
-  get messages$(): Observable<DomainMessage> {
-    return this.messagesSubject.asObservable();
+  // Public methods - CommandProvider interface
+  async execute(command: string, _args: string[]): Promise<CommandResult> {
+    if (command !== 'init') {
+      return {
+        success: false,
+        error: 'Initializer service only supports "init" command'
+      };
+    }
+
+    if (this.isCurrentDirectoryInitialized()) {
+      return {
+        success: false,
+        error: 'FlowCode project is already initialized in this directory.'
+      };
+    }
+
+    const result = this.start();
+    if (!result.isSuccess) {
+      return {
+        success: false,
+        error: `Failed to start initialization: ${result.error}`
+      };
+    }
+
+    return {
+      success: true,
+      message: 'FlowCode initialization started. Follow the prompts to configure your project.'
+    };
   }
 
-  get options$(): Observable<DomainOption> {
-    return this.optionsSubject.asObservable();
+  getCommands(): CommandDefinition[] {
+    return [
+      {
+        name: 'init',
+        description: 'Initialize FlowCode project in current directory'
+      }
+    ];
   }
 
-  get completion$(): Observable<{ state: InitializationState; error?: string }> {
-    return this.completionSubject.asObservable();
+  supports(command: string): boolean {
+    return command === 'init';
   }
 
-  getState(): InitializationState {
-    return this.currentState;
+  // Public methods - InteractiveCommandCapabilities interface
+  processResponse(response: string): Result<void, string> {
+    if (!this.currentStage) {
+      return Result.failure('No active stage to process response.');
+    }
+
+    const result = this.currentStage.processResponse(response);
+    if (result.isSuccess && this.currentStage.isCompleted()) {
+      this.handleStageCompletion();
+    }
+
+    return result;
   }
 
-  start(): Result<void, string> {
+  processOptionSelection(optionIndex: number): Result<void, string> {
+    if (!this.currentStage) {
+      return Result.failure('No active stage to process option selection.');
+    }
+
+    const result = this.currentStage.processOptionSelection(optionIndex);
+    if (result.isSuccess && this.currentStage.isCompleted()) {
+      this.handleStageCompletion();
+    }
+
+    return result;
+  }
+
+  isInteractive(): boolean {
+    return this.currentState === InitializationState.InProgress;
+  }
+
+  resetInteractiveState(): void {
+    this.reset();
+  }
+
+  reset(): void {
+    this.currentState = InitializationState.NotStarted;
+    this.currentStageIndex = 0;
+    this.currentStage = null;
+    this.collectedData.clear();
+    
+    this.messagesSubject.next({
+      id: Date.now().toString(),
+      type: 'system',
+      content: 'FlowCode initialization reset',
+      timestamp: new Date()
+    });
+  }
+
+  // Private methods
+  private start(): Result<void, string> {
     if (this.currentState !== InitializationState.NotStarted) {
       return Result.failure('Initialization already in progress or completed.');
     }
@@ -94,64 +184,7 @@ export class InitializerService implements Initializer {
     return Result.success(undefined);
   }
 
-  processResponse(response: string): Result<void, string> {
-    if (!this.currentStage) {
-      return Result.failure('No active stage to process response.');
-    }
-
-    const result = this.currentStage.processResponse(response);
-    if (result.isSuccess && this.currentStage.isCompleted()) {
-      this.handleStageCompletion();
-    }
-
-    return result;
-  }
-
-  processOptionSelection(optionIndex: number): Result<void, string> {
-    if (!this.currentStage) {
-      return Result.failure('No active stage to process option selection.');
-    }
-
-    const result = this.currentStage.processOptionSelection(optionIndex);
-    if (result.isSuccess && this.currentStage.isCompleted()) {
-      this.handleStageCompletion();
-    }
-
-    return result;
-  }
-
-  async createProjectStructure(): Promise<Result<void, string>> {
-    try {
-      await this.settingsWriter.ensureSettingsDirectory();
-      
-      this.messagesSubject.next({
-        id: Date.now().toString(),
-        type: 'system',
-        content: '✓ Created .flowcode directory structure',
-        timestamp: new Date()
-      });
-
-      return Result.success(undefined);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      return Result.failure(`Failed to create project structure: ${errorMessage}`);
-    }
-  }
-
-  async generateMarkdownFiles(_options?: unknown): Promise<Result<void, string>> {
-    // Documentation generation is handled by DocGeneration stage; service method is a no-op placeholder.
-    return Result.success(undefined);
-  }
-
-  getInitializationSteps(): InitializationStep[] {
-    return this.stageOrder.map((stageType, index) => ({
-      name: this.getStageDisplayName(stageType),
-      description: this.getStageDescription(stageType),
-      completed: index < this.currentStageIndex || (index === this.currentStageIndex && (this.currentStage?.isCompleted() || false))
-    }));
-  }
-
-  validateCurrentDirectory(): Result<void, string> {
+  private validateCurrentDirectory(): Result<void, string> {
     try {
       if (!this.rootDirectory) {
         return Result.failure('Root directory not specified.');
@@ -162,27 +195,13 @@ export class InitializerService implements Initializer {
     }
   }
 
-  isCurrentDirectoryInitialized(): boolean {
+  protected isCurrentDirectoryInitialized(): boolean {
     try {
       const fs = require('fs');
       return fs.existsSync(this.context.flowcodeDirectory);
     } catch {
       return false;
     }
-  }
-
-  reset(): void {
-    this.currentState = InitializationState.NotStarted;
-    this.currentStageIndex = 0;
-    this.currentStage = null;
-    this.collectedData.clear();
-    
-    this.messagesSubject.next({
-      id: Date.now().toString(),
-      type: 'system',
-      content: 'FlowCode initialization reset',
-      timestamp: new Date()
-    });
   }
 
   private startNextStage(): void {
@@ -201,7 +220,6 @@ export class InitializerService implements Initializer {
 
     this.currentStage = stageResult.value;
     
-    // Subscribe to stage messages and options
     this.currentStage.messages$.subscribe(message => {
       this.messagesSubject.next(message);
     });
@@ -210,7 +228,6 @@ export class InitializerService implements Initializer {
       this.optionsSubject.next(option);
     });
 
-    // Start the stage
     const startResult = this.currentStage.start(this.context);
     if (!startResult.isSuccess) {
       this.failInitialization(`Failed to start stage ${stageType}: ${startResult.error}`);
@@ -230,11 +247,9 @@ export class InitializerService implements Initializer {
       return;
     }
 
-    // Collect data from completed stage
     const stageData = this.currentStage.getCollectedData();
     const stageKey = this.stageOrder[this.currentStageIndex];
     
-    // Store stage data with appropriate keys
     Object.entries(stageData).forEach(([key, value]) => {
       if (key === 'workers' || key === 'summarizer' || key === 'embedding' || key === 'generateMarkdownFiles') {
         this.collectedData.set(key, value);
@@ -253,7 +268,6 @@ export class InitializerService implements Initializer {
     this.currentStageIndex++;
     this.currentStage = null;
     
-    // Small delay before starting next stage
     setTimeout(() => this.startNextStage(), 500);
   }
 
@@ -266,17 +280,13 @@ export class InitializerService implements Initializer {
     });
 
     try {
-      // Create project structure
       const structureResult = await this.createProjectStructure();
       if (!structureResult.isSuccess) {
         this.failInitialization(`Failed to create project structure: ${structureResult.error}`);
         return;
       }
 
-      // Generate configuration files
       await this.generateConfigurationFiles();
-
-      // Save credentials
       await this.saveCredentials();
 
       this.currentState = InitializationState.Completed;
@@ -295,12 +305,28 @@ export class InitializerService implements Initializer {
     }
   }
 
+  private async createProjectStructure(): Promise<Result<void, string>> {
+    try {
+      await this.settingsWriter.ensureSettingsDirectory();
+      
+      this.messagesSubject.next({
+        id: Date.now().toString(),
+        type: 'system',
+        content: '✓ Created .flowcode directory structure',
+        timestamp: new Date()
+      });
+
+      return Result.success(undefined);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return Result.failure(`Failed to create project structure: ${errorMessage}`);
+    }
+  }
+
   private async generateConfigurationFiles(): Promise<void> {
-    // Generate config.json
     const config = this.buildFlowCodeConfig();
     await this.configWriter.writeConfig(config);
 
-    // Generate settings.json
     const settings = this.buildSettingsConfig();
     await this.settingsWriter.writeSettings(settings);
 
@@ -314,11 +340,8 @@ export class InitializerService implements Initializer {
 
   private async saveCredentials(): Promise<void> {
     const credentials: any = {};
-    
-    // Extract and save unique credentials
     const savedProviders = new Set<string>();
 
-    // Taskmaster credentials
     const taskmasterProvider = this.collectedData.get('taskmaster-model-provider') as string;
     const taskmasterApiKey = this.collectedData.get('taskmaster-model-apiKey') as string;
     if (taskmasterProvider && taskmasterApiKey && !savedProviders.has(taskmasterProvider)) {
@@ -329,7 +352,6 @@ export class InitializerService implements Initializer {
       savedProviders.add(taskmasterProvider);
     }
 
-    // Worker credentials
     const workers = this.collectedData.get('workers') as any[];
     if (workers) {
       for (const worker of workers) {
@@ -344,7 +366,6 @@ export class InitializerService implements Initializer {
       }
     }
 
-    // Summarizer credentials
     const summarizer = this.collectedData.get('summarizer') as any;
     if (summarizer?.apiKey && !savedProviders.has(summarizer.provider)) {
       credentials[summarizer.provider] = {
@@ -354,7 +375,6 @@ export class InitializerService implements Initializer {
       savedProviders.add(summarizer.provider);
     }
 
-    // Embedding credentials
     const embedding = this.collectedData.get('embedding') as any;
     if (embedding?.apiKey && !savedProviders.has(embedding.provider)) {
       credentials[embedding.provider] = {
@@ -450,27 +470,5 @@ export class InitializerService implements Initializer {
     });
 
     this.completionSubject.next({ state: InitializationState.Failed, error });
-  }
-
-  private getStageDisplayName(stageType: InitializerStageType): string {
-    switch (stageType) {
-      case InitializerStageType.TaskmasterModel: return 'Taskmaster Model';
-      case InitializerStageType.Worker: return 'Worker Configuration';
-      case InitializerStageType.Summarizer: return 'Summarizer Setup';
-      case InitializerStageType.Embedding: return 'Embedding Configuration';
-      case InitializerStageType.DocGeneration: return 'Documentation Generation';
-      default: return stageType;
-    }
-  }
-
-  private getStageDescription(stageType: InitializerStageType): string {
-    switch (stageType) {
-      case InitializerStageType.TaskmasterModel: return 'Configure the main AI agent model';
-      case InitializerStageType.Worker: return 'Set up specialized worker agents';
-      case InitializerStageType.Summarizer: return 'Configure conversation summarization';
-      case InitializerStageType.Embedding: return 'Set up vector embeddings for context';
-      case InitializerStageType.DocGeneration: return 'Generate documentation and prompts';
-      default: return 'Unknown stage';
-    }
   }
 }

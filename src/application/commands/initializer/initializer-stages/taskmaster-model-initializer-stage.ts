@@ -1,9 +1,9 @@
 import { BehaviorSubject, Observable } from 'rxjs';
-import { InitializerStage, InitializerStageType, InitializerStageContext } from '../../interfaces/initializer-stage.js';
-import { AgentFactory } from '../../interfaces/agent.js';
-import { CredentialReader } from '../../interfaces/credential-store.js';
-import { Result } from '../../shared/result.js';
-import { DomainMessage, DomainOption } from '../../../presentation/view-models/console/console-use-case.js';
+import { InitializerStage, InitializerStageType, InitializerStageContext } from '../../../interfaces/initializer-stage.js';
+import { AgentFactory } from '../../../interfaces/agent.js';
+import { CredentialReader } from '../../../interfaces/credential-store.js';
+import { Result } from '../../../shared/result.js';
+import { DomainMessage, DomainOption } from '../../../../presentation/view-models/console/console-use-case.js';
 
 export class TaskmasterModelInitializerStage implements InitializerStage {
   readonly stageType = InitializerStageType.TaskmasterModel;
@@ -29,11 +29,6 @@ export class TaskmasterModelInitializerStage implements InitializerStage {
   private apiKey: string | null = null;
   private context: InitializerStageContext | null = null;
 
-  constructor(
-    private readonly agentFactory: AgentFactory,
-    private readonly credentialReader: CredentialReader
-  ) {}
-
   get messages$(): Observable<DomainMessage> {
     return this.messagesSubject.asObservable();
   }
@@ -41,6 +36,11 @@ export class TaskmasterModelInitializerStage implements InitializerStage {
   get options$(): Observable<DomainOption> {
     return this.optionsSubject.asObservable();
   }
+
+  constructor(
+    private readonly agentFactory: AgentFactory,
+    private readonly credentialReader: CredentialReader
+  ) {}
 
   isCompleted(): boolean {
     return this.completed;
