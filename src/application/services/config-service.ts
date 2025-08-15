@@ -1,6 +1,6 @@
+import { ConfigStore, FlowCodeConfig, TaskmasterConfig, SummarizerConfig, EmbeddingConfig, WorkerConfig } from '../interfaces/config-store.js';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { ConfigStore, FlowCodeConfig, ProjectConfig, TaskmasterConfig, SummarizerConfig, EmbeddingConfig, WorkerConfig } from '../interfaces/config-store.js';
 
 /**
  * Configuration service implementation for FlowCode config.json management
@@ -23,11 +23,6 @@ export class ConfigService implements ConfigStore {
     } catch (error) {
       throw new Error(`Failed to read config file: ${error instanceof Error ? error.message : String(error)}`);
     }
-  }
-
-  async getProjectConfig(): Promise<ProjectConfig> {
-    const config = await this.getConfig();
-    return config.project;
   }
 
   async getTaskmasterConfig(): Promise<TaskmasterConfig> {
@@ -72,8 +67,7 @@ export class ConfigService implements ConfigStore {
     try {
       await fs.access(this.configFile);
       return true;
-    } catch (error) {
-      console.error('Error checking config file existence:', error);
+    } catch {
       return false;
     }
   }
@@ -90,16 +84,6 @@ export class ConfigService implements ConfigStore {
       await fs.writeFile(this.configFile, JSON.stringify(config, null, 2));
     } catch (error) {
       throw new Error(`Failed to write config file: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
-  async updateProjectConfig(projectConfig: ProjectConfig): Promise<void> {
-    try {
-      const config = await this.getConfig();
-      config.project = projectConfig;
-      await this.writeConfig(config);
-    } catch (error) {
-      throw new Error(`Failed to update project config: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 

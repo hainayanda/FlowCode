@@ -2,11 +2,6 @@
  * Configuration interfaces for FlowCode config.json management
  */
 
-export interface ProjectConfig {
-  name: string;
-  description: string;
-}
-
 export interface ModelConfig {
   model: string;
   temperature: number;
@@ -18,8 +13,6 @@ export interface TaskmasterConfig extends ModelConfig {
 }
 
 export interface SummarizerConfig extends ModelConfig {
-  summarize_threshold: number;
-  preserve_recent_messages: number;
   enabled: boolean;
 }
 
@@ -36,7 +29,6 @@ export interface WorkerConfig extends ModelConfig {
 
 export interface FlowCodeConfig {
   version: string;
-  project: ProjectConfig;
   taskmaster: TaskmasterConfig;
   summarizer: SummarizerConfig;
   embedding: EmbeddingConfig;
@@ -48,7 +40,6 @@ export interface FlowCodeConfig {
  */
 export interface ConfigReader {
   getConfig(): Promise<FlowCodeConfig>;
-  getProjectConfig(): Promise<ProjectConfig>;
   getTaskmasterConfig(): Promise<TaskmasterConfig>;
   getSummarizerConfig(): Promise<SummarizerConfig>;
   getEmbeddingConfig(): Promise<EmbeddingConfig>;
@@ -64,7 +55,6 @@ export interface ConfigReader {
  */
 export interface ConfigWriter {
   writeConfig(config: FlowCodeConfig): Promise<void>;
-  updateProjectConfig(projectConfig: ProjectConfig): Promise<void>;
   updateTaskmasterConfig(taskmasterConfig: TaskmasterConfig): Promise<void>;
   updateSummarizerConfig(summarizerConfig: SummarizerConfig): Promise<void>;
   updateEmbeddingConfig(embeddingConfig: EmbeddingConfig): Promise<void>;

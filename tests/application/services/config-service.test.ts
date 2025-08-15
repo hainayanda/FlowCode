@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ConfigService } from '../../../src/application/services/config-service.js';
-import { FlowCodeConfig, ProjectConfig, TaskmasterConfig, WorkerConfig } from '../../../src/application/interfaces/config-store.js';
+import { FlowCodeConfig, TaskmasterConfig, WorkerConfig } from '../../../src/application/interfaces/config-store.js';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
@@ -17,21 +17,17 @@ describe('ConfigService', () => {
   let configFile: string;
 
   const mockConfig: FlowCodeConfig = {
-    project: {
-      name: 'Test Project',
-      version: '1.0.0',
-      description: 'A test project'
-    },
+    version: '1.0.0',
     taskmaster: {
       provider: 'openai',
       model: 'gpt-4',
       temperature: 0.7,
-      maxTokens: 4096
     },
     summarizer: {
       provider: 'openai',
       model: 'gpt-4',
-      enabled: true
+      enabled: true,
+      temperature: 0.7,
     },
     embedding: {
       provider: 'openai',
@@ -44,14 +40,14 @@ describe('ConfigService', () => {
         model: 'gpt-4',
         temperature: 0.5,
         enabled: true,
-        maxTokens: 2048
+        description: 'Code generation worker'
       },
       'test-worker': {
         provider: 'anthropic',
         model: 'claude-3',
         temperature: 0.3,
         enabled: false,
-        maxTokens: 1024
+        description: 'Test generation worker'
       }
     }
   };
@@ -104,16 +100,6 @@ describe('ConfigService', () => {
       mockFs.readFile.mockRejectedValue(new Error('File not found'));
 
       await expect(configService.getConfig()).rejects.toThrow('Failed to read config file: File not found');
-    });
-  });
-
-  describe('getProjectConfig', () => {
-    it('should return project config section', async () => {
-      mockFs.readFile.mockResolvedValue(JSON.stringify(mockConfig));
-
-      const result = await configService.getProjectConfig();
-
-      expect(result).toEqual(mockConfig.project);
     });
   });
 
@@ -198,15 +184,12 @@ describe('ConfigService', () => {
     });
 
     it('should return false when file does not exist', async () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       mockFs.access.mockRejectedValue(new Error('File not found'));
 
       const result = await configService.configExists();
 
       expect(result).toBe(false);
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Error checking config file existence:', expect.any(Error));
-
-      consoleErrorSpy.mockRestore();
+      expect(mockFs.access).toHaveBeenCalledWith(expect.stringContaining('config.json'));
     });
   });
 
@@ -240,39 +223,12 @@ describe('ConfigService', () => {
     });
   });
 
-  describe('updateProjectConfig', () => {
-    it('should update project config section', async () => {
-      const updatedProjectConfig: ProjectConfig = {
-        name: 'Updated Project',
-        version: '2.0.0',
-        description: 'An updated project'
-      };
-
-      mockFs.readFile.mockResolvedValue(JSON.stringify(mockConfig));
-      mockFs.mkdir.mockResolvedValue(undefined);
-      mockFs.writeFile.mockResolvedValue(undefined);
-
-      await configService.updateProjectConfig(updatedProjectConfig);
-
-      const expectedConfig = {
-        ...mockConfig,
-        project: updatedProjectConfig
-      };
-
-      expect(mockFs.writeFile).toHaveBeenCalledWith(
-        configFile,
-        JSON.stringify(expectedConfig, null, 2)
-      );
-    });
-  });
-
   describe('updateTaskmasterConfig', () => {
     it('should update taskmaster config section', async () => {
       const updatedTaskmasterConfig: TaskmasterConfig = {
         provider: 'anthropic',
         model: 'claude-3',
         temperature: 0.5,
-        maxTokens: 2048
       };
 
       mockFs.readFile.mockResolvedValue(JSON.stringify(mockConfig));
@@ -300,7 +256,7 @@ describe('ConfigService', () => {
         model: 'gemini-pro',
         temperature: 0.8,
         enabled: true,
-        maxTokens: 3072
+        description: ''
       };
 
       mockFs.readFile.mockResolvedValue(JSON.stringify(mockConfig));
