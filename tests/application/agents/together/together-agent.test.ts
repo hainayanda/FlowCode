@@ -36,7 +36,7 @@ describe('TogetherAgent', () => {
     mockClient = new MockOpenAIClient();
     
     // Mock OpenAI constructor to return our mock client
-    const OpenAI = vi.mocked(await import('openai')).default;
+    const OpenAI = vi.mocked(await import('openai')).default as any;
     OpenAI.mockImplementation(() => mockClient as any);
     
     agent = new TogetherAgent(createTogetherConfig(), toolbox);

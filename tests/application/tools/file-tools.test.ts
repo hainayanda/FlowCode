@@ -1,17 +1,41 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { FileTools } from '../../../src/application/tools/file-tools.js';
+import { EmbeddingService } from '../../../src/application/interfaces/embedding-service.js';
 import * as fs from 'fs/promises';
 
 // Mock fs module
 vi.mock('fs/promises');
 const mockFs = vi.mocked(fs);
 
+/**
+ * Mock EmbeddingService for testing
+ */
+class MockEmbeddingService implements EmbeddingService {
+  async generateEmbedding(_text: string): Promise<number[]> {
+    return new Array(1536).fill(0);
+  }
+
+  async isAvailable(): Promise<boolean> {
+    return true;
+  }
+
+  getEmbeddingDimension(): number {
+    return 1536;
+  }
+
+  async validateConfig(): Promise<boolean> {
+    return true;
+  }
+}
+
 describe('FileTools', () => {
   let fileTools: FileTools;
+  let mockEmbeddingService: MockEmbeddingService;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    fileTools = new FileTools();
+    mockEmbeddingService = new MockEmbeddingService();
+    fileTools = new FileTools(mockEmbeddingService);
   });
 
   afterEach(() => {

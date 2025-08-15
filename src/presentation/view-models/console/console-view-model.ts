@@ -11,6 +11,7 @@ import { ConsoleUseCase, DomainMessage, DomainOption, CommandDefinition } from '
  * Depends only on router and use case, following dependency injection
  */
 export class ConsoleViewModel implements ConsoleViewState, ConsoleViewListener {
+  // Private properties
   private readonly messageSubject = new Subject<ConsoleMessage>();
   private readonly inputTextSubject = new BehaviorSubject<string>('');
   private readonly optionSubject = new Subject<Option>();
@@ -19,16 +20,7 @@ export class ConsoleViewModel implements ConsoleViewState, ConsoleViewListener {
   private allowInput = true;
   private readonly availableCommands: CommandDefinition[];
 
-  constructor(
-    private readonly router: ConsoleRouter,
-    private readonly useCase: ConsoleUseCase
-  ) {
-    this.availableCommands = this.useCase.getAvailableCommands();
-    this.setupMessageSubscription();
-    this.setupOptionSubscription();
-  }
-
-  // ConsoleViewState implementation
+  // Public getters - ConsoleViewState implementation
   get messages$(): Observable<ConsoleMessage> {
     return this.messageSubject.asObservable();
   }
@@ -41,7 +33,16 @@ export class ConsoleViewModel implements ConsoleViewState, ConsoleViewListener {
     return this.optionSubject.asObservable();
   }
 
-  // ConsoleViewListener implementation
+  constructor(
+    private readonly router: ConsoleRouter,
+    private readonly useCase: ConsoleUseCase
+  ) {
+    this.availableCommands = this.useCase.getAvailableCommands();
+    this.setupMessageSubscription();
+    this.setupOptionSubscription();
+  }
+
+  // Public methods - ConsoleViewListener implementation
   async onUserInput(input: string): Promise<void> {
     if (!this.allowInput || !input.trim()) return;
 
@@ -93,6 +94,20 @@ export class ConsoleViewModel implements ConsoleViewState, ConsoleViewListener {
     this.router.exit();
   }
 
+  /**
+   * Handle option selection - called when user selects an option
+   */
+  async selectOption(selectedIndex: number): Promise<void> {
+    try {
+      await this.useCase.respondToChoice(selectedIndex);
+      
+      // Re-enable input after option selection
+      this.allowInput = true;
+    } catch (error) {
+      this.handleError(error);
+    }
+  }
+
   // Private methods
   private setupMessageSubscription(): void {
     this.useCase.messages$
@@ -124,20 +139,6 @@ export class ConsoleViewModel implements ConsoleViewState, ConsoleViewListener {
       .subscribe((option: Option) => {
         this.optionSubject.next(option);
       });
-  }
-
-  /**
-   * Handle option selection - called when user selects an option
-   */
-  async selectOption(selectedIndex: number): Promise<void> {
-    try {
-      await this.useCase.respondToChoice(selectedIndex);
-      
-      // Re-enable input after option selection
-      this.allowInput = true;
-    } catch (error) {
-      this.handleError(error);
-    }
   }
 
   private transformToConsoleMessage(domainMessage: DomainMessage): ConsoleMessage {
@@ -202,12 +203,7 @@ export class ConsoleViewModel implements ConsoleViewState, ConsoleViewListener {
           domainMessage.id,
           'system',
           choiceText,
-          domainMessage.timestamp,
-          {
-            choices: domainMessage.metadata.choices,
-            selectedIndex: domainMessage.metadata.selectedIndex,
-            prompt: domainMessage.metadata.prompt
-          }
+          domainMessage.timestamp
         );
 
       default:

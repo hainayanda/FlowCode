@@ -6,9 +6,7 @@ import { DomainMessage } from '../../../../src/presentation/view-models/console/
  * Mock MessageStorePublisher for testing
  */
 export class MockMessageStorePublisher implements MessageStorePublisher {
-  private readonly messageHistorySubject = new BehaviorSubject<DomainMessage[]>([]);
-  private messages: DomainMessage[] = [];
-  
+
   public initializeCalled = false;
   public storeMessageCalled = false;
   public storeMessagesCalled = false;
@@ -19,6 +17,9 @@ export class MockMessageStorePublisher implements MessageStorePublisher {
   public lastStoredMessages: DomainMessage[] = [];
   public lastUpdateId = '';
   public lastUpdateData: Partial<DomainMessage> = {};
+
+  private readonly messageHistorySubject = new BehaviorSubject<DomainMessage[]>([]);
+  private messages: DomainMessage[] = [];
 
   get messageHistory$() {
     return this.messageHistorySubject.asObservable();
@@ -130,7 +131,6 @@ export class MockMessageStorePublisher implements MessageStorePublisher {
  * Mock MessageStore for testing
  */
 export class MockMessageStore implements MessageStore {
-  private messages: DomainMessage[] = [];
   
   public initializeCalled = false;
   public storeMessageCalled = false;
@@ -143,6 +143,8 @@ export class MockMessageStore implements MessageStore {
   public lastStoredMessages: DomainMessage[] = [];
   public lastUpdateId = '';
   public lastUpdateData: Partial<DomainMessage> = {};
+  
+  private messages: DomainMessage[] = [];
 
   async initialize(): Promise<void> {
     this.initializeCalled = true;

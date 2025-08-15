@@ -28,7 +28,8 @@ class MockMessageReader implements MessageReader {
       id: 'msg2',
       type: 'ai-response',
       content: 'I can help you implement authentication using JWT tokens',
-      timestamp: new Date('2024-01-01T10:01:00Z')
+      timestamp: new Date('2024-01-01T10:01:00Z'),
+      metadata: { workerId: 'test-worker' }
     },
     {
       id: 'msg3',
@@ -93,12 +94,20 @@ class MockSummarizerAgent implements SummarizerAgent {
 }
 
 class MockEmbeddingService implements EmbeddingService {
-  async generateEmbedding(text: string): Promise<number[]> {
+  async generateEmbedding(_text: string): Promise<number[]> {
     return [0.1, 0.2, 0.3];
   }
 
   async generateEmbeddings(texts: string[]): Promise<number[][]> {
     return texts.map(() => [0.1, 0.2, 0.3]);
+  }
+
+  async isAvailable(): Promise<boolean> {
+    return true;
+  }
+
+  getEmbeddingDimension(): number {
+    return 3;
   }
 }
 

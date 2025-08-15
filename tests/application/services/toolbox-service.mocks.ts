@@ -5,6 +5,27 @@ import { DomainMessage } from '../../../src/presentation/view-models/console/con
 import { EmbeddingService } from '../../../src/application/interfaces/embedding-service.js';
 
 /**
+ * Mock EmbeddingService for testing
+ */
+class MockEmbeddingService implements EmbeddingService {
+  async generateEmbedding(_text: string): Promise<number[]> {
+    return new Array(1536).fill(0);
+  }
+
+  async isAvailable(): Promise<boolean> {
+    return true;
+  }
+
+  getEmbeddingDimension(): number {
+    return 1536;
+  }
+
+  async validateConfig(): Promise<boolean> {
+    return true;
+  }
+}
+
+/**
  * Mock Toolbox for testing
  */
 export class MockToolbox implements Toolbox {
@@ -13,17 +34,13 @@ export class MockToolbox implements Toolbox {
   public mockResult: ToolResult = { success: true, message: 'Mock tool executed' };
   public mockTools: ToolDefinition[] = [];
 
+  readonly embeddingService: EmbeddingService = new MockEmbeddingService();
+  readonly domainMessages$: Observable<DomainMessage> = EMPTY;
+
   constructor(
     public readonly id: string,
     public readonly description: string
   ) {}
-
-  readonly embeddingService: EmbeddingService | null = null;
-
-  /**
-   * Mock toolboxes don't emit messages
-   */
-  readonly domainMessages$: Observable<DomainMessage> = EMPTY;
 
   getTools(): ToolDefinition[] {
     return this.mockTools;

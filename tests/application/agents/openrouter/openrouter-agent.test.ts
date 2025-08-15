@@ -11,9 +11,15 @@ import {
 import { firstValueFrom, toArray } from 'rxjs';
 
 // Mock the OpenAI module
-vi.mock('openai', () => ({
-  default: vi.fn()
-}));
+vi.mock('openai', () => {
+  const mockConstructor = vi.fn();
+  return {
+    default: mockConstructor
+  };
+});
+
+// Get the mocked constructor
+const mockOpenAIConstructor = vi.mocked((await import('openai')).default);
 
 function createOpenRouterConfig() {
   return {
@@ -33,21 +39,19 @@ describe('OpenRouterAgent', () => {
   let toolbox: MockToolbox;
   let mockClient: MockOpenAIClient;
 
-  beforeEach(async () => {
+  beforeEach(() => {
     toolbox = new MockToolbox();
     mockClient = new MockOpenAIClient();
     
     // Mock OpenAI constructor to return our mock client
-    const OpenAI = vi.mocked(await import('openai')).default;
-    OpenAI.mockImplementation(() => mockClient as any);
+    mockOpenAIConstructor.mockImplementation(() => mockClient as any);
     
     agent = new OpenRouterAgent(createOpenRouterConfig(), toolbox);
   });
 
   describe('constructor', () => {
-    it('should initialize with OpenRouter client and custom headers', async () => {
-      const OpenAI = vi.mocked(await import('openai')).default;
-      expect(OpenAI).toHaveBeenCalledWith({
+    it('should initialize with OpenRouter client and custom headers', () => {
+      expect(mockOpenAIConstructor).toHaveBeenCalledWith({
         apiKey: 'test-api-key',
         baseURL: 'https://openrouter.ai/api/v1',
         defaultHeaders: {
@@ -57,7 +61,7 @@ describe('OpenRouterAgent', () => {
       });
     });
 
-    it('should use default headers when not provided', async () => {
+    it('should use default headers when not provided', () => {
       const configWithoutHeaders = {
         model: 'openai/gpt-5',
         provider: 'openrouter',
@@ -66,8 +70,7 @@ describe('OpenRouterAgent', () => {
       
       new OpenRouterAgent(configWithoutHeaders, toolbox);
       
-      const OpenAI = vi.mocked(await import('openai')).default;
-      expect(OpenAI).toHaveBeenLastCalledWith({
+      expect(mockOpenAIConstructor).toHaveBeenLastCalledWith({
         apiKey: 'test-api-key',
         baseURL: 'https://openrouter.ai/api/v1',
         defaultHeaders: {

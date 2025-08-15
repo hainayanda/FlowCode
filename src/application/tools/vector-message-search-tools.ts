@@ -27,16 +27,19 @@ export interface VectorAvailabilityResult {
  * Provides semantic search and similarity matching using vector embeddings
  */
 export class VectorMessageSearchTools implements Toolbox {
-  
+  // Public getters
   readonly id = 'vector_message_search_tools';
   readonly description = 'Vector-based message history search toolbox for semantic and similarity search';
 
+  // Private properties
   private readonly domainMessagesSubject = new Subject<DomainMessage>();
-  
+
   /**
    * Observable stream of domain messages for rich UI updates
    */
-  readonly domainMessages$: Observable<DomainMessage> = this.domainMessagesSubject.asObservable();
+  get domainMessages$(): Observable<DomainMessage> {
+    return this.domainMessagesSubject.asObservable();
+  }
 
   constructor(
     public readonly embeddingService: EmbeddingService,

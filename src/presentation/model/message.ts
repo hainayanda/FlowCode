@@ -89,14 +89,6 @@ export type FileMetadata = FileMessage['metadata'];
 export type ConsoleMetadata = WorkerMetadata | ErrorMetadata | FileMetadata;
 
 export class ConsoleMessage implements BaseMessage {
-  constructor(
-    public id: string,
-    public type: 'user' | 'system' | 'worker' | 'error' | 'thinking' | 'file',
-    public content: string,
-    public timestamp: Date,
-    public metadata?: ConsoleMetadata
-  ) {}
-
   static create(
     content: string,
     type: 'user' | 'system' | 'worker' | 'error' | 'thinking' | 'file',
@@ -110,6 +102,14 @@ export class ConsoleMessage implements BaseMessage {
       metadata
     );
   }
+
+  constructor(
+    public id: string,
+    public type: 'user' | 'system' | 'worker' | 'error' | 'thinking' | 'file',
+    public content: string,
+    public timestamp: Date,
+    public metadata?: ConsoleMetadata
+  ) {}
 
   getDisplayText(): string {
     const workerMeta = this.getWorkerMetadata();

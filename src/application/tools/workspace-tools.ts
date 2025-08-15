@@ -29,16 +29,19 @@ export interface DirectoryListing {
  * Workspace tools implementation
  */
 export class WorkspaceTools implements Toolbox {
-
+  // Public getters
   readonly id = 'workspace_tools';
   readonly description = 'Workspace operations toolbox for file system navigation and management';
 
+  // Private properties
   private readonly domainMessagesSubject = new Subject<DomainMessage>();
-  
+
   /**
    * Observable stream of domain messages for rich UI updates
    */
-  readonly domainMessages$: Observable<DomainMessage> = this.domainMessagesSubject.asObservable();
+  get domainMessages$(): Observable<DomainMessage> {
+    return this.domainMessagesSubject.asObservable();
+  }
 
   constructor(public readonly embeddingService: EmbeddingService) {}
 

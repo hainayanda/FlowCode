@@ -57,6 +57,22 @@ export class MockCredentialStore implements CredentialStore {
     // Mock implementation
   }
 
+  // Test helpers
+  setHasCredential(hasCredential: boolean): void {
+    if (hasCredential) {
+      this.mockCredentials['test'] = {
+        apiKey: 'test-api-key',
+        lastUsed: new Date().toISOString()
+      };
+    } else {
+      this.mockCredentials = {};
+    }
+  }
+
+  setCredential(credential: ProviderCredential): void {
+    this.mockCredentials['test'] = credential;
+  }
+
   reset(): void {
     this.writeCredentialsCalled = false;
     this.lastWrittenCredentials = null;

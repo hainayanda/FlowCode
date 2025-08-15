@@ -28,6 +28,24 @@ export class OpenRouterAgent extends BaseAgent {
     });
   }
 
+  async validateConfig(): Promise<boolean> {
+    if (!await super.validateConfig()) {
+      return false;
+    }
+
+    try {
+      // Test the API key by making a simple request
+      await this.client.chat.completions.create({
+        model: this.config.model,
+        max_tokens: 1,
+        messages: [{ role: 'user', content: 'test' }]
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   private async streamProcess(input: AgentInput, observer: Observer<AgentResponse>): Promise<void> {
     try {
       const messages = this.convertMessages(input);
@@ -139,21 +157,4 @@ export class OpenRouterAgent extends BaseAgent {
     }));
   }
 
-  async validateConfig(): Promise<boolean> {
-    if (!await super.validateConfig()) {
-      return false;
-    }
-
-    try {
-      // Test the API key by making a simple request
-      await this.client.chat.completions.create({
-        model: this.config.model,
-        max_tokens: 1,
-        messages: [{ role: 'user', content: 'test' }]
-      });
-      return true;
-    } catch {
-      return false;
-    }
-  }
 }

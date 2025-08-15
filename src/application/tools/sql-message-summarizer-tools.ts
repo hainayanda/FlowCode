@@ -21,16 +21,19 @@ export interface SqlMessageSummaryResult {
  * Combines SQL message search with AI summarization capabilities
  */
 export class SqlMessageSummarizerTools implements Toolbox {
-  
+  // Public getters
   readonly id = 'sql_message_summarizer_tools';
   readonly description = 'SQL-based message summarization toolbox for regex-based and filtered message summaries';
 
+  // Private properties
   private readonly domainMessagesSubject = new Subject<DomainMessage>();
-  
+
   /**
    * Observable stream of domain messages for rich UI updates
    */
-  readonly domainMessages$: Observable<DomainMessage> = this.domainMessagesSubject.asObservable();
+  get domainMessages$(): Observable<DomainMessage> {
+    return this.domainMessagesSubject.asObservable();
+  }
 
   constructor(
     public readonly embeddingService: EmbeddingService,

@@ -5,6 +5,7 @@ export class MockSettingsStore implements SettingsStore {
   public lastWrittenSettings: SettingsConfig | null = null;
   public isPermissionAllowedCalled = false;
   public lastCheckedPermission: string | null = null;
+  public ensureSettingsDirectoryCalled = false;
   public mockSettings: SettingsConfig = {
     permissions: {
       allow: [],
@@ -48,6 +49,7 @@ export class MockSettingsStore implements SettingsStore {
   }
 
   async ensureSettingsDirectory(): Promise<boolean> {
+    this.ensureSettingsDirectoryCalled = true;
     return true;
   }
 
@@ -65,6 +67,7 @@ export class MockSettingsStore implements SettingsStore {
     this.lastWrittenSettings = null;
     this.isPermissionAllowedCalled = false;
     this.lastCheckedPermission = null;
+    this.ensureSettingsDirectoryCalled = false;
     this.mockSettings = {
       permissions: {
         allow: [],

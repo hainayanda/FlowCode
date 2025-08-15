@@ -94,7 +94,7 @@ export class MockMessageReader implements MessageReader {
   async searchByRegex(pattern: string, limit?: number, type?: DomainMessage['type']): Promise<DomainMessage[]> {
     this.searchByRegexCalls.push({ pattern, limit, type });
     const regex = new RegExp(pattern);
-    let results = Array.from(this.messages.values()).filter(m => 
+    const results = Array.from(this.messages.values()).filter(m => 
       regex.test(m.content) && (!type || m.type === type)
     );
     return limit ? results.slice(0, limit) : results;

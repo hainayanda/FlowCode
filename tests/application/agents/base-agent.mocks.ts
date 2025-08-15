@@ -1,8 +1,9 @@
-import { Observable, of } from 'rxjs';
+import { Observable, EMPTY, of } from 'rxjs';
 import { BaseAgent } from '../../../src/application/agents/base-agent.js';
 import { AgentConfig, AgentInput, AgentResponse } from '../../../src/application/interfaces/agent.js';
-import { Toolbox, ToolboxMessage, ToolDefinition, ToolCall, ToolResult } from '../../../src/application/interfaces/toolbox.js';
+import { Toolbox, ToolDefinition, ToolCall, ToolResult } from '../../../src/application/interfaces/toolbox.js';
 import { EmbeddingService } from '../../../src/application/interfaces/embedding-service.js';
+import { DomainMessage } from '../../../src/presentation/view-models/console/console-use-case.js';
 
 /**
  * Mock Embedding Service for testing
@@ -11,6 +12,18 @@ export class MockEmbeddingService implements EmbeddingService {
   provider = 'mock';
   model = 'mock-model';
   dimensions = 384;
+
+  async generateEmbedding(): Promise<number[]> {
+    return [0.1, 0.2, 0.3];
+  }
+
+  async isAvailable(): Promise<boolean> {
+    return true;
+  }
+
+  getEmbeddingDimension(): number {
+    return this.dimensions;
+  }
 
   async embed(): Promise<number[]> {
     return [0.1, 0.2, 0.3];
@@ -27,7 +40,7 @@ export class MockEmbeddingService implements EmbeddingService {
 export class MockToolbox implements Toolbox {
   readonly id = 'mock-toolbox';
   readonly description = 'Mock toolbox for testing';
-  readonly messages$ = of<ToolboxMessage>();
+  readonly domainMessages$ = EMPTY as Observable<DomainMessage>;
   readonly embeddingService = new MockEmbeddingService();
 
   executeToolCalled = false;

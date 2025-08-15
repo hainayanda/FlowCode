@@ -11,9 +11,15 @@ import {
 import { firstValueFrom, toArray } from 'rxjs';
 
 // Mock the OpenAI module
-vi.mock('openai', () => ({
-  default: vi.fn()
-}));
+vi.mock('openai', () => {
+  const mockConstructor = vi.fn();
+  return {
+    default: mockConstructor
+  };
+});
+
+// Get the mocked constructor
+const mockOpenAIConstructor = vi.mocked((await import('openai')).default);
 
 function createGeminiConfig() {
   return {
@@ -31,21 +37,19 @@ describe('GeminiAgent', () => {
   let toolbox: MockToolbox;
   let mockClient: MockOpenAIClient;
 
-  beforeEach(async () => {
+  beforeEach(() => {
     toolbox = new MockToolbox();
     mockClient = new MockOpenAIClient();
     
     // Mock OpenAI constructor to return our mock client
-    const OpenAI = vi.mocked(await import('openai')).default;
-    OpenAI.mockImplementation(() => mockClient as any);
+    mockOpenAIConstructor.mockImplementation(() => mockClient as any);
     
     agent = new GeminiAgent(createGeminiConfig(), toolbox);
   });
 
   describe('constructor', () => {
-    it('should initialize with Google Gemini client', async () => {
-      const OpenAI = vi.mocked(await import('openai')).default;
-      expect(OpenAI).toHaveBeenCalledWith({
+    it('should initialize with Google Gemini client', () => {
+      expect(mockOpenAIConstructor).toHaveBeenCalledWith({
         apiKey: 'test-api-key',
         baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/'
       });

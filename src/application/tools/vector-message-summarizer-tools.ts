@@ -22,16 +22,19 @@ export interface VectorMessageSummaryResult {
  * Combines vector message search with AI summarization capabilities
  */
 export class VectorMessageSummarizerTools implements Toolbox {
-  
+  // Public getters
   readonly id = 'vector_message_summarizer_tools';
   readonly description = 'Vector-based message summarization toolbox for semantic similarity-based summaries';
 
+  // Private properties
   private readonly domainMessagesSubject = new Subject<DomainMessage>();
-  
+
   /**
    * Observable stream of domain messages for rich UI updates
    */
-  readonly domainMessages$: Observable<DomainMessage> = this.domainMessagesSubject.asObservable();
+  get domainMessages$(): Observable<DomainMessage> {
+    return this.domainMessagesSubject.asObservable();
+  }
 
   constructor(
     public readonly embeddingService: EmbeddingService,

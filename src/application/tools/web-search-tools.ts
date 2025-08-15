@@ -78,6 +78,44 @@ export class SearXNGSearchService implements WebSearchService {
     throw new Error(`All SearXNG instances failed. Last error: ${lastError?.message || 'Unknown error'}`);
   }
 
+  async getAvailableEngines(): Promise<string[]> {
+    // Common SearXNG engines
+    return [
+      'google', 'bing', 'duckduckgo', 'yahoo', 'yandex',
+      'startpage', 'qwant', 'brave', 'wikipedia', 'reddit'
+    ];
+  }
+
+  async getAvailableCategories(): Promise<string[]> {
+    return [
+      'general', 'images', 'videos', 'news', 'map',
+      'music', 'it', 'science', 'files', 'social media'
+    ];
+  }
+
+  async isAvailable(): Promise<boolean> {
+    try {
+      const testQuery = 'test';
+      const instance = this.getCurrentInstance();
+      const url = new URL('/search', instance.url);
+      url.searchParams.set('q', testQuery);
+      url.searchParams.set('format', 'json');
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      const response = await fetch(url.toString(), {
+        method: 'GET',
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+      return response.ok;
+    } catch {
+      return false;
+    }
+  }
+
   private async performSearch(
     instance: SearXNGInstance, 
     query: string, 
@@ -167,61 +205,26 @@ export class SearXNGSearchService implements WebSearchService {
   private rotateInstance(): void {
     this.currentInstanceIndex = (this.currentInstanceIndex + 1) % this.instances.length;
   }
-
-  async getAvailableEngines(): Promise<string[]> {
-    // Common SearXNG engines
-    return [
-      'google', 'bing', 'duckduckgo', 'yahoo', 'yandex',
-      'startpage', 'qwant', 'brave', 'wikipedia', 'reddit'
-    ];
-  }
-
-  async getAvailableCategories(): Promise<string[]> {
-    return [
-      'general', 'images', 'videos', 'news', 'map',
-      'music', 'it', 'science', 'files', 'social media'
-    ];
-  }
-
-  async isAvailable(): Promise<boolean> {
-    try {
-      const testQuery = 'test';
-      const instance = this.getCurrentInstance();
-      const url = new URL('/search', instance.url);
-      url.searchParams.set('q', testQuery);
-      url.searchParams.set('format', 'json');
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-      const response = await fetch(url.toString(), {
-        method: 'GET',
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-      return response.ok;
-    } catch {
-      return false;
-    }
-  }
 }
 
 /**
  * Web search tools implementation
  */
 export class WebSearchTools implements Toolbox {
+  // Public getters
   readonly id = 'web_search_tools';
   readonly description = 'Web search toolbox using SearXNG for privacy-respecting search';
 
+  // Private properties
   private readonly domainMessagesSubject = new Subject<DomainMessage>();
-  
+  private searchService: WebSearchService;
+
   /**
    * Observable stream of domain messages for rich UI updates
    */
-  readonly domainMessages$: Observable<DomainMessage> = this.domainMessagesSubject.asObservable();
-
-  private searchService: WebSearchService;
+  get domainMessages$(): Observable<DomainMessage> {
+    return this.domainMessagesSubject.asObservable();
+  }
 
   constructor(public readonly embeddingService: EmbeddingService, searchService?: WebSearchService) {
     this.searchService = searchService || new SearXNGSearchService();

@@ -32,16 +32,19 @@ export interface BashCommandOptions {
  * Bash tools implementation
  */
 export class BashTools implements Toolbox {
-
+  // Public getters
   readonly id = 'bash_tools';
   readonly description = 'Bash command execution toolbox for running shell commands';
 
+  // Private properties
   private readonly domainMessagesSubject = new Subject<DomainMessage>();
-  
+
   /**
    * Observable stream of domain messages for rich UI updates
    */
-  readonly domainMessages$: Observable<DomainMessage> = this.domainMessagesSubject.asObservable();
+  get domainMessages$(): Observable<DomainMessage> {
+    return this.domainMessagesSubject.asObservable();
+  }
 
   constructor(public readonly embeddingService: EmbeddingService) {}
 

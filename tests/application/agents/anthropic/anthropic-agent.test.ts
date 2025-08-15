@@ -26,7 +26,7 @@ describe('AnthropicAgent', () => {
     mockClient = new MockAnthropicClient();
     
     // Mock Anthropic constructor to return our mock client
-    const Anthropic = vi.mocked(await import('@anthropic-ai/sdk')).default;
+    const Anthropic = vi.mocked(await import('@anthropic-ai/sdk')).default as any;
     Anthropic.mockImplementation(() => mockClient as any);
     
     agent = new AnthropicAgent(createAnthropicConfig(), toolbox);

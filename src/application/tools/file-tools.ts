@@ -18,17 +18,19 @@ export interface FileContent {
  * File tools implementation
  */
 export class FileTools implements Toolbox {
-  
+  // Public getters
   readonly id = 'file_tools';
   readonly description = 'File operations toolbox for reading, writing, and modifying files';
 
-
+  // Private properties
   private readonly domainMessagesSubject = new Subject<DomainMessage>();
 
   /**
    * Observable stream of domain messages for rich UI updates
    */
-  readonly domainMessages$: Observable<DomainMessage> = this.domainMessagesSubject.asObservable();
+  get domainMessages$(): Observable<DomainMessage> {
+    return this.domainMessagesSubject.asObservable();
+  }
 
   constructor(public readonly embeddingService: EmbeddingService) {}
 

@@ -7,6 +7,7 @@ import * as os from 'os';
  * Settings service implementation with global and workspace settings support
  */
 export class SettingsService implements SettingsStore {
+  // Private properties
   private readonly globalSettingsPath: string;
   private readonly workspaceSettingsPath: string;
   private readonly workspaceSettingsDir: string;
@@ -18,7 +19,7 @@ export class SettingsService implements SettingsStore {
     this.workspaceSettingsPath = path.join(this.workspaceSettingsDir, 'settings.json');
   }
 
-  // SettingsReader implementation
+  // Public methods - SettingsReader implementation
 
   async getSettings(): Promise<SettingsConfig> {
     const defaultSettings: SettingsConfig = {
@@ -102,6 +103,56 @@ export class SettingsService implements SettingsStore {
     return false;
   }
 
+  // Public methods - SettingsWriter implementation
+
+  async writeSettings(settings: SettingsConfig): Promise<boolean> {
+    try {
+      await this.ensureSettingsDirectory();
+      await fs.writeFile(this.workspaceSettingsPath, JSON.stringify(settings, null, 2));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async initializeSettings(): Promise<boolean> {
+    const dirCreated = await this.ensureSettingsDirectory();
+    if (!dirCreated) return false;
+    
+    const defaultSettings: SettingsConfig = {
+      permissions: {
+        allow: [],
+        deny: []
+      }
+    };
+    
+    return await this.writeSettings(defaultSettings);
+  }
+
+  getSettingsPath(): string {
+    return this.workspaceSettingsPath;
+  }
+
+  async settingsExists(): Promise<boolean> {
+    try {
+      await fs.access(this.workspaceSettingsPath);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async ensureSettingsDirectory(): Promise<boolean> {
+    try {
+      await fs.mkdir(this.workspaceSettingsDir, { recursive: true });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  // Private methods
+
   private matchesAnyPattern(permissionPattern: string, patterns: string[]): boolean {
     return patterns.some(pattern => this.matchesPattern(permissionPattern, pattern));
   }
@@ -122,53 +173,5 @@ export class SettingsService implements SettingsStore {
 
     const regex = new RegExp(`^${patternRegex}$`);
     return regex.test(permissionPattern);
-  }
-
-  getSettingsPath(): string {
-    return this.workspaceSettingsPath;
-  }
-
-  async settingsExists(): Promise<boolean> {
-    try {
-      await fs.access(this.workspaceSettingsPath);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  // SettingsWriter implementation
-
-  async writeSettings(settings: SettingsConfig): Promise<boolean> {
-    try {
-      await this.ensureSettingsDirectory();
-      await fs.writeFile(this.workspaceSettingsPath, JSON.stringify(settings, null, 2));
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  async ensureSettingsDirectory(): Promise<boolean> {
-    try {
-      await fs.mkdir(this.workspaceSettingsDir, { recursive: true });
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  async initializeSettings(): Promise<boolean> {
-    const dirCreated = await this.ensureSettingsDirectory();
-    if (!dirCreated) return false;
-    
-    const defaultSettings: SettingsConfig = {
-      permissions: {
-        allow: [],
-        deny: []
-      }
-    };
-    
-    return await this.writeSettings(defaultSettings);
   }
 }

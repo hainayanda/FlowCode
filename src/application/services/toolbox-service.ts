@@ -18,13 +18,19 @@ interface PermissionRequest {
  * Toolbox service that aggregates multiple toolboxes and handles permissions
  */
 export class ToolboxService implements Toolbox {
-  
+  // Private properties
   readonly id = 'toolbox_service';
   readonly description = 'Aggregates multiple toolboxes with unified permission handling';
+  readonly domainMessages$: Observable<DomainMessage>;
   
   private readonly optionsSubject = new BehaviorSubject<DomainOption | null>(null);
   private pendingPermissionRequest: PermissionRequest | null = null;
   private permissionResolver: ((granted: boolean) => void) | null = null;
+
+  // Public getters
+  get options$(): Observable<DomainOption | null> {
+    return this.optionsSubject.asObservable();
+  }
 
   constructor(
     private readonly toolboxes: Toolbox[],
@@ -34,17 +40,7 @@ export class ToolboxService implements Toolbox {
     this.domainMessages$ = merge(...toolboxes.map(tb => tb.domainMessages$));
   }
 
-  /**
-   * Observable for permission requests (options)
-   */
-  get options$(): Observable<DomainOption | null> {
-    return this.optionsSubject.asObservable();
-  }
-
-  /**
-   * Observable stream of domain messages from all toolboxes
-   */
-  readonly domainMessages$: Observable<DomainMessage>;
+  // Public methods
 
   getTools(): ToolDefinition[] {
     const allTools: ToolDefinition[] = [];
@@ -121,9 +117,6 @@ export class ToolboxService implements Toolbox {
     }
   }
 
-  /**
-   * Respond to user permission choice
-   */
   async respondToPermissionChoice(selectedIndex: number): Promise<void> {
     if (!this.pendingPermissionRequest || !this.permissionResolver) {
       return;

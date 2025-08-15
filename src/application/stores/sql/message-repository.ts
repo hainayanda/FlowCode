@@ -7,15 +7,25 @@ import { DomainMessage } from '../../../presentation/view-models/console/console
  * Implements all message store interfaces and handles the dual-store architecture
  */
 export class MessageRepository implements MessageStorePublisher {
+  // Private properties
   private inMemoryStore: MessageStorePublisher;
   private persistentStore: MessageStore;
   private initialized = false;
+
+  // Public getters
+  /**
+   * Observable stream of current message history from in-memory store
+   */
+  get messageHistory$(): Observable<DomainMessage[]> {
+    return this.inMemoryStore.messageHistory$;
+  }
 
   constructor(inMemoryStore: MessageStorePublisher, persistentStore: MessageStore) {
     this.inMemoryStore = inMemoryStore;
     this.persistentStore = persistentStore;
   }
 
+  // Public methods
   /**
    * Initialize the repository by loading persistent messages into memory
    */
@@ -29,13 +39,6 @@ export class MessageRepository implements MessageStorePublisher {
     } catch (error) {
       throw new Error(`Failed to initialize message repository: ${error}`);
     }
-  }
-
-  /**
-   * Observable stream of current message history from in-memory store
-   */
-  get messageHistory$(): Observable<DomainMessage[]> {
-    return this.inMemoryStore.messageHistory$;
   }
 
   /**
@@ -130,6 +133,7 @@ export class MessageRepository implements MessageStorePublisher {
     return this.inMemoryStore.getAllMessages();
   }
 
+  // Private methods
   private async ensureInitialized(): Promise<void> {
     if (!this.initialized) {
       await this.initialize();

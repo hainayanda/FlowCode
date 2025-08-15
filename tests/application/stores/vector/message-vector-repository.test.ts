@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { MessageVectorRepository } from '../../../../src/application/stores/vector/message-vector-repository.js';
 import { 
   MockVectorStore, 
@@ -113,6 +113,8 @@ describe('MessageVectorRepository', () => {
     });
 
     it('should handle search errors gracefully', async () => {
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const originalSearchSimilar = mockVectorStore.searchSimilar;
       mockVectorStore.searchSimilar = async () => {
         throw new Error('Search failed');
       };
@@ -120,6 +122,11 @@ describe('MessageVectorRepository', () => {
       const results = await repository.searchByNaturalLanguage('test query');
       
       expect(results).toHaveLength(0);
+      expect(consoleWarnSpy).toHaveBeenCalledWith('Vector search failed, falling back to empty results:', expect.any(Error));
+      
+      // Restore original method and console
+      mockVectorStore.searchSimilar = originalSearchSimilar;
+      consoleWarnSpy.mockRestore();
     });
 
     it('should sort results by relevance then timestamp', async () => {
@@ -185,6 +192,8 @@ describe('MessageVectorRepository', () => {
     });
 
     it('should handle search errors gracefully', async () => {
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const originalGenerateEmbedding = mockEmbeddingService.generateEmbedding;
       mockEmbeddingService.generateEmbedding = async () => {
         throw new Error('Embedding failed');
       };
@@ -192,6 +201,11 @@ describe('MessageVectorRepository', () => {
       const results = await repository.getSimilarMessages('msg-1', 5);
       
       expect(results).toHaveLength(0);
+      expect(consoleWarnSpy).toHaveBeenCalledWith('Similar message search failed:', expect.any(Error));
+      
+      // Restore original method and console
+      mockEmbeddingService.generateEmbedding = originalGenerateEmbedding;
+      consoleWarnSpy.mockRestore();
     });
   });
 
@@ -228,6 +242,8 @@ describe('MessageVectorRepository', () => {
     });
 
     it('should handle storage errors gracefully', async () => {
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const originalGenerateEmbedding = mockEmbeddingService.generateEmbedding;
       mockEmbeddingService.generateEmbedding = async () => {
         throw new Error('Embedding failed');
       };
@@ -236,6 +252,11 @@ describe('MessageVectorRepository', () => {
       
       // Should not throw, just log warning
       await expect(repository.storeMessageWithEmbedding(message)).resolves.not.toThrow();
+      expect(consoleWarnSpy).toHaveBeenCalledWith('Failed to store message embedding:', expect.any(Error));
+      
+      // Restore original method and console
+      mockEmbeddingService.generateEmbedding = originalGenerateEmbedding;
+      consoleWarnSpy.mockRestore();
     });
 
     it('should update message embedding', async () => {
@@ -353,7 +374,9 @@ describe('MessageVectorRepository', () => {
 
   describe('error resilience', () => {
     it('should handle vector store failures gracefully', async () => {
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       mockEmbeddingService.setAvailable(true);
+      const originalStoreVector = mockVectorStore.storeVector;
       mockVectorStore.storeVector = async () => {
         throw new Error('Vector store failed');
       };
@@ -362,6 +385,11 @@ describe('MessageVectorRepository', () => {
       
       // Should not throw, just log warning
       await expect(repository.storeMessageWithEmbedding(message)).resolves.not.toThrow();
+      expect(consoleWarnSpy).toHaveBeenCalledWith('Failed to store message embedding:', expect.any(Error));
+      
+      // Restore original method and console
+      mockVectorStore.storeVector = originalStoreVector;
+      consoleWarnSpy.mockRestore();
     });
 
     it('should handle missing messages in search results', async () => {

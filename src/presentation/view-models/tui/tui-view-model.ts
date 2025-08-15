@@ -17,6 +17,7 @@ import { TUIUseCase, DomainMessage, DomainOption, CommandDefinition, DomainToken
  * Depends only on router and use case, following dependency injection
  */
 export class TUIViewModel implements TUIViewState, TUIViewListener {
+  // Private properties
   private readonly messageSubject = new Subject<ConsoleMessage>();
   private readonly tokenUsageSubject = new BehaviorSubject<TokenUsage>({ used: 0, limit: 10000 });
   private readonly workerInfoSubject = new BehaviorSubject<WorkerInfo>({ 
@@ -29,22 +30,13 @@ export class TUIViewModel implements TUIViewState, TUIViewListener {
   private readonly inputTextSubject = new BehaviorSubject<string>('');
   private readonly suggestionsSubject = new BehaviorSubject<Suggestion[]>([]);
   private readonly optionSubject = new BehaviorSubject<Option | null>(null);
-
   private readonly inputHistory: string[] = [];
   private historyIndex = -1;
   private allowInput = true;
   private readonly availableCommands: CommandDefinition[];
   private suggestionIndex = -1;
 
-  constructor(
-    private readonly router: TUIRouter,
-    private readonly useCase: TUIUseCase
-  ) {
-    this.availableCommands = this.useCase.getAvailableCommands();
-    this.setupSubscriptions();
-  }
-
-  // TUIViewState implementation
+  // Public getters - TUIViewState implementation
   get messages$(): Observable<ConsoleMessage> {
     return this.messageSubject.asObservable();
   }
@@ -73,7 +65,15 @@ export class TUIViewModel implements TUIViewState, TUIViewListener {
     return this.optionSubject.asObservable();
   }
 
-  // TUIViewListener implementation
+  constructor(
+    private readonly router: TUIRouter,
+    private readonly useCase: TUIUseCase
+  ) {
+    this.availableCommands = this.useCase.getAvailableCommands();
+    this.setupSubscriptions();
+  }
+
+  // Public methods - TUIViewListener implementation
   onExit(): void {
     this.router.exit();
   }

@@ -10,6 +10,7 @@ import { DomainMessage, BaseDomainMessage } from '../../../presentation/view-mod
  * Following SOLID principles with dependency injection
  */
 export class MessageVectorRepository implements MessageVectorReader, MessageVectorWriter {
+  // Private properties
   private initialized = false;
 
   constructor(
@@ -18,19 +19,7 @@ export class MessageVectorRepository implements MessageVectorReader, MessageVect
     private messageStore: MessageReader
   ) {}
 
-  /**
-   * Initialize the vector repository
-   */
-  private async initialize(): Promise<void> {
-    if (this.initialized) return;
-    
-    try {
-      await this.vectorStore.initialize();
-      this.initialized = true;
-    } catch (error) {
-      throw new Error(`Failed to initialize message vector repository: ${error}`);
-    }
-  }
+  // Public methods
 
   /**
    * Search messages by natural language query
@@ -217,6 +206,18 @@ export class MessageVectorRepository implements MessageVectorReader, MessageVect
       return await this.embeddingService.isAvailable();
     } catch {
       return false;
+    }
+  }
+
+  // Private methods
+  private async initialize(): Promise<void> {
+    if (this.initialized) return;
+    
+    try {
+      await this.vectorStore.initialize();
+      this.initialized = true;
+    } catch (error) {
+      throw new Error(`Failed to initialize message vector repository: ${error}`);
     }
   }
 

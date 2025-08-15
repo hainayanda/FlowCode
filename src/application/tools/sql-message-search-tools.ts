@@ -19,16 +19,19 @@ export interface SqlMessageSearchResult {
  * Provides regex search, type filtering, and history retrieval from SQL store
  */
 export class SqlMessageSearchTools implements Toolbox {
-  
+  // Public getters
   readonly id = 'sql_message_search_tools';
   readonly description = 'SQL-based message history search toolbox for regex and type-based queries';
 
+  // Private properties
   private readonly domainMessagesSubject = new Subject<DomainMessage>();
-  
+
   /**
    * Observable stream of domain messages for rich UI updates
    */
-  readonly domainMessages$: Observable<DomainMessage> = this.domainMessagesSubject.asObservable();
+  get domainMessages$(): Observable<DomainMessage> {
+    return this.domainMessagesSubject.asObservable();
+  }
 
   constructor(
     public readonly embeddingService: EmbeddingService,

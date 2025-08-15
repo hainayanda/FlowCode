@@ -6,12 +6,13 @@ import { MockAgent, MockToolbox } from './base-agent.mocks.js';
  * Mock Agent Factory for testing
  */
 export class MockAgentFactory implements AgentFactory {
-  private providerName: string;
-  private models: ModelDefinition[];
   
   createAgentCalled = false;
   lastConfig: AgentConfig | null = null;
   lastToolbox: Toolbox | null = null;
+  
+  private providerName: string;
+  private models: ModelDefinition[];
 
   constructor(providerName: string, models: ModelDefinition[] = []) {
     this.providerName = providerName;
