@@ -3,6 +3,27 @@ import { ToolDefinition, ToolCall, ToolResult, Toolbox, ToolboxMessage } from '.
 import { WebSearchService, WebSearchOptions, WebSearchResponse, SearXNGInstance } from '../interfaces/web-search.js';
 
 /**
+ * Raw search result from SearXNG API
+ */
+interface RawSearchResult {
+  title?: string;
+  url?: string;
+  content?: string;
+  engine?: string;
+}
+
+/**
+ * Raw search response from SearXNG API
+ */
+interface RawSearchResponse {
+  results?: RawSearchResult[];
+  number_of_results?: number;
+  search_time?: number;
+  suggestions?: string[];
+  infoboxes?: any[];
+}
+
+/**
  * Default SearXNG instances (reliable public instances)
  */
 const DEFAULT_SEARXNG_INSTANCES: SearXNGInstance[] = [
@@ -117,10 +138,10 @@ export class SearXNGSearchService implements WebSearchService {
     }
   }
 
-  private parseSearchResponse(query: string, data: any, maxResults = 10): WebSearchResponse {
+  private parseSearchResponse(query: string, data: RawSearchResponse, maxResults = 10): WebSearchResponse {
     const results = (data.results || [])
       .slice(0, maxResults)
-      .map((result: any) => ({
+      .map((result: RawSearchResult) => ({
         title: result.title || '',
         url: result.url || '',
         content: result.content || '',

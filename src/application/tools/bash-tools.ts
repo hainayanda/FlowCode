@@ -146,13 +146,14 @@ export class BashTools implements Toolbox {
         success: true,
         duration
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       const duration = Date.now() - startTime;
+      const execError = error as { stdout?: string; stderr?: string; code?: number };
       
       return {
-        stdout: error.stdout || '',
-        stderr: error.stderr || '',
-        exitCode: error.code || 1,
+        stdout: execError.stdout || '',
+        stderr: execError.stderr || '',
+        exitCode: execError.code || 1,
         success: false,
         duration
       };
