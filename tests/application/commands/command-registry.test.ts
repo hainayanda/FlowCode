@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { CommandDispatcherService } from '../../../src/application/services/command-dispatcher-service.js';
+import { CommandRegistry } from '../../../src/application/commands/command-registry.js';
 import { CommandProvider, CommandResult } from '../../../src/application/interfaces/command-provider.js';
 import { CommandDefinition } from '../../../src/presentation/view-models/console/console-use-case.js';
 import { MessageWriter } from '../../../src/application/interfaces/message-store.js';
@@ -76,8 +76,8 @@ class MockMessageWriter implements MessageWriter {
   }
 }
 
-describe('CommandDispatcher', () => {
-  let dispatcher: CommandDispatcherService;
+describe('CommandRegistry', () => {
+  let dispatcher: CommandRegistry;
   let mockProvider1: MockCommandProvider;
   let mockProvider2: MockCommandProvider;
   let mockMessageWriter: MockMessageWriter;
@@ -97,7 +97,7 @@ describe('CommandDispatcher', () => {
     
     mockMessageWriter = new MockMessageWriter();
     
-    dispatcher = new CommandDispatcherService(
+    dispatcher = new CommandRegistry(
       [mockProvider1, mockProvider2],
       mockMessageWriter
     );
@@ -244,7 +244,7 @@ describe('CommandDispatcher', () => {
   
   describe('Edge Cases', () => {
     it('should handle empty command providers array', () => {
-      const emptyDispatcher = new CommandDispatcherService([], mockMessageWriter);
+      const emptyDispatcher = new CommandRegistry([], mockMessageWriter);
       const commands = emptyDispatcher.getCommands();
       
       expect(commands).toHaveLength(1); // Only help command
