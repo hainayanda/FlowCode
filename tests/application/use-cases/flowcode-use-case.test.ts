@@ -1,11 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { firstValueFrom, take, skip } from 'rxjs';
 import { FlowCodeUseCase } from '../../../src/application/use-cases/flowcode-use-case.js';
 import {
   MockMessagePublisher,
   MockCommandDispatcher,
   MockPromptHandler,
-  MockInitializer,
   createTestDomainMessage
 } from './flowcode-use-case.mocks.js';
 
@@ -14,26 +13,22 @@ describe('FlowCodeUseCase', () => {
   let mockMessagePublisher: MockMessagePublisher;
   let mockCommandDispatcher: MockCommandDispatcher;
   let mockPromptHandler: MockPromptHandler;
-  let mockInitializer: MockInitializer;
 
   beforeEach(() => {
     mockMessagePublisher = new MockMessagePublisher();
     mockCommandDispatcher = new MockCommandDispatcher();
     mockPromptHandler = new MockPromptHandler();
-    mockInitializer = new MockInitializer();
 
     useCase = new FlowCodeUseCase(
       mockMessagePublisher,
       mockCommandDispatcher,
-      mockPromptHandler,
-      mockInitializer
+      mockPromptHandler
     );
   });
 
   afterEach(() => {
     mockCommandDispatcher.reset();
     mockPromptHandler.reset();
-    mockInitializer.resetTracking();
     mockMessagePublisher.clear();
   });
 
@@ -145,11 +140,10 @@ describe('FlowCodeUseCase', () => {
       expect(userMessage.type).toBe('user-input');
       expect(userMessage.content).toBe('init my-project');
 
-      // Should NOT forward to command dispatcher (init is special)
-      expect(mockCommandDispatcher.executeCalled).toBe(false);
-
-      // Should handle through initializer
-      expect(mockInitializer.isCurrentDirectoryInitializedCalled).toBe(true);
+      // Should forward to command dispatcher (init is now a regular command)
+      expect(mockCommandDispatcher.executeCalled).toBe(true);
+      expect(mockCommandDispatcher.lastCommand).toBe('init');
+      expect(mockCommandDispatcher.lastArgs).toEqual(['my-project']);
     });
   });
 
@@ -261,8 +255,10 @@ describe('FlowCodeUseCase', () => {
 
   describe('Error Handling', () => {
     it('should handle message storage failures gracefully', async () => {
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      
       // Mock storage failure by overriding the method to reject
-      const originalStoreMessage = mockMessagePublisher.storeMessage;
+      const originalStoreMessage = mockMessagePublisher.storeMessage.bind(mockMessagePublisher);
       mockMessagePublisher.storeMessage = async () => {
         throw new Error('Storage failed');
       };
@@ -272,9 +268,11 @@ describe('FlowCodeUseCase', () => {
       
       // Should still forward to prompt handler
       expect(mockPromptHandler.processUserInputCalled).toBe(true);
+      expect(consoleWarnSpy).toHaveBeenCalledWith('Failed to store user message:', expect.any(Error));
       
-      // Restore original method
+      // Restore original method and console
       mockMessagePublisher.storeMessage = originalStoreMessage;
+      consoleWarnSpy.mockRestore();
     });
 
     it('should handle command execution with dispatcher', async () => {

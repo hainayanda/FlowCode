@@ -1,10 +1,9 @@
-import { BehaviorSubject, Subject } from 'rxjs';
+import { BehaviorSubject, Subject, Observable } from 'rxjs';
 import { DomainMessage, DomainOption, CommandDefinition } from '../../../src/presentation/view-models/console/console-use-case.js';
 import { DomainTokenUsage, DomainWorkerInfo } from '../../../src/presentation/model/use-case-models.js';
 import { MessageStorePublisher, MessageWriter } from '../../../src/application/interfaces/message-store.js';
 import { CommandDispatcher, CommandResult } from '../../../src/application/interfaces/command-provider.js';
 import { PromptHandler } from '../../../src/application/interfaces/prompt-handler.js';
-import { Initializer, InitializationState, InitializationStep, InitializationOptions } from '../../../src/application/interfaces/initializer.js';
 import { Result } from '../../../src/application/shared/result.js';
 
 /**
@@ -12,15 +11,15 @@ import { Result } from '../../../src/application/shared/result.js';
  * Implements MessageStorePublisher which includes MessageStore + MessagePublisher responsibilities.
  */
 export class MockMessagePublisher implements MessageStorePublisher {
-  private messages: DomainMessage[] = [];
-  private readonly messageHistorySubject = new BehaviorSubject<DomainMessage[]>([]);
-  
   // Track method calls for testing
   public initializeCalled = false;
   public storeMessageCalled = false;
   public storeMessagesCalled = false;
   public updateMessageCalled = false;
   public clearHistoryCalled = false;
+  
+  private messages: DomainMessage[] = [];
+  private readonly messageHistorySubject = new BehaviorSubject<DomainMessage[]>([]);
 
   // MessagePublisher interface
   get messageHistory$() {
@@ -202,6 +201,27 @@ export class MockCommandDispatcher implements CommandDispatcher {
     );
   }
 
+  // Interactive command methods
+  processInteractiveResponse(_response: string): Result<void, string> {
+    return Result.success(undefined);
+  }
+
+  processInteractiveOptionSelection(_optionIndex: number): Result<void, string> {
+    return Result.success(undefined);
+  }
+
+  hasActiveInteractiveCommand(): boolean {
+    return false;
+  }
+
+  getActiveInteractiveCommand(): string | null {
+    return null;
+  }
+
+  getInteractiveStreams(): { messages$: Observable<DomainMessage>; options$: Observable<DomainOption> } | undefined {
+    return undefined;
+  }
+
   // Test helpers
   reset(): void {
     this.executeCalled = false;
@@ -215,6 +235,12 @@ export class MockCommandDispatcher implements CommandDispatcher {
  * Mock PromptHandler for testing
  */
 export class MockPromptHandler implements PromptHandler {
+  public processUserInputCalled = false;
+  public lastUserInput = '';
+  public respondToChoiceCalled = false;
+  public lastSelectedIndex = -1;
+  public cancelAllRequestsCalled = false;
+  
   private readonly optionsSubject = new Subject<DomainOption>();
   private readonly tokenUsageSubject = new BehaviorSubject<DomainTokenUsage>({ used: 0, limit: 10000 });
   private readonly currentWorkerSubject = new BehaviorSubject<DomainWorkerInfo>({
@@ -225,26 +251,6 @@ export class MockPromptHandler implements PromptHandler {
   });
   private readonly isProcessingSubject = new BehaviorSubject<boolean>(false);
   private readonly pendingMessagesSubject = new BehaviorSubject<any[]>([]);
-
-  public processUserInputCalled = false;
-  public lastUserInput = '';
-  public respondToChoiceCalled = false;
-  public lastSelectedIndex = -1;
-  public cancelAllRequestsCalled = false;
-
-  async processUserInput(input: string): Promise<void> {
-    this.processUserInputCalled = true;
-    this.lastUserInput = input;
-  }
-
-  async cancelAllRequests(): Promise<void> {
-    this.cancelAllRequestsCalled = true;
-  }
-
-  async respondToChoice(selectedIndex: number): Promise<void> {
-    this.respondToChoiceCalled = true;
-    this.lastSelectedIndex = selectedIndex;
-  }
 
   get pendingUserMessages$() {
     return this.pendingMessagesSubject.asObservable();
@@ -264,6 +270,20 @@ export class MockPromptHandler implements PromptHandler {
 
   get options$() {
     return this.optionsSubject.asObservable();
+  }
+
+  async processUserInput(input: string): Promise<void> {
+    this.processUserInputCalled = true;
+    this.lastUserInput = input;
+  }
+
+  async cancelAllRequests(): Promise<void> {
+    this.cancelAllRequestsCalled = true;
+  }
+
+  async respondToChoice(selectedIndex: number): Promise<void> {
+    this.respondToChoiceCalled = true;
+    this.lastSelectedIndex = selectedIndex;
   }
 
   getQueueStatus() {
@@ -299,124 +319,6 @@ export class MockPromptHandler implements PromptHandler {
   }
 }
 
-/**
- * Mock Initializer for testing
- */
-export class MockInitializer implements Initializer {
-  private readonly messagesSubject = new Subject<DomainMessage>();
-  private readonly optionsSubject = new Subject<DomainOption>();
-  private readonly completionSubject = new Subject<{ state: InitializationState; error?: string }>();
-  private currentState = InitializationState.NotStarted;
-  
-  public startCalled = false;
-  public processResponseCalled = false;
-  public processOptionSelectionCalled = false;
-  public createProjectStructureCalled = false;
-  public generateMarkdownFilesCalled = false;
-  public validateCurrentDirectoryCalled = false;
-  public isCurrentDirectoryInitializedCalled = false;
-  public resetCalled = false;
-  public lastResponse = '';
-  public lastOptionIndex = -1;
-  public mockIsInitialized = false;
-
-  get messages$() {
-    return this.messagesSubject.asObservable();
-  }
-
-  get options$() {
-    return this.optionsSubject.asObservable();
-  }
-
-  get completion$() {
-    return this.completionSubject.asObservable();
-  }
-
-  getState(): InitializationState {
-    return this.currentState;
-  }
-
-  start(): Result<void, string> {
-    this.startCalled = true;
-    this.currentState = InitializationState.InProgress;
-    return Result.success(undefined);
-  }
-
-  processResponse(response: string): Result<void, string> {
-    this.processResponseCalled = true;
-    this.lastResponse = response;
-    return Result.success(undefined);
-  }
-
-  processOptionSelection(optionIndex: number): Result<void, string> {
-    this.processOptionSelectionCalled = true;
-    this.lastOptionIndex = optionIndex;
-    return Result.success(undefined);
-  }
-
-  async createProjectStructure(): Promise<Result<void, string>> {
-    this.createProjectStructureCalled = true;
-    return Result.success(undefined);
-  }
-
-  async generateMarkdownFiles(_options: InitializationOptions): Promise<Result<void, string>> {
-    this.generateMarkdownFilesCalled = true;
-    return Result.success(undefined);
-  }
-
-  getInitializationSteps(): InitializationStep[] {
-    return [
-      { name: 'setup', description: 'Setup project', completed: false },
-      { name: 'config', description: 'Configure settings', completed: false }
-    ];
-  }
-
-  validateCurrentDirectory(): Result<void, string> {
-    this.validateCurrentDirectoryCalled = true;
-    return Result.success(undefined);
-  }
-
-  isCurrentDirectoryInitialized(): boolean {
-    this.isCurrentDirectoryInitializedCalled = true;
-    return this.mockIsInitialized;
-  }
-
-  reset(): void {
-    this.resetCalled = true;
-    this.currentState = InitializationState.NotStarted;
-  }
-
-  // Test helpers
-  setState(state: InitializationState): void {
-    this.currentState = state;
-  }
-
-  emitMessage(message: DomainMessage): void {
-    this.messagesSubject.next(message);
-  }
-
-  emitOption(option: DomainOption): void {
-    this.optionsSubject.next(option);
-  }
-
-  emitCompletion(state: InitializationState, error?: string): void {
-    this.completionSubject.next({ state, error });
-  }
-
-  resetTracking(): void {
-    this.startCalled = false;
-    this.processResponseCalled = false;
-    this.processOptionSelectionCalled = false;
-    this.createProjectStructureCalled = false;
-    this.generateMarkdownFilesCalled = false;
-    this.validateCurrentDirectoryCalled = false;
-    this.isCurrentDirectoryInitializedCalled = false;
-    this.resetCalled = false;
-    this.lastResponse = '';
-    this.lastOptionIndex = -1;
-    this.mockIsInitialized = false;
-  }
-}
 
 /**
  * Helper function to create test domain messages

@@ -1,4 +1,4 @@
-import { Observable, merge } from 'rxjs';
+import { Observable, merge, EMPTY } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 import { TUIUseCase } from '../../presentation/view-models/tui/tui-use-case.js';
 import { 
@@ -13,7 +13,6 @@ import {
 import { MessageStorePublisher } from '../interfaces/message-store.js';
 import { CommandDispatcher } from '../interfaces/command-provider.js';
 import { PromptHandler } from '../interfaces/prompt-handler.js';
-import { Initializer, InitializationState } from '../interfaces/initializer.js';
 
 /**
  * FlowCode Use Case - Core business logic implementation
@@ -22,18 +21,51 @@ import { Initializer, InitializationState } from '../interfaces/initializer.js';
  */
 export class FlowCodeUseCase implements TUIUseCase {
   
+  // Public getters - Reactive streams (shared by both Console and TUI)
+  get messages$(): Observable<DomainMessage> {
+    // Merge message store and interactive command sources
+    const storeMessages$ = this.messageStore.messageHistory$.pipe(
+      switchMap(messages => messages) // Flatten array to individual messages
+    );
+    
+    const interactiveStreams = this.commandDispatcher.getInteractiveStreams();
+    const interactiveMessages$ = interactiveStreams?.messages$ || EMPTY;
+    
+    return merge(storeMessages$, interactiveMessages$);
+  }
+
+  get options$(): Observable<DomainOption> {
+    // Merge PromptHandler and interactive command options
+    const interactiveStreams = this.commandDispatcher.getInteractiveStreams();
+    const interactiveOptions$ = interactiveStreams?.options$ || EMPTY;
+    
+    return merge(this.promptHandler.options$, interactiveOptions$);
+  }
+
+  // TUI-specific streams (ignored by Console)
+  get tokenUsage$(): Observable<DomainTokenUsage> {
+    return this.promptHandler.tokenUsage$;
+  }
+
+  get workerInfo$(): Observable<DomainWorkerInfo> {
+    return this.promptHandler.currentWorker$;
+  }
+
+  get isLoading$(): Observable<boolean> {
+    return this.promptHandler.isProcessing;
+  }
+
   constructor(
     private readonly messageStore: MessageStorePublisher,
     private readonly commandDispatcher: CommandDispatcher,
-    private readonly promptHandler: PromptHandler,
-    private readonly initializer: Initializer
+    private readonly promptHandler: PromptHandler
   ) {}
 
-  // Core use case methods (shared by both Console and TUI)
+  // Public methods - Core use case methods (shared by both Console and TUI)
   async processAIInput(input: string): Promise<void> {
-    // Check if we're in initialization mode
-    if (this.initializer.getState() === InitializationState.InProgress) {
-      this.initializer.processResponse(input);
+    // Check if we're in interactive command mode
+    if (this.commandDispatcher.hasActiveInteractiveCommand()) {
+      this.commandDispatcher.processInteractiveResponse(input);
       return;
     }
 
@@ -51,22 +83,8 @@ export class FlowCodeUseCase implements TUIUseCase {
   }
 
   async processCommand(command: string, args: string[] = []): Promise<void> {
-    // Handle init command specially - it goes through initializer, not dispatcher
-    if (command === 'init') {
-      try {
-        // Store init command for history
-        const commandInput = args.length > 0 ? `${command} ${args.join(' ')}` : command;
-        const userMessage = this.createUserMessage(commandInput);
-        await this.messageStore.storeMessage(userMessage);
-      } catch (error) {
-        console.warn('Failed to store init command message:', error);
-      }
-      await this.handleInitCommand();
-      return;
-    }
-
     try {
-      // Create and store user command message for non-init commands
+      // Create and store user command message
       const commandInput = args.length > 0 ? `${command} ${args.join(' ')}` : command;
       const userMessage = this.createUserMessage(commandInput);
       await this.messageStore.storeMessage(userMessage);
@@ -75,51 +93,14 @@ export class FlowCodeUseCase implements TUIUseCase {
       console.warn('Failed to store command message:', error);
     }
 
-    // Execute non-init commands through dispatcher
+    // Execute all commands through dispatcher (including init)
     await this.commandDispatcher.execute(command, args);
   }
 
-  private async handleInitCommand(): Promise<void> {
-    // Check if already initialized
-    if (this.initializer.isCurrentDirectoryInitialized()) {
-      // Create error message for already initialized
-      const errorMessage: DomainMessage = {
-        id: this.generateMessageId(),
-        type: 'error',
-        content: 'FlowCode project is already initialized in this directory.',
-        timestamp: new Date(),
-        metadata: {
-          errorCode: 'ALREADY_INITIALIZED',
-          recoverable: false
-        }
-      };
-      await this.messageStore.storeMessage(errorMessage);
-      return;
-    }
-
-    // Start initialization process - initializer will publish messages and options
-    const result = this.initializer.start();
-    if (!result.isSuccess) {
-      // Create error message
-      const errorMessage: DomainMessage = {
-        id: this.generateMessageId(),
-        type: 'error',
-        content: `Failed to start initialization: ${result.error}`,
-        timestamp: new Date(),
-        metadata: {
-          errorCode: 'INIT_FAILED',
-          recoverable: true
-        }
-      };
-      await this.messageStore.storeMessage(errorMessage);
-    }
-    // If successful, initializer will handle publishing messages/options through its streams
-  }
-
   async respondToChoice(selectedIndex: number): Promise<void> {
-    // Check if we're in initialization mode
-    if (this.initializer.getState() === InitializationState.InProgress) {
-      this.initializer.processOptionSelection(selectedIndex);
+    // Check if we're in interactive command mode
+    if (this.commandDispatcher.hasActiveInteractiveCommand()) {
+      this.commandDispatcher.processInteractiveOptionSelection(selectedIndex);
       return;
     }
 
@@ -129,34 +110,6 @@ export class FlowCodeUseCase implements TUIUseCase {
 
   getAvailableCommands(): CommandDefinition[] {
     return this.commandDispatcher.getCommands();
-  }
-
-  // Reactive streams (shared by both Console and TUI)
-  get messages$(): Observable<DomainMessage> {
-    // Merge message store and initializer message sources
-    const storeMessages$ = this.messageStore.messageHistory$.pipe(
-      switchMap(messages => messages) // Flatten array to individual messages
-    );
-    
-    return merge(storeMessages$, this.initializer.messages$);
-  }
-
-  get options$(): Observable<DomainOption> {
-    // Merge PromptHandler and Initializer options
-    return merge(this.promptHandler.options$, this.initializer.options$);
-  }
-
-  // TUI-specific streams (ignored by Console)
-  get tokenUsage$(): Observable<DomainTokenUsage> {
-    return this.promptHandler.tokenUsage$;
-  }
-
-  get workerInfo$(): Observable<DomainWorkerInfo> {
-    return this.promptHandler.currentWorker$;
-  }
-
-  get isLoading$(): Observable<boolean> {
-    return this.promptHandler.isProcessing;
   }
 
   // Private helper methods
