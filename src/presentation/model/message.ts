@@ -83,19 +83,24 @@ export type Message = PlainMessage | AIMessage | ErrorMessage | FileMessage;
 /**
  * Message entity that implements BaseMessage for UI rendering
  */
+export type WorkerMetadata = AIMessage['metadata'];
+export type ErrorMetadata = ErrorMessage['metadata'];
+export type FileMetadata = FileMessage['metadata'];
+export type ConsoleMetadata = WorkerMetadata | ErrorMetadata | FileMetadata;
+
 export class ConsoleMessage implements BaseMessage {
   constructor(
     public id: string,
     public type: 'user' | 'system' | 'worker' | 'error' | 'thinking' | 'file',
     public content: string,
     public timestamp: Date,
-    public metadata?: any
+    public metadata?: ConsoleMetadata
   ) {}
 
   static create(
     content: string,
     type: 'user' | 'system' | 'worker' | 'error' | 'thinking' | 'file',
-    metadata?: any
+    metadata?: ConsoleMetadata
   ): ConsoleMessage {
     return new ConsoleMessage(
       `msg_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
@@ -107,12 +112,13 @@ export class ConsoleMessage implements BaseMessage {
   }
 
   getDisplayText(): string {
+    const workerMeta = this.getWorkerMetadata();
     const prefix = {
       user: '> ',
       system: '• ',
-      worker: `[${this.metadata?.workerId || 'worker'}] `,
+      worker: `[${workerMeta?.workerId || 'worker'}] `,
       error: '✗ ',
-      thinking: `[thinking][${this.metadata?.workerId || 'worker'}] `,
+      thinking: `[thinking][${workerMeta?.workerId || 'worker'}] `,
       file: ''
     }[this.type];
 
@@ -131,7 +137,8 @@ export class ConsoleMessage implements BaseMessage {
   }
 
   shouldAnimate(): boolean {
-    return this.metadata?.isStreaming || false;
+    const meta = this.getWorkerMetadata();
+    return meta?.isStreaming === true;
   }
 
   /**
@@ -156,21 +163,25 @@ export class ConsoleMessage implements BaseMessage {
       case 'user':
         color = '\x1b[37m'; // white
         break;
-      case 'worker':
-        if (this.metadata?.workerId === 'taskmaster') {
+      case 'worker': {
+        const workerMeta = this.getWorkerMetadata();
+        if (workerMeta?.workerId === 'taskmaster') {
           color = '\x1b[38;5;214m'; // orange (256 color)
         } else {
           color = '\x1b[34m'; // blue
         }
         break;
-      case 'thinking':
+      }
+      case 'thinking': {
         // Subtle bluish color based on worker type
-        if (this.metadata?.workerId === 'taskmaster') {
+        const workerMeta = this.getWorkerMetadata();
+        if (workerMeta?.workerId === 'taskmaster') {
           color = '\x1b[38;5;173m'; // subtle orange bluish (256 color)
         } else {
           color = '\x1b[38;5;67m'; // subtle bluish (256 color)
         }
         break;
+      }
       case 'error':
         color = '\x1b[31m'; // red
         break;
@@ -181,13 +192,34 @@ export class ConsoleMessage implements BaseMessage {
     return `${color}[${timestamp}] ${this.getDisplayText()}${reset}`;
   }
 
+  private getWorkerMetadata(): WorkerMetadata | undefined {
+    if (this.type === 'worker' || this.type === 'thinking') {
+      const meta = this.metadata as WorkerMetadata | undefined;
+      if (meta && typeof meta.workerId === 'string') {
+        return meta;
+      }
+    }
+    return undefined;
+  }
+
+  private getFileMetadata(): FileMetadata | undefined {
+    if (this.type === 'file') {
+      const meta = this.metadata as FileMetadata | undefined;
+      if (meta && typeof meta.filePath === 'string') {
+        return meta;
+      }
+    }
+    return undefined;
+  }
+
   /**
    * Format file operations with diffs for console display
    */
   private formatFileForConsole(timestamp: string, reset: string): string {
-    const filePath = this.metadata?.filePath || 'unknown file';
-    const operation = this.metadata?.fileOperation || 'edit';
-    const diffs = this.metadata?.diffs || [];
+    const fileMeta = this.getFileMetadata();
+    const filePath = fileMeta?.filePath || 'unknown file';
+    const operation = fileMeta?.fileOperation || 'edit';
+    const diffs: DiffLine[] = Array.isArray(fileMeta?.diffs) ? (fileMeta?.diffs as DiffLine[]) : [];
     
     let result = '';
     
@@ -201,15 +233,15 @@ export class ConsoleMessage implements BaseMessage {
     switch (operation) {
       case 'add':
         result = `${green}[${timestamp}] File added ${gray}at ${filePath}${reset}\n`;
-        if (this.metadata?.totalLinesAdded) {
-          result += `${gray}+${this.metadata.totalLinesAdded} lines${reset}\n`;
+        if (fileMeta?.totalLinesAdded) {
+          result += `${gray}+${fileMeta.totalLinesAdded} lines${reset}\n`;
         }
         break;
         
       case 'delete':
         result = `${red}[${timestamp}] File deleted ${gray}at ${filePath}${reset}\n`;
-        if (this.metadata?.totalLinesRemoved) {
-          result += `${gray}-${this.metadata.totalLinesRemoved} lines${reset}\n`;
+        if (fileMeta?.totalLinesRemoved) {
+          result += `${gray}-${fileMeta.totalLinesRemoved} lines${reset}\n`;
         }
         break;
         
@@ -246,9 +278,9 @@ export class ConsoleMessage implements BaseMessage {
         }
         
         // Show line count summary
-        const linesAdded = this.metadata?.totalLinesAdded || 
+        const linesAdded = fileMeta?.totalLinesAdded || 
           diffs.filter((d: DiffLine) => d.type === 'added' || d.type === 'modified').length;
-        const linesRemoved = this.metadata?.totalLinesRemoved || 
+        const linesRemoved = fileMeta?.totalLinesRemoved || 
           diffs.filter((d: DiffLine) => d.type === 'removed' || d.type === 'modified').length;
         
         if (linesAdded > 0 || linesRemoved > 0) {

@@ -116,7 +116,7 @@ export class MockConsoleUseCase implements ConsoleUseCase {
 export function createDomainMessage(
   type: DomainMessage['type'],
   content: string,
-  metadata?: any
+  metadata?: Record<string, unknown>
 ): DomainMessage {
   const base = {
     id: `test-${Date.now()}`,

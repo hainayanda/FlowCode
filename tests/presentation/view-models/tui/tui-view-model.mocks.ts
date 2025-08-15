@@ -150,7 +150,7 @@ export class MockTUIUseCase implements TUIUseCase {
 export function createDomainMessage(
   type: DomainMessage['type'],
   content: string,
-  metadata?: any
+  metadata?: Record<string, unknown>
 ): DomainMessage {
   const base = {
     id: `test-${Date.now()}`,
