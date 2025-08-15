@@ -24,7 +24,7 @@ export interface AssistantMessage extends AgentMessage {
 export interface ThinkingMessage extends AgentMessage {
   type: 'thinking';
   toolCall?: ToolCall;
-  result?: unknown;
+  result?: any;
   error?: string;
 }
 
@@ -34,7 +34,7 @@ export interface ThinkingMessage extends AgentMessage {
 export interface ToolCall {
   id: string;
   name: string;
-  parameters: Record<string, unknown>;
+  parameters: Record<string, any>;
 }
 
 /**
@@ -54,7 +54,7 @@ export interface AgentInput {
 export interface ToolDefinition {
   name: string;
   description: string;
-  parameters: Record<string, unknown>; // JSON Schema
+  parameters: Record<string, any>; // JSON Schema
 }
 
 /**

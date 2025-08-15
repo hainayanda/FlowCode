@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { Observable, Observer } from 'rxjs';
 import { BaseAgent } from '../base-agent.js';
-import { AgentConfig, AgentInput, AgentResponse, ToolCall, ToolDefinition } from '../../interfaces/agent.js';
+import { AgentConfig, AgentInput, AgentResponse, AgentMessage, ToolCall, ToolDefinition } from '../../interfaces/agent.js';
 import { Toolbox } from '../../interfaces/toolbox.js';
 
 export class AnthropicAgent extends BaseAgent {
@@ -95,7 +95,7 @@ export class AnthropicAgent extends BaseAgent {
     }
   }
 
-  private convertMessages(messages: any[]): Anthropic.MessageParam[] {
+  private convertMessages(messages: AgentMessage[]): Anthropic.MessageParam[] {
     return messages
       .filter(msg => msg.type === 'user' || msg.type === 'assistant')
       .map(msg => ({
