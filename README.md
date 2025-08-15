@@ -43,7 +43,8 @@ FlowCode uses a hybrid approach combining structured config with flexible prompt
 
 ```
 .flowcode/
-├── taskmaster.yml         # Routing rules and model
+├── config.json            # Routing rules and model
+├── settings.json          # Flowcode settings
 ├── TASKMASTER.md          # Project context and custom guidelines
 ├── code-worker.md         # Custom prompts for each worker
 ├── security-worker.md    
