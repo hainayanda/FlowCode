@@ -9,7 +9,7 @@ export interface SessionInfo {
 }
 
 export interface SessionManaging {
-  initializeSession(): Promise<Result<string, string>>;
+  initializeSession(): Promise<Result<SessionInfo, string>>;
   getCurrentSession(): Promise<Result<SessionInfo | null, string>>;
   getAllSession(): Promise<Result<SessionInfo[], string>>;
   switchSessions(sessionName: string): Promise<Result<void, string>>;

@@ -33,7 +33,7 @@ export class SessionService implements SessionManaging {
     this.baseSessionDir = join(homedir(), '.flowcode', 'session');
   }
 
-  async initializeSession(): Promise<Result<string, string>> {
+  async initializeSession(): Promise<Result<SessionInfo, string>> {
     try {
       // Get current vector provider config
       const vectorProvider = await this.configStore.getVectorProviderConfig();
@@ -63,7 +63,14 @@ export class SessionService implements SessionManaging {
       // Set as current session
       this.currentSession = sessionName;
 
-      return Result.success(sessionName);
+      const sessionInfo: SessionInfo = {
+        name: sessionName,
+        createdDate: config.createdDate,
+        lastActiveDate: config.lastActiveDate,
+        vectorProvider: config.vectorProvider
+      };
+
+      return Result.success(sessionInfo);
     } catch (error) {
       return Result.failure(`Failed to initialize session: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
