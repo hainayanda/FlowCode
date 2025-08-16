@@ -56,21 +56,13 @@ describe('AgentTools', () => {
       expect(tools[0].name).toBe('execute_agent');
       expect(tools[0].description).toBe('Execute a configured worker agent with a prompt');
       expect(tools[0].permission).toBe('loose');
-      expect(tools[0].parameters).toHaveLength(5);
+      expect(tools[0].parameters).toHaveLength(2);
 
       // Check required parameters
       const agentNameParam = tools[0].parameters.find(p => p.name === 'agentName');
       const promptParam = tools[0].parameters.find(p => p.name === 'prompt');
       expect(agentNameParam?.required).toBe(true);
       expect(promptParam?.required).toBe(true);
-
-      // Check optional parameters
-      const systemPromptParam = tools[0].parameters.find(p => p.name === 'systemPrompt');
-      const temperatureParam = tools[0].parameters.find(p => p.name === 'temperature');
-      const maxTokensParam = tools[0].parameters.find(p => p.name === 'maxTokens');
-      expect(systemPromptParam?.required).toBe(false);
-      expect(temperatureParam?.required).toBe(false);
-      expect(maxTokensParam?.required).toBe(false);
     });
   });
 
@@ -104,21 +96,6 @@ describe('AgentTools', () => {
       expect(mockAgentExecutor.lastToolbox).toBe(mockWorkerToolbox);
     });
 
-    it('should execute agent with all optional parameters', async () => {
-      const toolCall = createTestToolCall('execute_agent', {
-        agentName: 'test-worker',
-        prompt: 'Test prompt',
-        systemPrompt: 'System instruction',
-        temperature: 0.8,
-        maxTokens: 2000
-      });
-
-      await agentTools.executeTool(toolCall);
-
-      expect(mockAgentExecutor.lastRequest?.systemPrompt).toBe('System instruction');
-      expect(mockAgentExecutor.lastRequest?.temperature).toBe(0.8);
-      expect(mockAgentExecutor.lastRequest?.maxTokens).toBe(2000);
-    });
 
     it('should emit domain messages during execution', async () => {
       const toolCall = createTestToolCall('execute_agent', {
@@ -214,70 +191,6 @@ describe('AgentTools', () => {
         expect(result.error).toBe('Prompt is required and must be a string');
       });
 
-      it('should fail when systemPrompt is not a string', async () => {
-        const toolCall = createTestToolCall('execute_agent', {
-          agentName: 'test-worker',
-          prompt: 'Test prompt',
-          systemPrompt: 123
-        });
-
-        const result = await agentTools.executeTool(toolCall);
-
-        expect(result.success).toBe(false);
-        expect(result.error).toBe('System prompt must be a string');
-      });
-
-      it('should fail when temperature is out of range', async () => {
-        const toolCall = createTestToolCall('execute_agent', {
-          agentName: 'test-worker',
-          prompt: 'Test prompt',
-          temperature: 3.0
-        });
-
-        const result = await agentTools.executeTool(toolCall);
-
-        expect(result.success).toBe(false);
-        expect(result.error).toBe('Temperature must be a number between 0 and 2');
-      });
-
-      it('should fail when temperature is negative', async () => {
-        const toolCall = createTestToolCall('execute_agent', {
-          agentName: 'test-worker',
-          prompt: 'Test prompt',
-          temperature: -0.5
-        });
-
-        const result = await agentTools.executeTool(toolCall);
-
-        expect(result.success).toBe(false);
-        expect(result.error).toBe('Temperature must be a number between 0 and 2');
-      });
-
-      it('should fail when maxTokens is not positive', async () => {
-        const toolCall = createTestToolCall('execute_agent', {
-          agentName: 'test-worker',
-          prompt: 'Test prompt',
-          maxTokens: 0
-        });
-
-        const result = await agentTools.executeTool(toolCall);
-
-        expect(result.success).toBe(false);
-        expect(result.error).toBe('Max tokens must be a positive number');
-      });
-
-      it('should accept valid parameter ranges', async () => {
-        const toolCall = createTestToolCall('execute_agent', {
-          agentName: 'test-worker',
-          prompt: 'Test prompt',
-          temperature: 1.5,
-          maxTokens: 1000
-        });
-
-        const result = await agentTools.executeTool(toolCall);
-
-        expect(result.success).toBe(true);
-      });
     });
   });
 });

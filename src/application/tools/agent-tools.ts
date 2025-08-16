@@ -12,9 +12,6 @@ import { SummaryMessage } from '../interfaces/agent.js';
 export interface AgentExecutionParams {
   agentName: string;
   prompt: string;
-  systemPrompt?: string;
-  temperature?: number;
-  maxTokens?: number;
 }
 
 /**
@@ -53,24 +50,6 @@ export class AgentTools implements Toolbox {
             type: 'string',
             description: 'Prompt to send to the agent',
             required: true
-          },
-          {
-            name: 'systemPrompt',
-            type: 'string',
-            description: 'Optional system prompt for the agent',
-            required: false
-          },
-          {
-            name: 'temperature',
-            type: 'number',
-            description: 'Temperature setting for the agent (0.0 to 2.0)',
-            required: false
-          },
-          {
-            name: 'maxTokens',
-            type: 'number',
-            description: 'Maximum tokens for the agent response',
-            required: false
           }
         ],
         permission: 'loose'
@@ -98,10 +77,7 @@ export class AgentTools implements Toolbox {
 
       const request: AgentExecutionRequest = {
         agentName: params.agentName,
-        prompt: params.prompt,
-        systemPrompt: params.systemPrompt,
-        temperature: params.temperature,
-        maxTokens: params.maxTokens
+        prompt: params.prompt
       };
 
       // Execute agent and collect all domain messages
@@ -226,7 +202,7 @@ export class AgentTools implements Toolbox {
   }
 
   private validateParameters(parameters: Record<string, any>): AgentExecutionParams {
-    const { agentName, prompt, systemPrompt, temperature, maxTokens } = parameters;
+    const { agentName, prompt } = parameters;
 
     if (!agentName || typeof agentName !== 'string') {
       throw new Error('Agent name is required and must be a string');
@@ -236,24 +212,9 @@ export class AgentTools implements Toolbox {
       throw new Error('Prompt is required and must be a string');
     }
 
-    if (systemPrompt !== undefined && typeof systemPrompt !== 'string') {
-      throw new Error('System prompt must be a string');
-    }
-
-    if (temperature !== undefined && (typeof temperature !== 'number' || temperature < 0 || temperature > 2)) {
-      throw new Error('Temperature must be a number between 0 and 2');
-    }
-
-    if (maxTokens !== undefined && (typeof maxTokens !== 'number' || maxTokens <= 0)) {
-      throw new Error('Max tokens must be a positive number');
-    }
-
     return {
       agentName,
-      prompt,
-      systemPrompt,
-      temperature,
-      maxTokens
+      prompt
     };
   }
 

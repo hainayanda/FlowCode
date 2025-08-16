@@ -10,9 +10,6 @@ export interface AgentExecutionRequest {
   agentName: string;
   prompt: string;
   context?: AgentMessage[];
-  systemPrompt?: string;
-  temperature?: number;
-  maxTokens?: number;
 }
 
 /**
