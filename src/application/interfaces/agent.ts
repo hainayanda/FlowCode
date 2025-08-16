@@ -6,7 +6,7 @@ import { Toolbox } from './toolbox.js';
  */
 export interface AgentMessage {
   id: string;
-  type: 'user' | 'assistant' | 'system' | 'tool' | 'thinking';
+  type: 'user' | 'assistant' | 'system' | 'tool' | 'thinking' | 'summary';
   content: string;
   timestamp: Date;
   metadata?: Record<string, unknown>;
@@ -28,6 +28,12 @@ export interface ThinkingMessage extends AgentMessage {
   error?: string;
 }
 
+export interface SummaryMessage extends AgentMessage {
+  type: 'summary';
+  taskStatus: 'completed' | 'partial' | 'failed';
+  summaryData: string;
+}
+
 /**
  * Tool call representation
  */
@@ -46,6 +52,8 @@ export interface AgentInput {
   temperature?: number;
   maxTokens?: number;
   tools?: ToolDefinition[];
+  maxMessages?: number;
+  disableMultiMessage?: boolean;
 }
 
 /**
@@ -61,9 +69,10 @@ export interface ToolDefinition {
  * Agent response from processing
  */
 export interface AgentResponse {
-  message: AssistantMessage | ThinkingMessage;
+  message: AssistantMessage | ThinkingMessage | SummaryMessage;
   usage?: TokenUsage;
   finishReason?: 'stop' | 'length' | 'tool_calls' | 'content_filter';
+  summaryData?: string;
 }
 
 /**
@@ -94,6 +103,7 @@ export interface AgentConfig {
 
   deploymentName?: string;
   apiVersion?: string;
+  maxIterations?: number;
 }
 
 /**
@@ -104,6 +114,31 @@ export interface Agent {
    * Stream processing with real-time message publishing
    */
   processStream(input: AgentInput): Observable<AgentResponse>;
+
+  /**
+   * Stream processing with iteration support
+   */
+  processStreamWithIteration(input: AgentInput): Observable<AgentResponse>;
+
+  /**
+   * Check if currently in an iteration
+   */
+  readonly isInIteration: boolean;
+
+  /**
+   * Queue an input for later processing
+   */
+  queueProcess(input: AgentInput): void;
+
+  /**
+   * Get all queued inputs and optionally clear the queue
+   */
+  getQueuedInputs(clear?: boolean): AgentInput[];
+
+  /**
+   * Merge multiple AgentInputs into one
+   */
+  mergeInputs(inputs: AgentInput[]): AgentInput;
 
   /**
    * Validate agent configuration
