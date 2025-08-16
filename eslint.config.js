@@ -40,19 +40,26 @@ export default [
         default: [
           // Static properties first
           'public-static-field',
+          'protected-static-field',
           'private-static-field',
 
           // Readonly properties
           'public-readonly-field',
+          'protected-readonly-field',
           'private-readonly-field',
 
           // Instance properties
           'public-instance-field',
+          'protected-instance-field',
           'private-instance-field',
           
           // Public getters
           'public-get',
           'public-set',
+
+          // Protected getters
+          'protected-get',
+          'protected-set',
           
           // Private getters
           'private-get',
@@ -60,6 +67,7 @@ export default [
 
           // Static methods
           'public-static-method',
+          'protected-static-method',
           'private-static-method',
 
           // Constructor
@@ -67,6 +75,7 @@ export default [
           
           // Instance methods
           'public-instance-method',
+          'protected-instance-method',
           'private-instance-method'
         ]
       }],
