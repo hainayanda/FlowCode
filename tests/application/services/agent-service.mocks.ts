@@ -9,9 +9,12 @@ import { DomainMessage } from '../../../src/presentation/view-models/console/con
  */
 export class MockAgent implements Agent {
   public processStreamCalled = false;
+  public processStreamWithIterationCalled = false;
   public lastInput: AgentInput | null = null;
   public mockMessages: AgentMessage[] = [];
   private messagesSubject = new Subject<AgentResponse>();
+  private _isInIteration = false;
+  private queuedInputs: AgentInput[] = [];
 
   constructor(
     public readonly config: AgentConfig,
@@ -41,6 +44,58 @@ export class MockAgent implements Agent {
     return this.messagesSubject.asObservable();
   }
 
+  processStreamWithIteration(input: AgentInput): Observable<AgentResponse> {
+    this.processStreamWithIterationCalled = true;
+    this.lastInput = input;
+    this._isInIteration = true;
+
+    // Simulate streaming messages with iteration support
+    setTimeout(() => {
+      this.mockMessages.forEach(message => {
+        // Ensure the message is AssistantMessage or ThinkingMessage
+        const responseMessage = message.type === 'thinking' || message.type === 'assistant' || message.type === 'summary'
+          ? message as AssistantMessage | ThinkingMessage
+          : {
+              ...message,
+              type: 'assistant' as const
+            } as AssistantMessage;
+        
+        this.messagesSubject.next({ message: responseMessage });
+      });
+      this._isInIteration = false;
+      this.messagesSubject.complete();
+    }, 10);
+
+    return this.messagesSubject.asObservable();
+  }
+
+  get isInIteration(): boolean {
+    return this._isInIteration;
+  }
+
+  queueProcess(input: AgentInput): void {
+    this.queuedInputs.push(input);
+  }
+
+  getQueuedInputs(clear?: boolean): AgentInput[] {
+    const inputs = [...this.queuedInputs];
+    if (clear) {
+      this.queuedInputs = [];
+    }
+    return inputs;
+  }
+
+  mergeInputs(inputs: AgentInput[]): AgentInput {
+    // Simple merge implementation for testing
+    const allMessages = inputs.flatMap(input => input.messages);
+    return {
+      messages: allMessages,
+      systemPrompt: inputs[0]?.systemPrompt,
+      temperature: inputs[0]?.temperature,
+      maxTokens: inputs[0]?.maxTokens
+    };
+  }
+
   async validateConfig(): Promise<boolean> {
     return true;
   }
@@ -55,9 +110,12 @@ export class MockAgent implements Agent {
 
   reset(): void {
     this.processStreamCalled = false;
+    this.processStreamWithIterationCalled = false;
     this.lastInput = null;
     this.mockMessages = [];
     this.messagesSubject = new Subject<AgentResponse>();
+    this._isInIteration = false;
+    this.queuedInputs = [];
   }
 }
 

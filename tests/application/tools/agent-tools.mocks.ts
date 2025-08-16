@@ -1,119 +1,113 @@
 import { BehaviorSubject, Subject, Observable, of } from 'rxjs';
-import { AgentService } from '../../../src/application/services/agent-service.js';
 import { EmbeddingService } from '../../../src/application/interfaces/embedding-service.js';
-import { 
-  AgentExecutionRequest, 
-  AgentExecutionResult, 
-  AgentExecutionStatus,
-  AgentExecutionOutput 
-} from '../../../src/application/interfaces/agent-execution.js';
-import { AgentMessage, AgentFactory } from '../../../src/application/interfaces/agent.js';
 import { Toolbox } from '../../../src/application/interfaces/toolbox.js';
-import { DomainMessage } from '../../../src/presentation/view-models/console/console-use-case.js';
-import { ConfigReader } from '../../../src/application/interfaces/config-store.js';
-import { CredentialStore } from '../../../src/application/interfaces/credential-store.js';
+import { DomainMessage, PlainMessage, AIResponseMessage } from '../../../src/presentation/view-models/console/console-use-case.js';
+import { AgentExecutor, AgentExecutionRequest } from '../../../src/application/interfaces/agent-executor.js';
 
 /**
- * Mock AgentService for testing AgentTools
+ * Mock AgentExecutor for testing AgentTools
  */
-export class MockAgentService extends AgentService {
+export class MockAgentExecutor implements AgentExecutor {
   public executeAgentCalled = false;
-  public getExecutionResultCalled = false;
   public lastRequest: AgentExecutionRequest | null = null;
   public lastToolbox: Toolbox | null = null;
-  public mockExecutionOutput: AgentExecutionOutput | null = null;
-  public mockExecutionResult: AgentExecutionResult | null = null;
+  public shouldSimulateError = false;
+  public simulatedErrorMessage = '';
 
-  constructor() {
-    // Create mock instances for the parent constructor
-    const mockConfigReader = {} as ConfigReader;
-    const mockAgentFactory = {} as AgentFactory;
-    const mockCredentialsService = {} as CredentialStore;
-    
-    super(mockConfigReader, mockAgentFactory, mockCredentialsService);
+  private domainMessagesSubject = new Subject<DomainMessage>();
+
+  get domainMessages$(): Observable<DomainMessage> {
+    return this.domainMessagesSubject.asObservable();
   }
 
-  async executeAgent(request: AgentExecutionRequest, toolbox: Toolbox): Promise<AgentExecutionOutput> {
+  executeAgent(request: AgentExecutionRequest, toolbox: Toolbox): Observable<DomainMessage> {
     this.executeAgentCalled = true;
     this.lastRequest = request;
     this.lastToolbox = toolbox;
 
-    if (this.mockExecutionOutput) {
-      return this.mockExecutionOutput;
-    }
-
-    // Default mock execution output
-    const statusSubject = new BehaviorSubject<AgentExecutionStatus>({ status: 'starting' });
-    const messagesSubject = new Subject<AgentMessage>();
-
-    // Simulate execution flow
-    setTimeout(() => {
-      statusSubject.next({ status: 'processing', message: 'Processing request...' });
-      messagesSubject.next({
-        id: 'msg-1',
-        type: 'assistant',
-        content: 'Mock agent response',
-        timestamp: new Date()
-      });
-      statusSubject.next({ status: 'completed', message: 'Execution completed' });
-      messagesSubject.complete();
-    }, 10);
-
-    return {
-      status: statusSubject.asObservable(),
-      messages: messagesSubject.asObservable()
-    };
-  }
-
-  async getExecutionResult(
-    request: AgentExecutionRequest,
-    executionTime: number,
-    success: boolean,
-    error?: string
-  ): Promise<AgentExecutionResult> {
-    this.getExecutionResultCalled = true;
-
-    if (this.mockExecutionResult) {
-      return this.mockExecutionResult;
-    }
-
-    // Default mock result
-    return {
-      success,
-      summary: success 
-        ? `${request.agentName} agent executed successfully`
-        : `${request.agentName} agent failed: ${error}`,
-      executionTime,
-      metadata: {
-        agentName: request.agentName,
-        provider: 'mock-provider',
-        model: 'mock-model'
+    return new Observable<DomainMessage>((subscriber) => {
+      if (this.shouldSimulateError) {
+        setTimeout(() => {
+          const errorMessage: PlainMessage = {
+            id: 'error-1',
+            type: 'system',
+            content: `Agent Error: ${this.simulatedErrorMessage}`,
+            timestamp: new Date()
+          };
+          subscriber.next(errorMessage);
+          this.domainMessagesSubject.next(errorMessage);
+          subscriber.error(new Error(this.simulatedErrorMessage));
+        }, 10);
+        return;
       }
-    };
-  }
 
-  setMockExecutionOutput(output: AgentExecutionOutput): void {
-    this.mockExecutionOutput = output;
-  }
+      // Simulate normal execution flow
+      setTimeout(() => {
+        // Start message
+        const startMessage: PlainMessage = {
+          id: 'start-1',
+          type: 'system',
+          content: `Starting ${request.agentName} agent...`,
+          timestamp: new Date()
+        };
+        subscriber.next(startMessage);
+        this.domainMessagesSubject.next(startMessage);
 
-  setMockExecutionResult(result: AgentExecutionResult): void {
-    this.mockExecutionResult = result;
+        // Agent response
+        const agentResponse: AIResponseMessage = {
+          id: 'agent-1',
+          type: 'ai-response',
+          content: 'Mock agent response',
+          timestamp: new Date(),
+          metadata: {
+            workerId: request.agentName,
+            isStreaming: false
+          }
+        };
+        subscriber.next(agentResponse);
+        this.domainMessagesSubject.next(agentResponse);
+
+        // Summary message
+        const summaryResponse: AIResponseMessage = {
+          id: 'summary-1',
+          type: 'ai-response',
+          content: `Task completed successfully. Summary: ${request.agentName} executed the requested task.`,
+          timestamp: new Date(),
+          metadata: {
+            workerId: request.agentName,
+            isStreaming: false
+          }
+        };
+        subscriber.next(summaryResponse);
+        this.domainMessagesSubject.next(summaryResponse);
+
+        // Completion message
+        const completionMessage: PlainMessage = {
+          id: 'complete-1',
+          type: 'system',
+          content: `Agent execution completed in 50ms`,
+          timestamp: new Date()
+        };
+        subscriber.next(completionMessage);
+        this.domainMessagesSubject.next(completionMessage);
+
+        subscriber.complete();
+      }, 10);
+    });
   }
 
   simulateError(errorMessage: string): void {
-    // Override executeAgent to throw an error
-    this.executeAgent = async () => {
-      throw new Error(errorMessage);
-    };
+    this.shouldSimulateError = true;
+    this.simulatedErrorMessage = errorMessage;
   }
 
   reset(): void {
     this.executeAgentCalled = false;
-    this.getExecutionResultCalled = false;
     this.lastRequest = null;
     this.lastToolbox = null;
-    this.mockExecutionOutput = null;
-    this.mockExecutionResult = null;
+    this.shouldSimulateError = false;
+    this.simulatedErrorMessage = '';
+    this.domainMessagesSubject = new Subject<DomainMessage>();
   }
 }
 

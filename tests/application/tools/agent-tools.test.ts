@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { firstValueFrom, take, toArray } from 'rxjs';
 import { AgentTools } from '../../../src/application/tools/agent-tools.js';
 import { 
-  MockAgentService, 
+  MockAgentExecutor, 
   MockEmbeddingService, 
   MockWorkerToolbox,
   createTestToolCall 
@@ -12,24 +12,24 @@ import { EmbeddingService } from '../../../src/application/interfaces/embedding-
 
 describe('AgentTools', () => {
   let agentTools: AgentTools;
-  let mockAgentService: MockAgentService;
+  let mockAgentExecutor: MockAgentExecutor;
   let mockEmbeddingService: EmbeddingService;
   let mockWorkerToolbox: MockWorkerToolbox;
 
   beforeEach(() => {
-    mockAgentService = new MockAgentService();
+    mockAgentExecutor = new MockAgentExecutor();
     mockEmbeddingService = new MockEmbeddingService();
     mockWorkerToolbox = new MockWorkerToolbox();
 
     agentTools = new AgentTools(
       mockEmbeddingService,
-      mockAgentService,
+      mockAgentExecutor,
       mockWorkerToolbox
     );
   });
 
   afterEach(() => {
-    mockAgentService.reset();
+    mockAgentExecutor.reset();
     mockWorkerToolbox.reset();
   });
 
@@ -96,13 +96,12 @@ describe('AgentTools', () => {
 
       expect(result.success).toBe(true);
       expect(result.data).toBeDefined();
-      expect(result.message).toContain('test-worker agent executed successfully');
+      expect(result.message).toContain('test-worker agent execution completed');
       
-      expect(mockAgentService.executeAgentCalled).toBe(true);
-      expect(mockAgentService.getExecutionResultCalled).toBe(true);
-      expect(mockAgentService.lastRequest?.agentName).toBe('test-worker');
-      expect(mockAgentService.lastRequest?.prompt).toBe('Test prompt');
-      expect(mockAgentService.lastToolbox).toBe(mockWorkerToolbox);
+      expect(mockAgentExecutor.executeAgentCalled).toBe(true);
+      expect(mockAgentExecutor.lastRequest?.agentName).toBe('test-worker');
+      expect(mockAgentExecutor.lastRequest?.prompt).toBe('Test prompt');
+      expect(mockAgentExecutor.lastToolbox).toBe(mockWorkerToolbox);
     });
 
     it('should execute agent with all optional parameters', async () => {
@@ -116,9 +115,9 @@ describe('AgentTools', () => {
 
       await agentTools.executeTool(toolCall);
 
-      expect(mockAgentService.lastRequest?.systemPrompt).toBe('System instruction');
-      expect(mockAgentService.lastRequest?.temperature).toBe(0.8);
-      expect(mockAgentService.lastRequest?.maxTokens).toBe(2000);
+      expect(mockAgentExecutor.lastRequest?.systemPrompt).toBe('System instruction');
+      expect(mockAgentExecutor.lastRequest?.temperature).toBe(0.8);
+      expect(mockAgentExecutor.lastRequest?.maxTokens).toBe(2000);
     });
 
     it('should emit domain messages during execution', async () => {
@@ -128,22 +127,23 @@ describe('AgentTools', () => {
       });
 
       const messagePromise = firstValueFrom(
-        agentTools.domainMessages$.pipe(take(3), toArray())
+        agentTools.domainMessages$.pipe(take(4), toArray())
       );
 
       await agentTools.executeTool(toolCall);
 
       const messages = await messagePromise;
-      expect(messages).toHaveLength(3);
+      expect(messages).toHaveLength(4);
       
       expect(messages[0].content).toContain('Starting test-worker agent');
-      expect(messages[1].content).toContain('Agent Status');
-      expect(messages[2].content).toContain('Agent execution completed');
+      expect(messages[1].content).toContain('Mock agent response');
+      expect(messages[2].content).toContain('test-worker executed the requested task');
+      expect(messages[3].content).toContain('Agent execution completed');
     });
 
     it('should handle agent execution errors gracefully', async () => {
       const errorMessage = 'Agent execution failed';
-      mockAgentService.simulateError(errorMessage);
+      mockAgentExecutor.simulateError(errorMessage);
 
       const toolCall = createTestToolCall('execute_agent', {
         agentName: 'test-worker',

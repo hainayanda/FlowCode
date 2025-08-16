@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, take, toArray } from 'rxjs';
 import { AgentService } from '../../../src/application/services/agent-service.js';
 import { CredentialService } from '../../../src/application/services/credential-service.js';
 import { MockConfigStore } from './config-service.mocks.js';
@@ -10,7 +10,8 @@ import {
   MockToolbox,
   createTestAgentMessage 
 } from './agent-service.mocks.js';
-import { AgentExecutionRequest } from '../../../src/application/interfaces/agent-execution.js';
+import { AgentExecutionRequest } from '../../../src/application/interfaces/agent-executor.js';
+import { DomainMessage } from '../../../src/presentation/view-models/console/console-use-case.js';
 
 describe('AgentService', () => {
   let agentService: AgentService;
@@ -79,16 +80,19 @@ describe('AgentService', () => {
       const testMessage = createTestAgentMessage('1', 'assistant', 'Test response');
       mockAgent.setMockMessages([testMessage]);
 
-      const execution = await agentService.executeAgent(request, mockToolbox);
+      const execution$ = agentService.executeAgent(request, mockToolbox);
 
+      // Verify we get domain messages
+      const firstDomainMessage = await firstValueFrom(execution$);
+      expect(firstDomainMessage.type).toBe('system');
+      expect(firstDomainMessage.content).toContain('Starting test-worker agent');
+
+      // Wait a bit for async execution and then check mock calls
+      await new Promise(resolve => setTimeout(resolve, 50));
       expect(mockAgentFactory.createAgentCalled).toBe(true);
-      expect(mockAgent.processStreamCalled).toBe(true);
+      expect(mockAgent.processStreamWithIterationCalled).toBe(true);
       expect(mockAgent.lastInput?.messages).toHaveLength(1);
       expect(mockAgent.lastInput?.messages[0].content).toBe('Test prompt');
-
-      // Verify status observable emits (likely 'processing' since it moves quickly)
-      const firstStatus = await firstValueFrom(execution.status);
-      expect(['starting', 'processing']).toContain(firstStatus.status);
     });
 
     it('should handle agent execution with system prompt and parameters', async () => {
@@ -100,7 +104,13 @@ describe('AgentService', () => {
         maxTokens: 1000
       };
 
-      await agentService.executeAgent(request, mockToolbox);
+      const execution$ = agentService.executeAgent(request, mockToolbox);
+
+      // Collect first message to trigger the execution
+      await firstValueFrom(execution$);
+      
+      // Wait a bit for async execution
+      await new Promise(resolve => setTimeout(resolve, 50));
 
       expect(mockAgent.lastInput?.systemPrompt).toBe('System instruction');
       expect(mockAgent.lastInput?.temperature).toBe(0.5);
@@ -113,8 +123,11 @@ describe('AgentService', () => {
         prompt: 'Test prompt'
       };
 
-      await expect(agentService.executeAgent(request, mockToolbox))
-        .rejects.toThrow("Worker 'non-existent-worker' not found in configuration");
+      const execution$ = agentService.executeAgent(request, mockToolbox);
+
+      const errorMessage = await firstValueFrom(execution$);
+      expect(errorMessage.type).toBe('system');
+      expect(errorMessage.content).toContain("Worker 'non-existent-worker' not found in configuration");
     });
 
     it('should fail when worker is disabled', async () => {
@@ -131,8 +144,11 @@ describe('AgentService', () => {
         prompt: 'Test prompt'
       };
 
-      await expect(agentService.executeAgent(request, mockToolbox))
-        .rejects.toThrow("Worker 'disabled-worker' is disabled");
+      const execution$ = agentService.executeAgent(request, mockToolbox);
+
+      const errorMessage = await firstValueFrom(execution$);
+      expect(errorMessage.type).toBe('system');
+      expect(errorMessage.content).toContain("Worker 'disabled-worker' is disabled");
     });
 
     it('should fail when no API key found for provider', async () => {
@@ -143,8 +159,11 @@ describe('AgentService', () => {
         prompt: 'Test prompt'
       };
 
-      await expect(agentService.executeAgent(request, mockToolbox))
-        .rejects.toThrow("No API key found for provider 'test-provider'");
+      const execution$ = agentService.executeAgent(request, mockToolbox);
+
+      const errorMessage = await firstValueFrom(execution$);
+      expect(errorMessage.type).toBe('system');
+      expect(errorMessage.content).toContain("No API key found for provider 'test-provider'");
     });
 
     it('should create agent with correct configuration', async () => {
@@ -153,7 +172,13 @@ describe('AgentService', () => {
         prompt: 'Test prompt'
       };
 
-      await agentService.executeAgent(request, mockToolbox);
+      const execution$ = agentService.executeAgent(request, mockToolbox);
+
+      // Collect first message to trigger the execution
+      await firstValueFrom(execution$);
+      
+      // Wait a bit for async execution
+      await new Promise(resolve => setTimeout(resolve, 50));
 
       expect(mockAgentFactory.lastConfig).toEqual({
         model: 'test-model',
@@ -165,68 +190,6 @@ describe('AgentService', () => {
     });
   });
 
-  describe('getExecutionResult', () => {
-    it('should return successful execution result', async () => {
-      const request: AgentExecutionRequest = {
-        agentName: 'test-worker',
-        prompt: 'Test prompt'
-      };
-
-      const result = await agentService.getExecutionResult(
-        request,
-        1500,
-        true
-      );
-
-      expect(result.success).toBe(true);
-      expect(result.summary).toBe('test-worker agent executed successfully');
-      expect(result.executionTime).toBe(1500);
-      expect(result.metadata).toBeDefined();
-      expect(result.metadata!.agentName).toBe('test-worker');
-      expect(result.metadata!.provider).toBe('test-provider');
-      expect(result.metadata!.model).toBe('test-model');
-      expect(result.metadata!.temperature).toBe(0.7);
-    });
-
-    it('should return failed execution result with error', async () => {
-      const request: AgentExecutionRequest = {
-        agentName: 'test-worker',
-        prompt: 'Test prompt'
-      };
-
-      const result = await agentService.getExecutionResult(
-        request,
-        2000,
-        false,
-        'Test error message'
-      );
-
-      expect(result.success).toBe(false);
-      expect(result.summary).toBe('test-worker agent failed: Test error message');
-      expect(result.executionTime).toBe(2000);
-      expect(result.metadata).toBeDefined();
-      expect(result.metadata!.agentName).toBe('test-worker');
-    });
-
-    it('should handle worker config not found in execution result', async () => {
-      const request: AgentExecutionRequest = {
-        agentName: 'non-existent-worker',
-        prompt: 'Test prompt'
-      };
-
-      const result = await agentService.getExecutionResult(
-        request,
-        1000,
-        false,
-        'Worker not found'
-      );
-
-      expect(result.metadata).toBeDefined();
-      expect(result.metadata!.provider).toBeUndefined();
-      expect(result.metadata!.model).toBeUndefined();
-      expect(result.metadata!.temperature).toBeUndefined();
-    });
-  });
 
   describe('Agent creation and configuration', () => {
     it('should use worker temperature when request temperature not provided', async () => {
@@ -237,7 +200,13 @@ describe('AgentService', () => {
         prompt: 'Test prompt'
       };
 
-      await agentService.executeAgent(request, mockToolbox);
+      const execution$ = agentService.executeAgent(request, mockToolbox);
+
+      // Collect first message to trigger the execution
+      await firstValueFrom(execution$);
+      
+      // Wait a bit for async execution
+      await new Promise(resolve => setTimeout(resolve, 50));
 
       expect(mockAgentFactory.lastConfig?.temperature).toBe(0.9);
     });
@@ -251,7 +220,13 @@ describe('AgentService', () => {
         temperature: 0.3
       };
 
-      await agentService.executeAgent(request, mockToolbox);
+      const execution$ = agentService.executeAgent(request, mockToolbox);
+
+      // Collect first message to trigger the execution
+      await firstValueFrom(execution$);
+      
+      // Wait a bit for async execution
+      await new Promise(resolve => setTimeout(resolve, 50));
 
       expect(mockAgent.lastInput?.temperature).toBe(0.3);
     });
@@ -265,7 +240,13 @@ describe('AgentService', () => {
         context: [contextMessage]
       };
 
-      await agentService.executeAgent(request, mockToolbox);
+      const execution$ = agentService.executeAgent(request, mockToolbox);
+
+      // Collect first message to trigger the execution
+      await firstValueFrom(execution$);
+      
+      // Wait a bit for async execution
+      await new Promise(resolve => setTimeout(resolve, 50));
 
       expect(mockAgent.lastInput?.messages).toHaveLength(2);
       expect(mockAgent.lastInput?.messages[0]).toBe(contextMessage);
