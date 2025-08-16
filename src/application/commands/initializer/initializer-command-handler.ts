@@ -155,6 +155,15 @@ export class InitializerCommandHandler implements CommandProvider, InteractiveCo
     });
   }
 
+  protected isCurrentDirectoryInitialized(): boolean {
+    try {
+      const fs = require('fs');
+      return fs.existsSync(this.context.flowcodeDirectory);
+    } catch {
+      return false;
+    }
+  }
+
   // Private methods
   private start(): Result<void, string> {
     if (this.currentState !== InitializationState.NotStarted) {
@@ -192,15 +201,6 @@ export class InitializerCommandHandler implements CommandProvider, InteractiveCo
       return Result.success(undefined);
     } catch {
       return Result.failure('Invalid directory.');
-    }
-  }
-
-  protected isCurrentDirectoryInitialized(): boolean {
-    try {
-      const fs = require('fs');
-      return fs.existsSync(this.context.flowcodeDirectory);
-    } catch {
-      return false;
     }
   }
 
