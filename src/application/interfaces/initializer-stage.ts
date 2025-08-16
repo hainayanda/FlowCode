@@ -1,5 +1,5 @@
 import { Observable } from 'rxjs';
-import { Result } from '../shared/result.js';
+import { Result } from '../../shared/result.js';
 import { DomainMessage, DomainOption } from '../../presentation/view-models/console/console-use-case.js';
 
 export enum InitializerStageType {

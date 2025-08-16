@@ -2,7 +2,7 @@ import { CommandProvider, CommandResult } from '../../interfaces/command-provide
 import { CommandDefinition } from '../../../presentation/view-models/console/console-use-case.js';
 import { ConfigStore } from '../../interfaces/config-store.js';
 import { MessageWriter } from '../../interfaces/message-store.js';
-import { Result } from '../../shared/result.js';
+import { Result } from '../../../shared/result.js';
 
 /**
  * Command handler for configuration management operations

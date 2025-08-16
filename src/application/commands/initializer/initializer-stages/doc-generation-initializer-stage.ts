@@ -2,7 +2,7 @@ import { BehaviorSubject, Observable, Subscription } from 'rxjs';
 import { InitializerStage, InitializerStageType, InitializerStageContext } from '../../../interfaces/initializer-stage.js';
 import { Agent, AgentFactory, AgentConfig } from '../../../interfaces/agent.js';
 import { Toolbox } from '../../../interfaces/toolbox.js';
-import { Result } from '../../../shared/result.js';
+import { Result } from '../../../../shared/result.js';
 import { DomainMessage, DomainOption } from '../../../../presentation/view-models/console/console-use-case.js';
 import { InitializationOptions } from '../../../interfaces/initializer.js';
 

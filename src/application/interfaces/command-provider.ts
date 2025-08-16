@@ -1,7 +1,7 @@
 import { Observable } from 'rxjs';
 import { CommandDefinition } from '../../presentation/view-models/console/console-use-case.js';
 import { DomainMessage, DomainOption } from '../../presentation/view-models/console/console-use-case.js';
-import { Result } from '../shared/result.js';
+import { Result } from '../../shared/result.js';
 
 /**
  * Command execution result

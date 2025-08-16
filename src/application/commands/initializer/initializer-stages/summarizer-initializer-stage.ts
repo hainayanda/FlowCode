@@ -2,7 +2,7 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { InitializerStage, InitializerStageType, InitializerStageContext } from '../../../interfaces/initializer-stage.js';
 import { AgentFactory } from '../../../interfaces/agent.js';
 import { CredentialReader } from '../../../interfaces/credential-store.js';
-import { Result } from '../../../shared/result.js';
+import { Result } from '../../../../shared/result.js';
 import { DomainMessage, DomainOption } from '../../../../presentation/view-models/console/console-use-case.js';
 
 export class SummarizerInitializerStage implements InitializerStage {

@@ -1,4 +1,4 @@
-import { Result } from '../shared/result';
+import { Result } from '../../shared/result';
 import { VectorProviderConfig } from '../stores/config-repository';
 
 export interface SessionInfo {

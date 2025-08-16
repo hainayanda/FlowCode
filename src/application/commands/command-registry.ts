@@ -2,7 +2,7 @@ import { Observable, merge } from 'rxjs';
 import { CommandDispatcher, CommandProvider, CommandResult } from '../interfaces/command-provider.js';
 import { CommandDefinition, DomainMessage, DomainOption } from '../../presentation/view-models/console/console-use-case.js';
 import { MessageWriter } from '../interfaces/message-store.js';
-import { Result } from '../shared/result.js';
+import { Result } from '../../shared/result.js';
 
 /**
  * Main command dispatcher that routes commands to appropriate handlers

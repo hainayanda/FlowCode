@@ -1,6 +1,6 @@
 import { SessionManaging, SessionInfo } from '../interfaces/session-managing';
 import { ConfigRepository } from '../stores/config-repository';
-import { Result } from '../shared/result';
+import { Result } from '../../shared/result';
 import { promises as fs } from 'fs';
 import { existsSync } from 'fs';
 import { homedir } from 'os';

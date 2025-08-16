@@ -4,7 +4,7 @@ import { InitializerStage, InitializerStageFactory, InitializerStageType, Initia
 import { ConfigWriter } from '../../interfaces/config-store.js';
 import { SettingsWriter } from '../../interfaces/settings-store.js';
 import { CredentialWriter } from '../../interfaces/credential-store.js';
-import { Result } from '../../shared/result.js';
+import { Result } from '../../../shared/result.js';
 import { DomainMessage, DomainOption, CommandDefinition } from '../../../presentation/view-models/console/console-use-case.js';
 import { CommandProvider, CommandResult, InteractiveCommandCapabilities } from '../../interfaces/command-provider.js';
 import * as path from 'path';

@@ -3,7 +3,7 @@ import { AgentFactory } from '../../../interfaces/agent.js';
 import { EmbeddingAgentFactory } from '../../../embedded-agents/base-embedding-agent.js';
 import { CredentialReader } from '../../../interfaces/credential-store.js';
 import { Toolbox } from '../../../interfaces/toolbox.js';
-import { Result } from '../../../shared/result.js';
+import { Result } from '../../../../shared/result.js';
 
 import { TaskmasterModelInitializerStage } from './taskmaster-model-initializer-stage.js';
 import { WorkerInitializerStage } from './worker-initializer-stage.js';
