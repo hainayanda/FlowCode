@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { firstValueFrom, take, toArray } from 'rxjs';
 import { AgentService } from '../../../src/application/services/agent-service.js';
-import { CredentialService } from '../../../src/application/services/credential-service.js';
+import { CredentialRepository } from '../../../src/application/stores/credential-repository.js';
 import { MockConfigStore } from './config-service.mocks.js';
-import { MockCredentialStore } from './credential-service.mocks.js';
+import { MockCredentialStore } from '../stores/credential-repository.mocks.js';
 import { 
   MockAgentFactoryRegistry, 
   MockAgent, 
@@ -17,7 +17,7 @@ describe('AgentService', () => {
   let agentService: AgentService;
   let mockConfigReader: MockConfigStore;
   let mockAgentFactory: MockAgentFactoryRegistry;
-  let mockCredentialService: CredentialService;
+  let mockCredentialRepository: CredentialRepository;
   let mockCredentialStore: MockCredentialStore;
   let mockToolbox: MockToolbox;
   let mockAgent: MockAgent;
@@ -26,22 +26,22 @@ describe('AgentService', () => {
     mockConfigReader = new MockConfigStore();
     mockAgentFactory = new MockAgentFactoryRegistry();
     mockCredentialStore = new MockCredentialStore();
-    mockCredentialService = new CredentialService();
+    mockCredentialRepository = new CredentialRepository();
     mockToolbox = new MockToolbox();
     mockAgent = new MockAgent(
       { model: 'test-model', provider: 'test-provider', apiKey: 'test-key' },
       mockToolbox
     );
 
-    // Replace the credential service methods with mock implementations
-    vi.spyOn(mockCredentialService, 'getProviderCredential').mockImplementation(
+    // Replace the credential repository methods with mock implementations
+    vi.spyOn(mockCredentialRepository, 'getProviderCredential').mockImplementation(
       (provider: string) => mockCredentialStore.getProviderCredential(provider)
     );
 
     agentService = new AgentService(
       mockConfigReader,
       mockAgentFactory,
-      mockCredentialService as any
+      mockCredentialRepository as any
     );
 
     // Set up default worker config
@@ -95,13 +95,13 @@ describe('AgentService', () => {
       expect(mockAgent.lastInput?.messages[0].content).toBe('Test prompt');
     });
 
-    it('should handle agent execution with system prompt and parameters', async () => {
+    it('should get worker prompt from markdown file and use worker config', async () => {
+      // Mock worker prompt from markdown
+      mockConfigReader.getWorkerPromptReturn = 'You are a test worker from markdown file';
+      
       const request: AgentExecutionRequest = {
         agentName: 'test-worker',
-        prompt: 'Test prompt',
-        systemPrompt: 'System instruction',
-        temperature: 0.5,
-        maxTokens: 1000
+        prompt: 'Test prompt'
       };
 
       const execution$ = agentService.executeAgent(request, mockToolbox);
@@ -112,9 +112,9 @@ describe('AgentService', () => {
       // Wait a bit for async execution
       await new Promise(resolve => setTimeout(resolve, 50));
 
-      expect(mockAgent.lastInput?.systemPrompt).toBe('System instruction');
-      expect(mockAgent.lastInput?.temperature).toBe(0.5);
-      expect(mockAgent.lastInput?.maxTokens).toBe(1000);
+      expect(mockAgent.lastInput?.systemPrompt).toBe('You are a test worker from markdown file');
+      expect(mockConfigReader.getWorkerPromptCalled).toBe(true);
+      expect(mockConfigReader.lastWorkerName).toBe('test-worker');
     });
 
     it('should fail when worker not found', async () => {
@@ -211,13 +211,12 @@ describe('AgentService', () => {
       expect(mockAgentFactory.lastConfig?.temperature).toBe(0.9);
     });
 
-    it('should prefer request temperature over worker temperature', async () => {
+    it('should use worker temperature from config for agent creation', async () => {
       mockConfigReader.mockConfig.workers['test-worker'].temperature = 0.9;
 
       const request: AgentExecutionRequest = {
         agentName: 'test-worker',
-        prompt: 'Test prompt',
-        temperature: 0.3
+        prompt: 'Test prompt'
       };
 
       const execution$ = agentService.executeAgent(request, mockToolbox);
@@ -228,7 +227,7 @@ describe('AgentService', () => {
       // Wait a bit for async execution
       await new Promise(resolve => setTimeout(resolve, 50));
 
-      expect(mockAgent.lastInput?.temperature).toBe(0.3);
+      expect(mockAgentFactory.lastConfig?.temperature).toBe(0.9);
     });
 
     it('should include context messages when provided', async () => {

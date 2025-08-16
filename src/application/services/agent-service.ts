@@ -53,6 +53,9 @@ export class AgentService implements AgentExecutor {
       this.domainMessagesSubject.next(startMessage);
       const startTime = Date.now();
 
+      // Get worker-specific prompt from markdown file
+      const workerPrompt = await this.configReader.getWorkerPrompt(request.agentName);
+      
       const agentInput: AgentInput = {
         messages: [
           ...(request.context || []),
@@ -63,9 +66,9 @@ export class AgentService implements AgentExecutor {
             timestamp: new Date()
           }
         ],
-        systemPrompt: request.systemPrompt,
-        temperature: request.temperature,
-        maxTokens: request.maxTokens
+        systemPrompt: workerPrompt || undefined,
+        temperature: undefined, // Will be set from worker config in createAgent
+        maxTokens: undefined    // Will be set from worker config in createAgent
       };
 
       // Subscribe to toolbox domain messages and forward them

@@ -2,11 +2,11 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { InitializerStageFactoryMock } from './initializer-stage-factory.mocks.js';
 import { MockConfigStore } from '../services/config-service.mocks.js';
 import { MockSettingsStore } from '../services/settings-service.mocks.js';
-import { MockCredentialStore } from '../services/credential-service.mocks.js';
+import { MockCredentialStore } from '../stores/credential-repository.mocks.js';
 import { InitializerStageMock } from './initializer-stage.mocks.js';
 import { InitializationState } from '../../../src/application/interfaces/initializer.js';
 import { InitializerStageType } from '../../../src/application/interfaces/initializer-stage.js';
-import { Result } from '../../../src/application/shared/result.js';
+import { Result } from '../../../src/shared/result.js';
 
 
 import { InitializerCommandHandler } from '../../../src/application/commands/initializer/initializer-command-handler.js';

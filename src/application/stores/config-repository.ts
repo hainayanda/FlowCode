@@ -77,6 +77,26 @@ export class ConfigRepository implements ConfigReader, ConfigWriter {
     return this.configFile;
   }
 
+  async getTaskmasterPrompt(): Promise<string | null> {
+    try {
+      const promptFile = path.join(this.configDir, 'taskmaster.md');
+      const content = await fs.readFile(promptFile, 'utf-8');
+      return content.trim();
+    } catch {
+      return null;
+    }
+  }
+
+  async getWorkerPrompt(workerName: string): Promise<string | null> {
+    try {
+      const promptFile = path.join(this.configDir, `${workerName}.md`);
+      const content = await fs.readFile(promptFile, 'utf-8');
+      return content.trim();
+    } catch {
+      return null;
+    }
+  }
+
   // ConfigWriter methods
   async writeConfig(config: FlowCodeConfig): Promise<void> {
     try {

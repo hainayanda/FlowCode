@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { WorkerInitializerStage } from '../../../src/application/commands/initializer/initializer-stages/worker-initializer-stage.js';
 import { InitializerStageType } from '../../../src/application/interfaces/initializer-stage.js';
 import { MockAgentFactory, createMockModels } from '../agents/agent-factory.mocks.js';
-import { MockCredentialStore } from '../services/credential-service.mocks.js';
+import { MockCredentialStore } from '../stores/credential-repository.mocks.js';
 
 describe('WorkerInitializerStage', () => {
   let stage: WorkerInitializerStage;

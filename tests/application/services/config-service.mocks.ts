@@ -4,6 +4,11 @@ export class MockConfigStore implements ConfigStore {
   public writeConfigCalled = false;
   public lastWrittenConfig: FlowCodeConfig | null = null;
   public writeConfigResult = true;
+  public getWorkerPromptCalled = false;
+  public getTaskmasterPromptCalled = false;
+  public lastWorkerName: string | null = null;
+  public getWorkerPromptReturn: string | null = null;
+  public getTaskmasterPromptReturn: string | null = null;
   public mockConfig: FlowCodeConfig = {
     version: '1.0.0',
     taskmaster: {
@@ -68,6 +73,17 @@ export class MockConfigStore implements ConfigStore {
     return '/test/.flowcode/config.json';
   }
 
+  async getTaskmasterPrompt(): Promise<string | null> {
+    this.getTaskmasterPromptCalled = true;
+    return this.getTaskmasterPromptReturn;
+  }
+
+  async getWorkerPrompt(workerName: string): Promise<string | null> {
+    this.getWorkerPromptCalled = true;
+    this.lastWorkerName = workerName;
+    return this.getWorkerPromptReturn;
+  }
+
   // ConfigWriter implementation
   async writeConfig(config: FlowCodeConfig): Promise<void> {
     this.writeConfigCalled = true;
@@ -101,6 +117,11 @@ export class MockConfigStore implements ConfigStore {
     this.writeConfigCalled = false;
     this.lastWrittenConfig = null;
     this.writeConfigResult = true;
+    this.getWorkerPromptCalled = false;
+    this.getTaskmasterPromptCalled = false;
+    this.lastWorkerName = null;
+    this.getWorkerPromptReturn = null;
+    this.getTaskmasterPromptReturn = null;
     this.mockConfig = {
       version: '1.0.0',
       taskmaster: {

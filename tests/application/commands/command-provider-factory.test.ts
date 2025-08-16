@@ -6,7 +6,7 @@ import { SettingsWriter, SettingsConfig } from '../../../src/application/interfa
 import { CredentialWriter, CredentialsConfig, ProviderCredential } from '../../../src/application/interfaces/credential-store.js';
 import { InitializerStageFactory, InitializerStageType, InitializerStage } from '../../../src/application/interfaces/initializer-stage.js';
 import { DomainMessage } from '../../../src/presentation/view-models/console/console-use-case.js';
-import { Result } from '../../../src/application/shared/result.js';
+import { Result } from '../../../src/shared/result.js';
 
 /**
  * Mock implementations for testing
@@ -51,6 +51,12 @@ class MockConfigStore implements ConfigStore {
   }
   getConfigPath(): string {
     return '/test/config.json';
+  }
+  async getTaskmasterPrompt(): Promise<string | null> {
+    return null;
+  }
+  async getWorkerPrompt(workerName: string): Promise<string | null> {
+    return null;
   }
   async writeConfig(config: FlowCodeConfig): Promise<void> {}
   async updateTaskmasterConfig(taskmasterConfig: TaskmasterConfig): Promise<void> {}

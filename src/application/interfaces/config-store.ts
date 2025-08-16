@@ -48,6 +48,8 @@ export interface ConfigReader {
   getEnabledWorkers(): Promise<Record<string, WorkerConfig>>;
   configExists(): Promise<boolean>;
   getConfigPath(): string;
+  getTaskmasterPrompt(): Promise<string | null>;
+  getWorkerPrompt(workerName: string): Promise<string | null>;
 }
 
 /**

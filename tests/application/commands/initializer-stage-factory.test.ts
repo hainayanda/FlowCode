@@ -3,7 +3,7 @@ import { InitializerStageFactoryImpl } from '../../../src/application/commands/i
 import { InitializerStageType } from '../../../src/application/interfaces/initializer-stage.js';
 import { MockAgentFactory, createMockModels } from '../agents/agent-factory.mocks.js';
 import { EmbeddingAgentFactoryMock } from './embedding-agent-factory.mocks.js';
-import { MockCredentialStore } from '../services/credential-service.mocks.js';
+import { MockCredentialStore } from '../stores/credential-repository.mocks.js';
 import { MockToolbox } from '../services/toolbox-service.mocks.js';
 
 describe('InitializerStageFactoryImpl', () => {

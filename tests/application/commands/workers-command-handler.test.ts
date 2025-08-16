@@ -63,6 +63,14 @@ class MockConfigStore implements ConfigStore {
     return '/test/.flowcode/config.json';
   }
 
+  async getTaskmasterPrompt(): Promise<string | null> {
+    return null;
+  }
+
+  async getWorkerPrompt(workerName: string): Promise<string | null> {
+    return null;
+  }
+
   // ConfigWriter methods
   async writeConfig(config: FlowCodeConfig): Promise<void> {
     this.mockConfig = config;

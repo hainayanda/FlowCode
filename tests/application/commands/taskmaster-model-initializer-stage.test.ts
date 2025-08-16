@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { TaskmasterModelInitializerStage } from '../../../src/application/commands/initializer/initializer-stages/taskmaster-model-initializer-stage.js';
 import { InitializerStageType } from '../../../src/application/interfaces/initializer-stage.js';
 import { MockAgentFactory, createMockModels } from '../agents/agent-factory.mocks.js';
-import { MockCredentialStore } from '../services/credential-service.mocks.js';
+import { MockCredentialStore } from '../stores/credential-repository.mocks.js';
 
 describe('TaskmasterModelInitializerStage', () => {
   let stage: TaskmasterModelInitializerStage;

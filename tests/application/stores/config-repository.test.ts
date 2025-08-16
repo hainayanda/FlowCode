@@ -135,4 +135,61 @@ describe('ConfigStore', () => {
       );
     });
   });
+
+  describe('getTaskmasterPrompt', () => {
+    it('should return taskmaster prompt from markdown file', async () => {
+      const mockPrompt = '# Taskmaster Prompt\n\nYou are a task master...';
+      
+      const fs = await import('fs/promises');
+      vi.mocked(fs.readFile).mockResolvedValue(mockPrompt);
+
+      const result = await configStore.getTaskmasterPrompt();
+
+      expect(result).toBe('# Taskmaster Prompt\n\nYou are a task master...');
+      expect(fs.readFile).toHaveBeenCalledWith('/test/project/.flowcode/taskmaster.md', 'utf-8');
+    });
+
+    it('should return null when taskmaster prompt file does not exist', async () => {
+      const fs = await import('fs/promises');
+      vi.mocked(fs.readFile).mockRejectedValue(new Error('File not found'));
+
+      const result = await configStore.getTaskmasterPrompt();
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('getWorkerPrompt', () => {
+    it('should return worker prompt from markdown file', async () => {
+      const mockPrompt = '# Code Worker\n\nYou are a code generation worker...';
+      
+      const fs = await import('fs/promises');
+      vi.mocked(fs.readFile).mockResolvedValue(mockPrompt);
+
+      const result = await configStore.getWorkerPrompt('code-worker');
+
+      expect(result).toBe('# Code Worker\n\nYou are a code generation worker...');
+      expect(fs.readFile).toHaveBeenCalledWith('/test/project/.flowcode/code-worker.md', 'utf-8');
+    });
+
+    it('should return null when worker prompt file does not exist', async () => {
+      const fs = await import('fs/promises');
+      vi.mocked(fs.readFile).mockRejectedValue(new Error('File not found'));
+
+      const result = await configStore.getWorkerPrompt('nonexistent-worker');
+
+      expect(result).toBeNull();
+    });
+
+    it('should trim whitespace from prompt content', async () => {
+      const mockPrompt = '\n\n  # Code Worker\n\nYou are a code worker...  \n\n';
+      
+      const fs = await import('fs/promises');
+      vi.mocked(fs.readFile).mockResolvedValue(mockPrompt);
+
+      const result = await configStore.getWorkerPrompt('code-worker');
+
+      expect(result).toBe('# Code Worker\n\nYou are a code worker...');
+    });
+  });
 });
