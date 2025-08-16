@@ -15,6 +15,15 @@ export interface FileContent {
 }
 
 /**
+ * Bulk edit operation
+ */
+export interface BulkEditOperation {
+  type: 'replace_at_line' | 'insert_at_line' | 'append_to_file';
+  content: string;
+  lineNumber?: number; // Required for replace_at_line and insert_at_line, not used for append_to_file
+}
+
+/**
  * File tools implementation
  */
 export class FileTools implements Toolbox {
@@ -77,10 +86,10 @@ export class FileTools implements Toolbox {
       },
       {
         name: 'replace_with_regex',
-        description: 'Replace text using regex on single line',
+        description: 'Replace text using regex (fails if multiple matches found)',
         parameters: [
           { name: 'filePath', type: 'string', description: 'Path to the file', required: true },
-          { name: 'lineNumber', type: 'number', description: 'Line number to apply regex (1-based)', required: true },
+          { name: 'lineNumber', type: 'number', description: 'Line number to apply regex (1-based)', required: false },
           { name: 'pattern', type: 'string', description: 'Regex pattern', required: true },
           { name: 'replacement', type: 'string', description: 'Replacement text', required: true }
         ],
@@ -94,6 +103,15 @@ export class FileTools implements Toolbox {
           { name: 'pattern', type: 'string', description: 'Regex pattern', required: true },
           { name: 'replacement', type: 'string', description: 'Replacement text', required: true },
           { name: 'flags', type: 'string', description: 'Regex flags (g, i, m, s)', required: false, default: 'g' }
+        ],
+        permission: 'loose'
+      },
+      {
+        name: 'bulk_edit',
+        description: 'Perform multiple file operations in sequence (replace_at_line, insert_at_line, append_to_file)',
+        parameters: [
+          { name: 'filePath', type: 'string', description: 'Path to the file', required: true },
+          { name: 'operations', type: 'array', description: 'Array of operations to perform', required: true }
         ],
         permission: 'loose'
       }
@@ -191,7 +209,7 @@ export class FileTools implements Toolbox {
             toolCall.parameters.replacement
           );
           
-          if (regexResult) {
+          if (regexResult.success) {
             const afterRegexContent = await this.getFileContent(toolCall.parameters.filePath);
             this.publishFileOperationMessage(
               toolCall.parameters.filePath,
@@ -201,7 +219,10 @@ export class FileTools implements Toolbox {
             );
           }
           
-          return { success: regexResult, message: regexResult ? 'Regex replacement successful' : 'Regex replacement failed' };
+          return { 
+            success: regexResult.success, 
+            message: regexResult.success ? 'Regex replacement successful' : regexResult.error 
+          };
 
         case 'replace_all_with_regex':
           const beforeReplaceAllContent = await this.getFileContent(toolCall.parameters.filePath);
@@ -226,6 +247,31 @@ export class FileTools implements Toolbox {
             success: replaceAllResult.success, 
             data: replaceAllResult,
             message: `Replaced ${replaceAllResult.replaced} occurrences`
+          };
+
+        case 'bulk_edit':
+          const beforeBulkContent = await this.getFileContent(toolCall.parameters.filePath);
+          const bulkResult = await this.bulkEdit(
+            toolCall.parameters.filePath,
+            toolCall.parameters.operations
+          );
+          
+          if (bulkResult.success && bulkResult.operationsCompleted > 0) {
+            const afterBulkContent = await this.getFileContent(toolCall.parameters.filePath);
+            this.publishFileOperationMessage(
+              toolCall.parameters.filePath,
+              'edit',
+              beforeBulkContent,
+              afterBulkContent
+            );
+          }
+          
+          return { 
+            success: bulkResult.success, 
+            data: bulkResult,
+            message: bulkResult.success 
+              ? `Completed ${bulkResult.operationsCompleted} operations` 
+              : bulkResult.error 
           };
 
         default:
@@ -298,22 +344,49 @@ export class FileTools implements Toolbox {
     }
   }
 
-  async replaceWithRegex(filePath: string, lineNumber: number, pattern: string, replacement: string): Promise<boolean> {
+  async replaceWithRegex(filePath: string, lineNumber: number | undefined, pattern: string, replacement: string): Promise<{ success: boolean; error?: string }> {
     try {
       const fileContent = await fs.readFile(filePath, 'utf-8');
-      const lines = fileContent.split('\n');
+      const regex = new RegExp(pattern, 'g');
       
-      if (lineNumber < 1 || lineNumber > lines.length) {
-        return false;
+      // Count total matches in the file
+      const matches: RegExpExecArray[] = [];
+      let match: RegExpExecArray | null;
+      while ((match = regex.exec(fileContent)) !== null) {
+        matches.push(match);
       }
       
-      const regex = new RegExp(pattern);
-      lines[lineNumber - 1] = lines[lineNumber - 1].replace(regex, replacement);
+      if (matches.length === 0) {
+        return { success: false, error: 'No matches found for the pattern' };
+      }
       
-      await fs.writeFile(filePath, lines.join('\n'));
-      return true;
-    } catch {
-      return false;
+      if (matches.length > 1) {
+        return { 
+          success: false, 
+          error: `Multiple matches found (${matches.length}). Use replace_all_with_regex to replace all occurrences` 
+        };
+      }
+      
+      // If lineNumber is specified, validate it matches the found line
+      if (lineNumber !== undefined) {
+        const lines = fileContent.split('\n');
+        if (lineNumber < 1 || lineNumber > lines.length) {
+          return { success: false, error: 'Invalid line number' };
+        }
+        
+        const lineContent = lines[lineNumber - 1];
+        if (!new RegExp(pattern).test(lineContent)) {
+          return { success: false, error: 'Pattern not found on specified line' };
+        }
+      }
+      
+      // Replace the single match
+      const newContent = fileContent.replace(new RegExp(pattern), replacement);
+      await fs.writeFile(filePath, newContent);
+      
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: `File operation failed: ${error instanceof Error ? error.message : String(error)}` };
     }
   }
 
@@ -332,6 +405,86 @@ export class FileTools implements Toolbox {
       return { replaced, success: true };
     } catch {
       return { replaced: 0, success: false };
+    }
+  }
+
+  async bulkEdit(filePath: string, operations: BulkEditOperation[]): Promise<{ success: boolean; operationsCompleted: number; error?: string }> {
+    try {
+      // Validate all operations first
+      for (const operation of operations) {
+        if (!this.isValidBulkOperation(operation)) {
+          return { 
+            success: false, 
+            operationsCompleted: 0, 
+            error: `Invalid operation: ${JSON.stringify(operation)}` 
+          };
+        }
+      }
+
+      // Sort operations by line number (descending) for insert/replace operations
+      // This prevents line number shifts from affecting subsequent operations
+      const sortedOperations = [...operations].sort((a, b) => {
+        if (a.type === 'append_to_file' && b.type !== 'append_to_file') return 1;
+        if (a.type !== 'append_to_file' && b.type === 'append_to_file') return -1;
+        if (a.type === 'append_to_file' && b.type === 'append_to_file') return 0;
+        
+        const aLine = (a.type === 'replace_at_line' || a.type === 'insert_at_line') ? (a.lineNumber || 0) : 0;
+        const bLine = (b.type === 'replace_at_line' || b.type === 'insert_at_line') ? (b.lineNumber || 0) : 0;
+        
+        return bLine - aLine; // Descending order
+      });
+
+      let operationsCompleted = 0;
+      
+      for (const operation of sortedOperations) {
+        let success = false;
+        
+        switch (operation.type) {
+          case 'replace_at_line':
+            success = await this.replaceAtLine(filePath, operation.lineNumber!, operation.content);
+            break;
+          case 'insert_at_line':
+            success = await this.insertAtLine(filePath, operation.lineNumber!, operation.content);
+            break;
+          case 'append_to_file':
+            success = await this.appendToFile(filePath, operation.content);
+            break;
+        }
+        
+        if (!success) {
+          return { 
+            success: false, 
+            operationsCompleted, 
+            error: `Operation failed: ${operation.type} at line ${operation.type === 'append_to_file' ? 'end' : (operation.lineNumber || 'unknown')}` 
+          };
+        }
+        
+        operationsCompleted++;
+      }
+      
+      return { success: true, operationsCompleted };
+    } catch (error) {
+      return { 
+        success: false, 
+        operationsCompleted: 0, 
+        error: `Bulk edit failed: ${error instanceof Error ? error.message : String(error)}` 
+      };
+    }
+  }
+
+  private isValidBulkOperation(operation: BulkEditOperation): boolean {
+    if (!operation.type || !operation.content) {
+      return false;
+    }
+    
+    switch (operation.type) {
+      case 'replace_at_line':
+      case 'insert_at_line':
+        return typeof operation.lineNumber === 'number' && operation.lineNumber > 0;
+      case 'append_to_file':
+        return true;
+      default:
+        return false;
     }
   }
 

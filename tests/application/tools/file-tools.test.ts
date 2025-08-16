@@ -51,7 +51,7 @@ describe('FileTools', () => {
     it('should return all tool definitions', () => {
       const tools = fileTools.getTools();
       
-      expect(tools).toHaveLength(6);
+      expect(tools).toHaveLength(7);
       expect(tools.map(t => t.name)).toContain('read_file');
       expect(tools.map(t => t.name)).toContain('append_to_file');
       expect(tools.map(t => t.name)).toContain('insert_at_line');
