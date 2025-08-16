@@ -1,6 +1,6 @@
 import { Observable, EMPTY, of } from 'rxjs';
 import { BaseAgent } from '../../../src/application/agents/base-agent.js';
-import { AgentConfig, AgentInput, AgentResponse } from '../../../src/application/interfaces/agent.js';
+import { AgentConfig, AgentInput, AgentResponse, SummaryMessage } from '../../../src/application/interfaces/agent.js';
 import { Toolbox, ToolDefinition, ToolCall, ToolResult } from '../../../src/application/interfaces/toolbox.js';
 import { EmbeddingService } from '../../../src/application/interfaces/embedding-service.js';
 import { DomainMessage } from '../../../src/presentation/view-models/console/console-use-case.js';
@@ -81,7 +81,11 @@ export class MockToolbox implements Toolbox {
  */
 export class MockAgent extends BaseAgent {
   processStreamCalled = false;
+  processStreamCallCount = 0;
   lastInput: AgentInput | null = null;
+  mockResponses: AgentResponse[] = [];
+  currentResponseIndex = 0;
+  
   mockResponse: AgentResponse = {
     message: {
       id: 'mock-response-id',
@@ -93,9 +97,32 @@ export class MockAgent extends BaseAgent {
 
   processStream(input: AgentInput): Observable<AgentResponse> {
     this.processStreamCalled = true;
+    this.processStreamCallCount++;
     this.lastInput = input;
+    
+    // If mockResponses is set, return the next response in sequence
+    if (this.mockResponses.length > 0) {
+      const response = this.mockResponses[this.currentResponseIndex % this.mockResponses.length];
+      this.currentResponseIndex++;
+      return of(response);
+    }
+    
     return of(this.mockResponse);
   }
+
+  setMockResponses(responses: AgentResponse[]): void {
+    this.mockResponses = responses;
+    this.currentResponseIndex = 0;
+  }
+
+  reset(): void {
+    this.processStreamCalled = false;
+    this.processStreamCallCount = 0;
+    this.lastInput = null;
+    this.mockResponses = [];
+    this.currentResponseIndex = 0;
+  }
+
 }
 
 /**
