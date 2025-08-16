@@ -4,7 +4,7 @@ import { DomainTokenUsage, DomainWorkerInfo } from '../../../src/presentation/mo
 import { MessageStorePublisher, MessageWriter } from '../../../src/application/interfaces/message-store.js';
 import { CommandDispatcher, CommandResult } from '../../../src/application/interfaces/command-provider.js';
 import { PromptHandler } from '../../../src/application/interfaces/prompt-handler.js';
-import { Result } from '../../../src/application/shared/result.js';
+import { Result } from '../../../src/shared/result.js';
 
 /**
  * Mock MessageStorePublisher for testing (full implementation of the complete interface)

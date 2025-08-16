@@ -1,5 +1,5 @@
 import { InitializerStage, InitializerStageFactory, InitializerStageType } from '../../../src/application/interfaces/initializer-stage.js';
-import { Result } from '../../../src/application/shared/result.js';
+import { Result } from '../../../src/shared/result.js';
 
 export class InitializerStageFactoryMock implements InitializerStageFactory {
   createStageCalls = 0;

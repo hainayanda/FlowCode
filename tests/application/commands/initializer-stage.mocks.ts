@@ -1,6 +1,6 @@
 import { BehaviorSubject, Observable } from 'rxjs';
 import { InitializerStage, InitializerStageType, InitializerStageContext } from '../../../src/application/interfaces/initializer-stage.js';
-import { Result } from '../../../src/application/shared/result.js';
+import { Result } from '../../../src/shared/result.js';
 import { DomainMessage, DomainOption } from '../../../src/presentation/view-models/console/console-use-case.js';
 
 export class InitializerStageMock implements InitializerStage {
@@ -16,7 +16,7 @@ export class InitializerStageMock implements InitializerStage {
   canProceedToNextCalled = false;
   getCollectedDataCalled = false;
   resetCalled = false;
-  
+
   lastContext: InitializerStageContext | null = null;
   lastResponse: string | null = null;
   lastOptionIndex: number | null = null;
