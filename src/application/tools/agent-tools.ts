@@ -2,9 +2,9 @@ import { Observable, Subject } from 'rxjs';
 import { ToolDefinition, ToolCall, ToolResult, Toolbox } from '../interfaces/toolbox.js';
 import { EmbeddingService } from '../interfaces/embedding-service.js';
 import { DomainMessage, PlainMessage } from '../../presentation/view-models/console/console-use-case.js';
-import { AgentService } from '../services/agent-service.js';
-import { AgentExecutionRequest, AgentExecutionResult, AgentExecutionStatus } from '../interfaces/agent-execution.js';
-import { AgentMessage } from '../interfaces/agent.js';
+import { AgentExecutor } from '../interfaces/agent-executor.js';
+import { AgentExecutionRequest } from '../interfaces/agent-executor.js';
+import { SummaryMessage } from '../interfaces/agent.js';
 
 /**
  * Agent execution parameters
@@ -32,7 +32,7 @@ export class AgentTools implements Toolbox {
 
   constructor(
     public readonly embeddingService: EmbeddingService,
-    private readonly agentService: AgentService,
+    private readonly agentExecutor: AgentExecutor,
     private readonly workerToolbox: Toolbox
   ) {}
 
@@ -91,17 +91,10 @@ export class AgentTools implements Toolbox {
     }
 
     const startTime = Date.now();
+    let summaryMessage: SummaryMessage | null = null;
     
     try {
       const params = this.validateParameters(toolCall.parameters);
-      
-      // Emit start message
-      this.domainMessagesSubject.next({
-        id: Date.now().toString(),
-        type: 'system',
-        content: `Starting ${params.agentName} agent...`,
-        timestamp: new Date()
-      } as PlainMessage);
 
       const request: AgentExecutionRequest = {
         agentName: params.agentName,
@@ -111,97 +104,123 @@ export class AgentTools implements Toolbox {
         maxTokens: params.maxTokens
       };
 
-      const execution = await this.agentService.executeAgent(request, this.workerToolbox);
+      // Execute agent and collect all domain messages
+      const execution$ = this.agentExecutor.executeAgent(request, this.workerToolbox);
       
-      // Subscribe to status updates and publish as domain messages
-      execution.status.subscribe({
-        next: (status: AgentExecutionStatus) => {
-          this.domainMessagesSubject.next({
-            id: Date.now().toString(),
-            type: 'system',
-            content: `Agent Status: ${status.status} - ${status.message || ''}`,
-            timestamp: new Date()
-          } as PlainMessage);
-        },
-        error: (error: Error) => {
-          this.domainMessagesSubject.next({
-            id: Date.now().toString(),
-            type: 'system',
-            content: `Agent Error: ${error.message}`,
-            timestamp: new Date()
-          } as PlainMessage);
-        }
+      // Wait for execution to complete and collect summary
+      return new Promise<ToolResult>((resolve, _reject) => {
+        execution$.subscribe({
+          next: (domainMessage: DomainMessage) => {
+            // Forward all domain messages
+            this.domainMessagesSubject.next(domainMessage);
+            
+            // Check if this is a summary message from an AI response
+            if (domainMessage.type === 'ai-response' && domainMessage.content.includes('summary')) {
+              // Try to extract summary data from the message
+              const messageContent = domainMessage.content;
+              if (messageContent.includes('completed') || messageContent.includes('partial') || messageContent.includes('failed')) {
+                summaryMessage = {
+                  id: domainMessage.id,
+                  type: 'summary',
+                  content: messageContent,
+                  timestamp: domainMessage.timestamp,
+                  taskStatus: messageContent.includes('completed') ? 'completed' : 
+                            messageContent.includes('partial') ? 'partial' : 'failed',
+                  summaryData: messageContent
+                } as SummaryMessage;
+              }
+            }
+          },
+          error: (error: Error) => {
+            const executionTime = Date.now() - startTime;
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            
+            const errorDomainMessage: PlainMessage = {
+              id: Date.now().toString(),
+              type: 'system',
+              content: `❌ Agent execution failed: ${errorMessage}`,
+              timestamp: new Date()
+            };
+            this.domainMessagesSubject.next(errorDomainMessage);
+            
+            resolve({
+              success: false,
+              data: {
+                success: false,
+                summary: `Agent execution failed: ${errorMessage}`,
+                executionTime,
+                metadata: {
+                  agentName: params.agentName,
+                  error: errorMessage
+                }
+              },
+              error: errorMessage,
+              message: `Agent execution failed: ${errorMessage}`
+            });
+          },
+          complete: () => {
+            const executionTime = Date.now() - startTime;
+            
+            if (summaryMessage) {
+              // Return summary message as the tool result
+              resolve({
+                success: summaryMessage.taskStatus === 'completed',
+                data: {
+                  success: summaryMessage.taskStatus === 'completed',
+                  summary: summaryMessage.summaryData,
+                  executionTime,
+                  taskStatus: summaryMessage.taskStatus,
+                  metadata: {
+                    agentName: params.agentName,
+                    messageId: summaryMessage.id
+                  }
+                },
+                message: summaryMessage.summaryData
+              });
+            } else {
+              // Fallback if no summary message was captured
+              resolve({
+                success: true,
+                data: {
+                  success: true,
+                  summary: `${params.agentName} agent execution completed`,
+                  executionTime,
+                  metadata: {
+                    agentName: params.agentName
+                  }
+                },
+                message: `${params.agentName} agent execution completed`
+              });
+            }
+          }
+        });
       });
-
-      // Subscribe to agent messages and publish them
-      execution.messages.subscribe({
-        next: (message: AgentMessage) => {
-          this.domainMessagesSubject.next({
-            id: message.id,
-            type: 'system',
-            content: message.content,
-            timestamp: message.timestamp
-          } as PlainMessage);
-        },
-        error: (error: Error) => {
-          this.domainMessagesSubject.next({
-            id: Date.now().toString(),
-            type: 'system',
-            content: `Agent Message Error: ${error.message}`,
-            timestamp: new Date()
-          } as PlainMessage);
-        }
-      });
-
-      const executionTime = Date.now() - startTime;
-      const result = await this.agentService.getExecutionResult(
-        request,
-        executionTime,
-        true
-      );
-
-      // Emit completion message
-      this.domainMessagesSubject.next({
-        id: Date.now().toString(),
-        type: 'system',
-        content: `Agent execution completed: ${result.summary}`,
-        timestamp: new Date()
-      } as PlainMessage);
-
-      return {
-        success: true,
-        data: result,
-        message: result.summary
-      };
 
     } catch (error) {
       const executionTime = Date.now() - startTime;
       const errorMessage = error instanceof Error ? error.message : String(error);
       
-      // Get result even for failed execution
-      const result: AgentExecutionResult = {
-        success: false,
-        summary: `Agent execution failed: ${errorMessage}`,
-        executionTime,
-        metadata: {
-          agentName: toolCall.parameters.agentName,
-          error: errorMessage
-        }
-      };
-
       // Emit error message
       this.domainMessagesSubject.next({
         id: Date.now().toString(),
         type: 'system',
-        content: `❌ ${result.summary}`,
+        content: `❌ Agent setup failed: ${errorMessage}`,
         timestamp: new Date()
       } as PlainMessage);
 
       return {
         success: false,
-        data: result,
+        data: {
+          success: false,
+          summary: `Agent setup failed: ${errorMessage}`,
+          executionTime,
+          metadata: {
+            agentName: toolCall.parameters.agentName || 'unknown',
+            error: errorMessage
+          }
+        },
         error: errorMessage,
-        message: result.summary
+        message: `Agent setup failed: ${errorMessage}`
       };
     }
   }
@@ -237,4 +256,5 @@ export class AgentTools implements Toolbox {
       maxTokens
     };
   }
+
 }
