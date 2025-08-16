@@ -44,8 +44,8 @@ describe('FlowCodeUseCase', () => {
 
     it('should expose available commands from command dispatcher', () => {
       const commands = useCase.getAvailableCommands();
-      expect(commands).toHaveLength(3);
-      expect(commands.map(c => c.name)).toEqual(['init', 'config', 'help']);
+      expect(commands).toHaveLength(4);
+      expect(commands.map(c => c.name)).toEqual(['init', 'config', 'workers', 'help']);
     });
   });
 

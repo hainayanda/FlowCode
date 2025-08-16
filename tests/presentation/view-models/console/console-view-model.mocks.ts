@@ -1,4 +1,4 @@
-import { BehaviorSubject, Subject } from 'rxjs';
+import { Subject } from 'rxjs';
 import { ConsoleRouter } from '../../../../src/presentation/view-models/console/console-router.js';
 import { 
   ConsoleUseCase,
@@ -47,7 +47,7 @@ export class MockConsoleUseCase implements ConsoleUseCase {
   private readonly mockCommands: CommandDefinition[] = [
     { name: 'init', description: 'Initialize project', aliases: ['i'] },
     { name: 'config', description: 'Configure settings', aliases: ['cfg'] },
-    { name: 'validate', description: 'Validate configuration', aliases: ['v'] },
+    { name: 'workers', description: 'Worker management operations' },
     { name: 'help', description: 'Show help' }
   ];
 

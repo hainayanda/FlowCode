@@ -69,7 +69,7 @@ describe('SettingsService', () => {
         }
       };
 
-      mockFs.readFile.mockImplementation((filePath: string) => {
+      mockFs.readFile.mockImplementation((filePath: any) => {
         if (filePath === globalSettingsFile) {
           return Promise.resolve(JSON.stringify(globalSettings));
         }
@@ -102,7 +102,7 @@ describe('SettingsService', () => {
         }
       };
 
-      mockFs.readFile.mockImplementation((filePath: string) => {
+      mockFs.readFile.mockImplementation((filePath: any) => {
         if (filePath === globalSettingsFile) {
           return Promise.resolve(JSON.stringify(globalSettings));
         }
@@ -134,7 +134,7 @@ describe('SettingsService', () => {
         }
       };
 
-      mockFs.readFile.mockImplementation((filePath: string) => {
+      mockFs.readFile.mockImplementation((filePath: any) => {
         if (filePath === globalSettingsFile) {
           return Promise.resolve(JSON.stringify(globalSettings));
         }
@@ -161,7 +161,7 @@ describe('SettingsService', () => {
         }
       };
 
-      mockFs.readFile.mockImplementation((filePath: string) => {
+      mockFs.readFile.mockImplementation((filePath: any) => {
         if (filePath === workspaceSettingsFile) {
           return Promise.resolve(JSON.stringify(settings));
         }
@@ -180,7 +180,7 @@ describe('SettingsService', () => {
         }
       };
 
-      mockFs.readFile.mockImplementation((filePath: string) => {
+      mockFs.readFile.mockImplementation((filePath: any) => {
         if (filePath === workspaceSettingsFile) {
           return Promise.resolve(JSON.stringify(settings));
         }
@@ -199,7 +199,7 @@ describe('SettingsService', () => {
         }
       };
 
-      mockFs.readFile.mockImplementation((filePath: string) => {
+      mockFs.readFile.mockImplementation((filePath: any) => {
         if (filePath === workspaceSettingsFile) {
           return Promise.resolve(JSON.stringify(settings));
         }
@@ -218,7 +218,7 @@ describe('SettingsService', () => {
         }
       };
 
-      mockFs.readFile.mockImplementation((filePath: string) => {
+      mockFs.readFile.mockImplementation((filePath: any) => {
         if (filePath === workspaceSettingsFile) {
           return Promise.resolve(JSON.stringify(settings));
         }
@@ -336,7 +336,7 @@ describe('SettingsService', () => {
         }
       };
 
-      mockFs.readFile.mockImplementation((filePath: string) => {
+      mockFs.readFile.mockImplementation((filePath: any) => {
         if (filePath === globalSettingsFile) {
           return Promise.resolve(JSON.stringify(globalSettings));
         }
@@ -367,7 +367,7 @@ describe('SettingsService', () => {
         }
       };
 
-      mockFs.readFile.mockImplementation((filePath: string) => {
+      mockFs.readFile.mockImplementation((filePath: any) => {
         if (filePath === globalSettingsFile) {
           return Promise.resolve(JSON.stringify(globalSettings));
         }

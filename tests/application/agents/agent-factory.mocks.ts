@@ -1,6 +1,6 @@
 import { AgentFactory, Agent, AgentConfig, ModelDefinition } from '../../../src/application/interfaces/agent.js';
 import { Toolbox } from '../../../src/application/interfaces/toolbox.js';
-import { MockAgent, MockToolbox } from './base-agent.mocks.js';
+import { MockAgent } from './base-agent.mocks.js';
 
 /**
  * Mock Agent Factory for testing

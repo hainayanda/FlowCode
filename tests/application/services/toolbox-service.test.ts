@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { firstValueFrom, filter, take, toArray, timeout } from 'rxjs';
 import { ToolboxService } from '../../../src/application/services/toolbox-service.js';
 import { PermissionLevel } from '../../../src/application/interfaces/toolbox.js';
+import { EmbeddingService } from '../../../src/application/interfaces/embedding-service.js';
 import { DomainOption } from '../../../src/presentation/view-models/console/console-use-case.js';
 import {
   MockToolbox,
@@ -23,9 +24,16 @@ describe('ToolboxService', () => {
     mockBashToolbox = new MockToolbox('bash_tools', 'Bash operations');
     mockSettingsStore = new MockSettingsStore();
 
+    const mockEmbeddingService: EmbeddingService = {
+      generateEmbedding: async () => [0.1, 0.2, 0.3],
+      isAvailable: async () => true,
+      getEmbeddingDimension: () => 3
+    };
+
     toolboxService = new ToolboxService(
       [mockFileToolbox, mockWorkspaceToolbox, mockBashToolbox],
-      mockSettingsStore
+      mockSettingsStore,
+      mockEmbeddingService
     );
   });
 

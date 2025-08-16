@@ -1,11 +1,17 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { BashTools } from '../../../src/application/tools/bash-tools.js';
+import { EmbeddingService } from '../../../src/application/interfaces/embedding-service.js';
 
 describe('BashTools (Simple Tests)', () => {
   let bashTools: BashTools;
 
   beforeEach(() => {
-    bashTools = new BashTools();
+    const mockEmbeddingService: EmbeddingService = {
+      generateEmbedding: async () => [0.1, 0.2, 0.3],
+      isAvailable: async () => true,
+      getEmbeddingDimension: () => 3
+    };
+    bashTools = new BashTools(mockEmbeddingService);
   });
 
   describe('Initialization', () => {

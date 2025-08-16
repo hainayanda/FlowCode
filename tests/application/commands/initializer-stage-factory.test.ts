@@ -17,7 +17,7 @@ describe('InitializerStageFactoryImpl', () => {
     agentFactory = new MockAgentFactory('test', createMockModels('test'));
     embeddingAgentFactory = new EmbeddingAgentFactoryMock();
     credentialReader = new MockCredentialStore();
-    toolbox = new MockToolbox();
+    toolbox = new MockToolbox('test_toolbox', 'Test toolbox for initialization');
 
     factory = new InitializerStageFactoryImpl(
       agentFactory,

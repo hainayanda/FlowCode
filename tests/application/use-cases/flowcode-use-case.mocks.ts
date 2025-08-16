@@ -181,6 +181,7 @@ export class MockCommandDispatcher implements CommandDispatcher {
   private readonly mockCommands: CommandDefinition[] = [
     { name: 'init', description: 'Initialize project', aliases: ['i'] },
     { name: 'config', description: 'Configure settings' },
+    { name: 'workers', description: 'Worker management operations' },
     { name: 'help', description: 'Show help' }
   ];
 

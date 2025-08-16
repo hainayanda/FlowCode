@@ -164,8 +164,8 @@ describe('TaskmasterModelInitializerStage', () => {
     });
 
     it('should be completed if credentials already exist', async () => {
-      credentialReader.setHasCredential(true);
-      credentialReader.setCredential({
+      // Set up credential for the 'test' provider that matches the agent factory
+      await credentialReader.setProviderCredential('test', {
         apiKey: 'existing-key',
         lastUsed: new Date().toISOString()
       });

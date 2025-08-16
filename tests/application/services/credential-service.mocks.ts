@@ -60,7 +60,7 @@ export class MockCredentialStore implements CredentialStore {
   // Test helpers
   setHasCredential(hasCredential: boolean): void {
     if (hasCredential) {
-      this.mockCredentials['test'] = {
+      this.mockCredentials['openai'] = {
         apiKey: 'test-api-key',
         lastUsed: new Date().toISOString()
       };
@@ -70,7 +70,7 @@ export class MockCredentialStore implements CredentialStore {
   }
 
   setCredential(credential: ProviderCredential): void {
-    this.mockCredentials['test'] = credential;
+    this.mockCredentials['openai'] = credential;
   }
 
   reset(): void {
