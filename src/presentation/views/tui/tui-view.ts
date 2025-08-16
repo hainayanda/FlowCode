@@ -42,13 +42,13 @@ interface BlessedLog extends BlessedElement {
  */
 export class TUIView implements View {
   private subscriptions: Subscription[] = [];
-  private screen: BlessedScreen;
-  private messageLog: BlessedLog;
-  private inputBox: BlessedElement;
-  private statusLine: BlessedElement;
-  private workerInfo: BlessedElement;
-  private optionBox: BlessedElement;
-  private suggestionsBox: BlessedElement;
+  private screen!: BlessedScreen;
+  private messageLog!: BlessedLog;
+  private inputBox!: BlessedElement;
+  private statusLine!: BlessedElement;
+  private workerInfo!: BlessedElement;
+  private optionBox!: BlessedElement;
+  private suggestionsBox!: BlessedElement;
   private currentOption?: Option;
   private loadingSpinnerIndex: number = 0;
   private loadingInterval: NodeJS.Timeout | null = null;
@@ -321,11 +321,11 @@ export class TUIView implements View {
       case 'system':
         return `{gray-fg}${message.content}{/}\n`;
       case 'worker':
-        const workerId = message.metadata?.workerId || 'assistant';
+        const workerId = (message.metadata && 'workerId' in message.metadata) ? message.metadata.workerId : 'assistant';
         const color = workerId === 'taskmaster' ? '#FFA500-fg' : 'blue-fg'; // Orange for taskmaster
         return `{${color}}${workerId}{/}\n${message.content}\n`;
       case 'thinking':
-        const thinkingWorkerId = message.metadata?.workerId || 'assistant';
+        const thinkingWorkerId = (message.metadata && 'workerId' in message.metadata) ? message.metadata.workerId : 'assistant';
         const thinkingTitleColor = thinkingWorkerId === 'taskmaster' ? '#8B4513-fg' : '#4682B4-fg'; // Very dull orange/blue for title
         return `{${thinkingTitleColor}}${thinkingWorkerId} is thinking{/}\n{#696969-fg}${message.content}{/}\n`;
       case 'error':

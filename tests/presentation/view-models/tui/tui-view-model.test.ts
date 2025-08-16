@@ -29,7 +29,7 @@ describe('TUIViewModel', () => {
     it('should initialize with available commands from use case', () => {
       expect(mockUseCase.getAvailableCommands()).toHaveLength(4);
       expect(mockUseCase.getAvailableCommands().map(c => c.name)).toEqual([
-        'init', 'config', 'validate', 'help'
+        'init', 'config', 'workers', 'help'
       ]);
     });
 
