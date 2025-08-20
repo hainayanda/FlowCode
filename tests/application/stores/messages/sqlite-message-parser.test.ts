@@ -1,20 +1,19 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import {
+    ChoiceInputMessage,
+    ChoiceMessage,
+    ErrorMessage,
+    FileOperationMessage,
+    PlainMessage,
+    PromptInputMessage,
+    PromptMessage,
+} from '../../../../src/application/models/messages';
+import { MessageRow } from '../../../../src/application/models/sqlite-message';
 import {
     SQLiteMessageParser,
     parseMessageFromRow,
     parseMessagesFromRows,
 } from '../../../../src/application/stores/messages/sqlite-message-parser';
-import { MessageRow } from '../../../../src/application/models/sqlite-message';
-import {
-    Message,
-    PlainMessage,
-    ErrorMessage,
-    FileOperationMessage,
-    PromptMessage,
-    ChoiceMessage,
-    ChoiceInputMessage,
-    PromptInputMessage,
-} from '../../../../src/application/models/messages';
 
 describe('SQLiteMessageParser', () => {
     const baseTimestamp = Date.now();

@@ -1,19 +1,16 @@
 import {
-    AgentFactory,
-    EmbedderFactory,
-} from '../../../src/application/interfaces/agent-factory';
-import {
     AgentEmbedder,
     AgentWorker,
 } from '../../../src/application/interfaces/agent';
+import {
+    AgentFactory,
+    EmbedderFactory,
+} from '../../../src/application/interfaces/agent-factory';
 import { Toolbox } from '../../../src/application/interfaces/toolbox';
 import { AgentModel } from '../../../src/application/models/agent-model';
 import {
     AgentModelConfig,
     EmbeddingConfig,
-    FlowCodeConfig,
-    SummarizerConfig,
-    TaskmasterConfig,
 } from '../../../src/application/models/config';
 import { TestWorker } from './test-worker.mocks';
 

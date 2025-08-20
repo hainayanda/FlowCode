@@ -1,10 +1,10 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { SummarizerWorker } from '../../../src/application/agents/summarizer-worker';
 import { AgentExecutionParameters } from '../../../src/application/interfaces/agent';
 import {
     TestWorker,
-    createMockMessage,
     createMockConfig,
+    createMockMessage,
 } from './test-worker.mocks';
 
 describe('SummarizerWorker', () => {

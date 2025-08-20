@@ -1,15 +1,11 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { CachedMessageStore } from '../../../../src/application/stores/messages/cached-message-store';
-import { MockSessionManager } from './session-manager.mocks';
+import { beforeEach, describe, expect, it } from 'vitest';
 import {
-    Message,
     ErrorMessage,
     FileOperationMessage,
-    PromptMessage,
-    ChoiceMessage,
-    ChoiceInputMessage,
-    PromptInputMessage,
+    Message,
 } from '../../../../src/application/models/messages';
+import { CachedMessageStore } from '../../../../src/application/stores/messages/cached-message-store';
+import { MockSessionManager } from './session-manager.mocks';
 
 describe('CachedMessageStore', () => {
     let store: CachedMessageStore;
@@ -57,6 +53,7 @@ describe('CachedMessageStore', () => {
         });
 
         it('should store an error message with metadata', async () => {
+            const testError = new Error('Something went wrong');
             const errorMessage: ErrorMessage = {
                 id: 'error-1',
                 content: 'Something went wrong',
@@ -64,9 +61,8 @@ describe('CachedMessageStore', () => {
                 sender: 'system',
                 timestamp: new Date('2023-01-01T10:01:00Z'),
                 metadata: {
-                    errorCode: 'E001',
-                    severity: 'high',
-                    context: { operation: 'file_read' },
+                    error: testError,
+                    stack: testError.stack,
                 },
             };
 
@@ -75,8 +71,10 @@ describe('CachedMessageStore', () => {
                 'error-1'
             )) as ErrorMessage;
             expect(retrieved).toEqual(errorMessage);
-            expect(retrieved.metadata.errorCode).toBe('E001');
-            expect(retrieved.metadata.severity).toBe('high');
+            expect(retrieved.metadata.error.message).toBe(
+                'Something went wrong'
+            );
+            expect(retrieved.metadata.stack).toBeDefined();
         });
 
         it('should store a file operation message', async () => {
@@ -87,9 +85,14 @@ describe('CachedMessageStore', () => {
                 sender: 'system',
                 timestamp: new Date('2023-01-01T10:02:00Z'),
                 metadata: {
-                    operation: 'create',
                     filePath: '/tmp/test.txt',
-                    success: true,
+                    diffs: [
+                        {
+                            lineNumber: 1,
+                            type: 'added',
+                            newText: 'New file content',
+                        },
+                    ],
                 },
             };
 
@@ -98,8 +101,9 @@ describe('CachedMessageStore', () => {
                 'file-op-1'
             )) as FileOperationMessage;
             expect(retrieved).toEqual(fileOpMessage);
-            expect(retrieved.metadata.operation).toBe('create');
             expect(retrieved.metadata.filePath).toBe('/tmp/test.txt');
+            expect(retrieved.metadata.diffs).toHaveLength(1);
+            expect(retrieved.metadata.diffs[0].type).toBe('added');
         });
 
         it('should replace existing message with same ID', async () => {

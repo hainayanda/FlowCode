@@ -1,7 +1,7 @@
 import {
     Toolbox,
-    ToolDefinition,
     ToolCallParameter,
+    ToolDefinition,
 } from '../../../src/application/interfaces/toolbox';
 import {
     AsyncControl,

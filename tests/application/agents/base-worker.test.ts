@@ -1,10 +1,9 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { AgentExecutionParameters } from '../../../src/application/interfaces/agent';
-import { AsyncControl } from '../../../src/application/models/async-control';
 import {
     TestWorker,
-    createMockMessage,
     createMockConfig,
+    createMockMessage,
 } from './test-worker.mocks';
 import { MockToolbox } from './toolbox.mocks';
 

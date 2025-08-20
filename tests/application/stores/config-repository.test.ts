@@ -1,14 +1,14 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { ConfigRepository } from '../../../src/application/stores/config-repository';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
-    FlowCodeConfig,
-    TaskmasterConfig,
-    SummarizerConfig,
-    EmbeddingConfig,
     AgentModelConfig,
+    EmbeddingConfig,
+    FlowCodeConfig,
+    SummarizerConfig,
+    TaskmasterConfig,
 } from '../../../src/application/models/config';
+import { ConfigRepository } from '../../../src/application/stores/config-repository';
 
 describe('ConfigRepository', () => {
     const testWorkspaceRoot = path.join(__dirname, 'test-workspace-config');

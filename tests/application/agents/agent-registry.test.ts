@@ -1,9 +1,6 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { AgentRegistry } from '../../../src/application/agents/agent-registry';
-import {
-    AgentFactory,
-    EmbedderFactory,
-} from '../../../src/application/interfaces/agent-factory';
+import { AgentFactory } from '../../../src/application/interfaces/agent-factory';
 import {
     MockAgentFactory,
     MockEmbedderFactory,

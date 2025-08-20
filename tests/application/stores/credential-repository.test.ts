@@ -1,11 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { CredentialRepository } from '../../../src/application/stores/credential-repository';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
     Credentials,
     ProviderCredential,
 } from '../../../src/application/models/credential';
+import { CredentialRepository } from '../../../src/application/stores/credential-repository';
 
 describe('CredentialRepository', () => {
     const testHomeDir = path.join(__dirname, 'test-home');

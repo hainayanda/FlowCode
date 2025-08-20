@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { SettingsRepository } from '../../../src/application/stores/settings-repository';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { Settings } from '../../../src/application/models/settings';
+import { SettingsRepository } from '../../../src/application/stores/settings-repository';
 
 describe('SettingsRepository', () => {
     const testWorkspaceRoot = path.join(__dirname, 'test-workspace-settings');

@@ -1,13 +1,9 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { MessageRepository } from '../../../../src/application/stores/messages/message-repository';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { Message } from '../../../../src/application/models/messages';
 import { CachedMessageStore } from '../../../../src/application/stores/messages/cached-message-store';
+import { MessageRepository } from '../../../../src/application/stores/messages/message-repository';
 import { SQLiteMessageStore } from '../../../../src/application/stores/messages/sqlite-message-store';
 import { MockSessionManager } from './session-manager.mocks';
-import {
-    Message,
-    ErrorMessage,
-    FileOperationMessage,
-} from '../../../../src/application/models/messages';
 
 describe('MessageRepository', () => {
     let repository: MessageRepository;
@@ -415,7 +411,7 @@ describe('MessageRepository', () => {
                 manyMessages.push({
                     id: `fallback-${i}`,
                     content: `Fallback message ${i}`,
-                    type: 'fallback-type',
+                    type: 'user',
                     sender: 'user1',
                     timestamp: new Date(
                         `2023-01-01T13:${i.toString().padStart(2, '0')}:00Z`
@@ -426,7 +422,7 @@ describe('MessageRepository', () => {
 
             // Request more than cache can provide for this type
             const fallbackMessages = await repository.getMessagesByType(
-                'fallback-type',
+                'user',
                 8
             );
             expect(fallbackMessages).toHaveLength(8);
@@ -532,7 +528,7 @@ describe('MessageRepository', () => {
                 manyMessages.push({
                     id: `search-fallback-${i}`,
                     content: `Fallback search pattern ${i}`,
-                    type: 'search-test',
+                    type: 'agent',
                     sender: 'user1',
                     timestamp: new Date(
                         `2023-01-01T15:${i.toString().padStart(2, '0')}:00Z`

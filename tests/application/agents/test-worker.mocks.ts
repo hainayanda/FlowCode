@@ -4,8 +4,8 @@ import {
     AsyncControl,
     AsyncControlResponse,
 } from '../../../src/application/models/async-control';
-import { Message } from '../../../src/application/models/messages';
 import { AgentModelConfig } from '../../../src/application/models/config';
+import { Message } from '../../../src/application/models/messages';
 import { generateUniqueId } from '../../../src/utils/id-generator';
 
 export class TestWorker extends BaseWorker {

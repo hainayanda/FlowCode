@@ -1,15 +1,15 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { SQLiteMessageStore } from '../../../../src/application/stores/messages/sqlite-message-store';
-import { MockSessionManager } from './session-manager.mocks';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
-    Message,
+    ChoiceInputMessage,
+    ChoiceMessage,
     ErrorMessage,
     FileOperationMessage,
-    PromptMessage,
-    ChoiceMessage,
-    ChoiceInputMessage,
+    Message,
     PromptInputMessage,
+    PromptMessage,
 } from '../../../../src/application/models/messages';
+import { SQLiteMessageStore } from '../../../../src/application/stores/messages/sqlite-message-store';
+import { MockSessionManager } from './session-manager.mocks';
 
 describe('SQLiteMessageStore', () => {
     let store: SQLiteMessageStore;

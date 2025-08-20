@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 import { SessionManager } from '../../../../src/application/interfaces/session-manager';
-import { SessionInfo } from '../../../../src/application/models/sessions';
 import { SessionChangeEvent } from '../../../../src/application/models/session-events';
+import { SessionInfo } from '../../../../src/application/models/sessions';
 
 /**
  * Mock SessionManager for testing SQLiteMessageStore
