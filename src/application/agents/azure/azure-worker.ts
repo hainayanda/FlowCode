@@ -2,11 +2,12 @@ import OpenAI from "openai";
 import { AgentModelConfig, AzureAgentModelConfig } from "../../models/config";
 import { OpenAICompatibleWorker } from "../openai/openai-compatible-worker";
 import { Toolbox } from "../../interfaces/toolbox";
+import { AgentSummarizer } from "../../interfaces/agents";
 
 export class AzureWorker extends OpenAICompatibleWorker {
 
-    constructor(name: string, config: AzureAgentModelConfig, toolbox: Toolbox) {
-        super(name, config, toolbox);
+    constructor(name: string, config: AzureAgentModelConfig, toolbox?: Toolbox, summarizer?: AgentSummarizer) {
+        super(name, config, toolbox, summarizer);
     }
 
     protected createClient(config: AgentModelConfig): OpenAI {

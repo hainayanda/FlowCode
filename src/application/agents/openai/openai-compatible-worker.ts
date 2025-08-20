@@ -1,4 +1,4 @@
-import { AgentExecutionParameters, AgentWorker } from '../../interfaces/agents.js';
+import { AgentExecutionParameters, AgentSummarizer, AgentWorker } from '../../interfaces/agents.js';
 import { AsyncControl, AsyncControlResponse } from '../../models/async-control.js';
 import { ErrorMessage, Message } from '../../models/messages.js';
 import { Toolbox, ToolDefinition } from '../../interfaces/toolbox.js';
@@ -11,16 +11,16 @@ export abstract class OpenAICompatibleWorker extends BaseWorker {
     
     private client: OpenAI;
 
-    constructor(name: string, config: AgentModelConfig, toolbox: Toolbox) {
-        super(name, config, toolbox);
+    constructor(name: string, config: AgentModelConfig, toolbox?: Toolbox, summarizer?: AgentSummarizer) {
+        super(name, config, toolbox, summarizer);
         this.client = this.createClient(config);
     }
 
     protected abstract createClient(config: AgentModelConfig): OpenAI
 
-    protected async* singleProcess(parameters: AgentExecutionParameters): AsyncGenerator<Message, AsyncControlResponse, AsyncControl> {
+    async* singleProcess(parameters: AgentExecutionParameters): AsyncGenerator<Message, AsyncControlResponse, AsyncControl> {
         const messages = this.convertToOpenAIMessages(parameters.messages, parameters.prompt);
-        const tools = this.convertToOpenAITools(this.toolbox.tools);
+        const tools = this.convertToOpenAITools(this.toolbox?.tools ?? []);
 
         const requestParams: OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming = {
             model: this.config.model,
@@ -84,6 +84,17 @@ export abstract class OpenAICompatibleWorker extends BaseWorker {
         accumulatedMessages: Message[], 
         toolCalls: OpenAI.Chat.Completions.ChatCompletionChunk.Choice.Delta.ToolCall[]
     ): AsyncGenerator<Message, AsyncControlResponse, AsyncControl> {
+        if (!this.toolbox) {
+            return { 
+                messages: accumulatedMessages,
+                usage: { 
+                    inputTokens: 0,
+                    outputTokens: 0,
+                    toolsUsed: 0
+                }
+            };
+        }
+
         let allMessages: Message[] = accumulatedMessages
         let inputTokens: number = 0;
         let outputTokens: number = 0;
