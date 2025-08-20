@@ -1,6 +1,6 @@
 import { generateUniqueId } from "../../utils/id-generator";
-import { AgentExecutionParameters, AgentSummarizer, AgentWorker } from "../interfaces/agents";
-import { Toolbox } from "../interfaces/toolbox";
+import { AgentExecutionParameters, AgentWorker } from "../interfaces/agents";
+import { Toolbox, ToolCallParameter } from "../interfaces/toolbox";
 import { AsyncControlResponse, AsyncControl } from "../models/async-control";
 import { AgentModelConfig } from "../models/config";
 import { Message } from "../models/messages";
@@ -11,13 +11,11 @@ export abstract class BaseWorker implements AgentWorker {
     protected name: string;
     protected config: AgentModelConfig;
     protected toolbox: Toolbox | undefined;
-    protected summarizer: AgentSummarizer | undefined;
 
-    constructor(name: string, config: AgentModelConfig, toolbox?: Toolbox, summarizer?: AgentSummarizer) {
+    constructor(name: string, config: AgentModelConfig, toolbox?: Toolbox) {
         this.name = name;
         this.toolbox = toolbox;
         this.config = config;
-        this.summarizer = summarizer;
     }
 
     async* process(parameters: AgentExecutionParameters, maxIterations?: number): AsyncGenerator<Message, AsyncControlResponse, AsyncControl> {
@@ -29,6 +27,7 @@ export abstract class BaseWorker implements AgentWorker {
         let outputTokens: number = 0;
         let toolsUsed: number = 0;
         let input: AsyncControl = { type: 'continue' };
+        let completedReason: `completed` | `aborted` = 'completed';
         let canContinue: boolean = true;
 
         for (let i = 0; i < iterations && canContinue; i++) {
@@ -37,40 +36,94 @@ export abstract class BaseWorker implements AgentWorker {
             while (true) {
                 const { done, value } = await process.next(input);
                 if (done) {
-                    parameters.messages.push(...value.messages);
-                    parameters.messages.push(...this.userTextMessages(input || { type: 'continue' }));
+                    if (input.summarizedMessages) {
+                        parameters.messages = [...input.summarizedMessages];
+                    } else {
+                        parameters.messages.push(...value.messages);
+                    }
+                    if (input.queuedMessages) {
+                        parameters.messages.push(...input.queuedMessages);
+                    }
                     outputMessages.push(...value.messages);
                     inputTokens += value.usage.inputTokens;
                     outputTokens += value.usage.outputTokens;
                     toolsUsed += value.usage.toolsUsed;
-                    canContinue = value.messages.length > 0 || value.usage.toolsUsed > 0;
+                    completedReason = value.completedReason;
+                    // Check if the singleProcess was force-stopped
+                    if (completedReason === 'aborted') {
+                        canContinue = false;
+                        break;
+                    } else {
+                        canContinue = value.messages.length > 0 || value.usage.toolsUsed > 0;
+                    }
+
+                    input = { type: 'continue' };
                     break;
                 } else {
-                    input = yield value as Message;
+                    input = yield value;
+                    if (input.type === 'abort') {
+                        outputMessages.push(value);
+                        completedReason = 'aborted';
+                        canContinue = false;
+                        break;
+                    }
                 }
             }
         }
-        return { messages: outputMessages, usage: { inputTokens, outputTokens, toolsUsed } };
+        return { 
+            messages: outputMessages, 
+            completedReason,
+            usage: { inputTokens, outputTokens, toolsUsed } 
+        };
     }
 
     abstract singleProcess(parameters: AgentExecutionParameters): AsyncGenerator<Message, AsyncControlResponse, AsyncControl>
 
-    private userTextMessages(input: AsyncControl): Message[] {
-        if (input.payload) {
-            return input.payload.map(text => ({
-                id: generateUniqueId("user"),
-                type: 'user',
-                sender: "user",
-                content: text,
-                timestamp: new Date()
-            }));
+    protected async* finalizeProcess(accumulatedMessages: Message[], toolCalls: ToolCallParameter[]): AsyncGenerator<Message, AsyncControlResponse, AsyncControl> {
+        if (!this.toolbox) {
+            return { 
+                messages: accumulatedMessages,
+                completedReason: 'completed',
+                usage: { 
+                    inputTokens: 0,
+                    outputTokens: 0,
+                    toolsUsed: 0
+                }
+            };
         }
-        return [];
-    }
+        
+        let allMessages: Message[] = accumulatedMessages;
+        let inputTokens: number = 0;
+        let outputTokens: number = 0;
+        let toolsUsed: number = 0;
+        let completedReason: `completed` | `aborted` = 'completed';
 
+        for (const toolCall of toolCalls) {
+            const toolResult = yield* this.toolbox.callTool(toolCall);
+            allMessages.push(...toolResult.messages);
+            inputTokens += toolResult.usage.inputTokens;
+            outputTokens += toolResult.usage.outputTokens;
+            toolsUsed += 1 + toolResult.usage.toolsUsed;
+            completedReason = toolResult.completedReason;
+            if (toolResult.completedReason === 'aborted') {
+                break;
+            }
+        }
+
+        return {
+            messages: allMessages,
+            completedReason,
+            usage: {
+                inputTokens,
+                outputTokens,
+                toolsUsed
+            }
+        };
+    }
+    
     private processInstructions(iteration: number, maxIterations: number): string {
         const isLastIteration = iteration === maxIterations;
-        
+
         return `
 ## Iterative Mode Instructions
 
@@ -94,9 +147,9 @@ ${isLastIteration ? '- ⚠️ THIS IS YOUR FINAL ITERATION - You must complete y
 - Provide meaningful output in each iteration to continue the process
 - If you've completed your task, you can end early by sending no output and making no tool calls
 
-${isLastIteration ? 
-'**FINAL ITERATION:** This is your last chance to complete the task. Provide your final response now.' : 
-'**Next Steps:** Plan what you want to accomplish in this iteration and what might be needed in subsequent iterations.'}
+${isLastIteration ?
+                '**FINAL ITERATION:** This is your last chance to complete the task. Provide your final response now.' :
+                '**Next Steps:** Plan what you want to accomplish in this iteration and what might be needed in subsequent iterations.'}
         `;
     }
 }
