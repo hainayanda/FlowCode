@@ -1,4 +1,5 @@
 import {
+    AgentModelConfig,
     EmbeddingConfig,
     FlowCodeConfig,
     SummarizerConfig,
@@ -16,13 +17,19 @@ export interface ConfigReader {
     config: FlowCodeConfig;
 
     /** Configuration for the task master component */
-    taskMasterConfig: TaskmasterConfig;
+    taskMasterConfig: TaskmasterConfig | undefined;
 
     /** Configuration for conversation summarization */
-    summarizerConfig: SummarizerConfig;
+    summarizerConfig: SummarizerConfig | undefined;
 
     /** Configuration for embedding/vector operations */
     embeddingConfig: EmbeddingConfig;
+
+    /** Agent configurations */
+    agentConfig: Record<string, AgentModelConfig>;
+
+    /** Whether the configuration has been initialized */
+    isInitialized: boolean;
 
     /**
      * Fetches the latest configuration from storage.
@@ -30,6 +37,43 @@ export interface ConfigReader {
      * @returns Promise resolving to the current FlowCode configuration
      */
     fetchConfig(): Promise<FlowCodeConfig>;
+
+    /**
+     * Fetches the latest taskmaster configuration from storage.
+     *
+     * @returns Promise resolving to the current taskmaster configuration
+     */
+    fetchTaskmasterConfig(): Promise<TaskmasterConfig | undefined>;
+
+    /**
+     * Fetches the latest summarizer configuration from storage.
+     *
+     * @returns Promise resolving to the current summarizer configuration
+     */
+    fetchSummarizerConfig(): Promise<SummarizerConfig | undefined>;
+
+    /**
+     * Fetches the latest embedding configuration from storage.
+     *
+     * @returns Promise resolving to the current embedding configuration
+     */
+    fetchEmbeddingConfig(): Promise<EmbeddingConfig>;
+
+    /**
+     * Fetches the latest agent configuration from storage.
+     *
+     * @param name - Name of the agent to fetch
+     * @returns Promise resolving to the agent configuration
+     */
+    fetchAgentConfig(name: string): Promise<AgentModelConfig | undefined>;
+
+    /**
+     * Gets an agent configuration by name from the current cached config.
+     *
+     * @param name - Name of the agent to get
+     * @returns Agent configuration or undefined if not found
+     */
+    getAgentConfig(name: string): AgentModelConfig | undefined;
 }
 
 /**
@@ -66,4 +110,17 @@ export interface ConfigWriter {
      * @param config - Embedding configuration to persist
      */
     writeEmbeddingConfig(config: EmbeddingConfig): Promise<void>;
+
+    /**
+     * Writes agent configuration to storage.
+     *
+     * @param name - Name of the agent
+     * @param config - Agent configuration to persist
+     */
+    writeAgentConfig(name: string, config: AgentModelConfig): Promise<void>;
 }
+
+/**
+ * Combined interface for reading and writing configuration data.
+ */
+export interface ConfigStore extends ConfigReader, ConfigWriter {}

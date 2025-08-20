@@ -117,11 +117,14 @@ export interface FlowCodeConfig {
     version: string;
 
     /** Task master component configuration */
-    taskmaster: TaskmasterConfig;
+    taskmaster?: TaskmasterConfig;
 
     /** Summarizer component configuration */
-    summarizer: SummarizerConfig;
+    summarizer?: SummarizerConfig;
 
     /** Embedding component configuration */
     embedding: EmbeddingConfig;
+
+    /** Agent configurations */
+    agents?: Record<string, AgentModelConfig>;
 }
