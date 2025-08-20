@@ -148,9 +148,14 @@ export class AnthropicWorker extends BaseWorker {
             switch (msg.type) {
                 case 'user':
                 case 'file_operation':
-                case 'user_interaction':
+                case 'user-input':
+                case 'user-choice':
+                case 'prompt':
+                case 'choice':
+                case 'error':
                 case 'system':
                     return { role: 'user', content: msg.content };
+                case 'summary':
                 case 'agent':
                 case 'taskmaster':
                     return { role: 'assistant', content: msg.content };
