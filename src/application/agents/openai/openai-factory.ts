@@ -88,6 +88,6 @@ export class OpenAIFactory implements AgentFactory {
     ];
 
     createWorker(name: string, config: AgentModelConfig, summarizer?: AgentSummarizer, toolbox?: Toolbox): AgentWorker {
-        return new OpenAIWorker(name, config, toolbox, summarizer);
+        return new OpenAIWorker(name, config, toolbox);
     }
 }

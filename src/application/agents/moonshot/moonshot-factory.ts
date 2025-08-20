@@ -64,6 +64,6 @@ export class MoonshotFactory implements AgentFactory {
     ];
 
     createWorker(name: string, config: AgentModelConfig, summarizer?: AgentSummarizer, toolbox?: Toolbox): AgentWorker {
-        return new MoonshotWorker(name, config, toolbox, summarizer);
+        return new MoonshotWorker(name, config, toolbox);
     }
 }

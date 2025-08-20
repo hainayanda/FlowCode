@@ -1,5 +1,5 @@
 import { AgentFactory } from "../../interfaces/agent-factory";
-import { AgentSummarizer, AgentWorker } from "../../interfaces/agents";
+import { AgentWorker, AgentSummarizer } from "../../interfaces/agents";
 import { Toolbox } from "../../interfaces/toolbox";
 import { AgentModel } from "../../models/agent-model";
 import { AgentModelConfig } from "../../models/config";
@@ -71,6 +71,6 @@ export class AnthropicFactory implements AgentFactory {
     ];
     
     createWorker(name: string, config: AgentModelConfig, summarizer?: AgentSummarizer, toolbox?: Toolbox): AgentWorker {
-        return new AnthropicWorker(name, config, toolbox, summarizer);
+        return new AnthropicWorker(name, config, toolbox);
     }
 }

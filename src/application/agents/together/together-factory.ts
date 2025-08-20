@@ -82,6 +82,6 @@ export class TogetherFactory implements AgentFactory {
     ];
 
     createWorker(name: string, config: AgentModelConfig, summarizer?: AgentSummarizer, toolbox?: Toolbox): AgentWorker {
-        return new TogetherWorker(name, config, toolbox, summarizer);
+        return new TogetherWorker(name, config, toolbox);
     }
 }

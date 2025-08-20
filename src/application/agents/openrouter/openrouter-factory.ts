@@ -181,6 +181,6 @@ export class OpenRouterFactory implements AgentFactory {
     ];
 
     createWorker(name: string, config: OpenRouterAgentModelConfig, summarizer?: AgentSummarizer, toolbox?: Toolbox): AgentWorker {
-        return new OpenRouterWorker(name, config, toolbox, summarizer);
+        return new OpenRouterWorker(name, config, toolbox);
     }
 }

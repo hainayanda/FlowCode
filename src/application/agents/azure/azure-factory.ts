@@ -1,5 +1,5 @@
 import { AgentFactory } from "../../interfaces/agent-factory";
-import { AgentSummarizer, AgentWorker } from "../../interfaces/agents";
+import { AgentWorker, AgentSummarizer } from "../../interfaces/agents";
 import { Toolbox } from "../../interfaces/toolbox";
 import { AgentModel } from "../../models/agent-model";
 import { AzureAgentModelConfig } from "../../models/config";
@@ -88,6 +88,6 @@ export class AzureFactory implements AgentFactory {
     ];
 
     createWorker(name: string, config: AzureAgentModelConfig, summarizer?: AgentSummarizer, toolbox?: Toolbox): AgentWorker {
-        return new AzureWorker(name, config, toolbox, summarizer);
+        return new AzureWorker(name, config, toolbox);
     }
 }

@@ -82,6 +82,6 @@ export class QwenFactory implements AgentFactory {
     ];
 
     createWorker(name: string, config: AgentModelConfig, summarizer?: AgentSummarizer, toolbox?: Toolbox): AgentWorker {
-        return new QwenWorker(name, config, toolbox, summarizer);
+        return new QwenWorker(name, config, toolbox);
     }
 }
