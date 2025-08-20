@@ -8,6 +8,7 @@ import { generateUniqueId } from "../../../src/utils/id-generator";
 export class TestWorker extends BaseWorker {
     public mockMessages: Message[] = [];
     public mockUsage = { inputTokens: 5, outputTokens: 15, toolsUsed: 0 };
+    public mockCompletedReason: 'completed' | 'aborted' = 'completed';
     public shouldYieldMessages: Message[] = [];
     public processedPrompts: string[] = [];
 
@@ -22,6 +23,7 @@ export class TestWorker extends BaseWorker {
 
         return {
             messages: this.mockMessages,
+            completedReason: this.mockCompletedReason,
             usage: this.mockUsage
         };
     }
@@ -33,6 +35,10 @@ export class TestWorker extends BaseWorker {
 
     setMockUsage(inputTokens: number, outputTokens: number, toolsUsed: number) {
         this.mockUsage = { inputTokens, outputTokens, toolsUsed };
+    }
+
+    setMockCompletedReason(reason: 'completed' | 'aborted') {
+        this.mockCompletedReason = reason;
     }
 
     setShouldYieldMessages(messages: Message[]) {

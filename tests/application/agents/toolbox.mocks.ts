@@ -1,4 +1,4 @@
-import { Toolbox, ToolDefinition } from "../../../src/application/interfaces/toolbox";
+import { Toolbox, ToolDefinition, ToolCallParameter } from "../../../src/application/interfaces/toolbox";
 import { AsyncControl, AsyncControlResponse } from "../../../src/application/models/async-control";
 import { Message } from "../../../src/application/models/messages";
 
@@ -14,9 +14,10 @@ export class MockToolbox implements Toolbox {
 
     public mockMessages: Message[] = [];
     public mockUsage = { inputTokens: 10, outputTokens: 20, toolsUsed: 1 };
+    public mockCompletedReason: 'completed' | 'aborted' = 'completed';
     public shouldYieldMessages: Message[] = [];
 
-    async* callTool(name: string, parameters: Record<string, any>): AsyncGenerator<Message, AsyncControlResponse, AsyncControl> {
+    async* callTool(parameter: ToolCallParameter): AsyncGenerator<Message, AsyncControlResponse, AsyncControl> {
         // Yield any intermediate messages if configured
         for (const message of this.shouldYieldMessages) {
             yield message;
@@ -24,6 +25,7 @@ export class MockToolbox implements Toolbox {
 
         return {
             messages: this.mockMessages,
+            completedReason: this.mockCompletedReason,
             usage: this.mockUsage
         };
     }
@@ -35,6 +37,10 @@ export class MockToolbox implements Toolbox {
 
     setMockUsage(inputTokens: number, outputTokens: number, toolsUsed: number) {
         this.mockUsage = { inputTokens, outputTokens, toolsUsed };
+    }
+
+    setMockCompletedReason(reason: 'completed' | 'aborted') {
+        this.mockCompletedReason = reason;
     }
 
     setShouldYieldMessages(messages: Message[]) {
