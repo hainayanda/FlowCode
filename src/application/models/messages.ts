@@ -11,14 +11,23 @@ export interface Message {
     type:
         | 'user'
         | 'system'
+        | 'error'
         | 'agent'
         | 'taskmaster'
         | 'file_operation'
-        | 'user_interaction';
+        | 'prompt'
+        | 'user-input'
+        | 'choice'
+        | 'user-choice'
+        | 'summary';
     /** Identifier of who/what sent this message (user, system, agent name, etc.) */
     sender: string;
     /** When this message was created */
     timestamp: Date;
+}
+
+export interface PlainMessage extends Message {
+    type: 'system' | 'user' | 'agent' | 'taskmaster' | 'summary';
 }
 
 /**
@@ -26,7 +35,7 @@ export interface Message {
  * Used to communicate errors and exceptions within the conversation flow.
  */
 export interface ErrorMessage extends Message {
-    type: 'system';
+    type: 'error';
     /** Error-specific metadata */
     metadata: {
         /** The error object that occurred */
@@ -78,7 +87,7 @@ export interface FileOperationMessage extends Message {
  * Content format: "asking user for input: <prompt>"
  */
 export interface PromptMessage extends Message {
-    type: 'user_interaction';
+    type: 'prompt';
     /** Prompt-specific metadata */
     metadata: {
         /** The prompt text to show the user */
@@ -97,8 +106,8 @@ export interface PromptMessage extends Message {
  * - <choiceLabel> (<choiceValue>)
  * ```
  */
-export interface ChoiceMessage extends PromptMessage {
-    type: 'user_interaction';
+export interface ChoiceMessage extends Message {
+    type: 'choice';
     /** Choice-specific metadata */
     metadata: {
         /** The prompt text to show the user */
@@ -119,7 +128,7 @@ export interface ChoiceMessage extends PromptMessage {
  * Content format: "user has made a choice: <choiceLabel> (<choiceValue>)"
  */
 export interface ChoiceInputMessage extends Message {
-    type: 'user_interaction';
+    type: 'user-choice';
     /** Choice input-specific metadata */
     metadata: {
         /** Index of the selected choice */
@@ -139,8 +148,8 @@ export interface ChoiceInputMessage extends Message {
  *
  * Content format: "user has provided an input: <input>"
  */
-export interface PromptInputMessage extends PromptMessage {
-    type: 'user_interaction';
+export interface PromptInputMessage extends Message {
+    type: 'user-input';
     /** Prompt input-specific metadata */
     metadata: {
         /** The original prompt that was shown */
