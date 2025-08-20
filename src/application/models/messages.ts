@@ -1,67 +1,97 @@
 /**
- * Represents a generic message.
- * This is the base interface for all message types.
+ * Represents a generic message in the conversation flow.
+ * This is the base interface for all message types in the system.
  */
-export interface Message { 
+export interface Message {
+    /** Unique identifier for this message */
     id: string;
+    /** The textual content of the message */
     content: string;
-    type: 'user' | 'system' | 'agent' | 'taskmaster' | 'file_operation' | 'user_interaction';
-    sender: string; // user, system, <agentName>, taskmaster
+    /** Type categorizing the source and purpose of the message */
+    type:
+        | 'user'
+        | 'system'
+        | 'agent'
+        | 'taskmaster'
+        | 'file_operation'
+        | 'user_interaction';
+    /** Identifier of who/what sent this message (user, system, agent name, etc.) */
+    sender: string;
+    /** When this message was created */
     timestamp: Date;
 }
 
 /**
+ * System message that contains error information.
+ * Used to communicate errors and exceptions within the conversation flow.
  */
 export interface ErrorMessage extends Message {
     type: 'system';
+    /** Error-specific metadata */
     metadata: {
+        /** The error object that occurred */
         error: Error;
+        /** Optional stack trace for debugging */
         stack?: string;
-    }
+    };
 }
 
 /**
- * content should be like:
- * <filepath> successfully edited (<startLine>-<endLine>)
- * from: 
+ * Message representing a file operation that was performed.
+ * Contains detailed information about what changes were made to which files.
+ *
+ * Content format example:
  * ```
- *  <oldText> 
+ * <filepath> successfully edited (<startLine>-<endLine>)
+ * from:
+ * ```
+ *  <oldText>
  * ```
  * to:
  * ```
  *  <newText>
  * ```
  */
-export interface FileOperationMessage extends Message { 
+export interface FileOperationMessage extends Message {
     type: 'file_operation';
+    /** File operation-specific metadata */
     metadata: {
+        /** Path to the file that was modified */
         filePath: string;
+        /** Array of changes made to the file */
         diffs: Array<{
+            /** Line number where the change occurred */
             lineNumber: number;
+            /** Type of change made */
             type: 'unchanged' | 'added' | 'removed' | 'modified';
+            /** Original text before the change */
             oldText?: string;
+            /** New text after the change */
             newText?: string;
         }>;
-    }
+    };
 }
 
 /**
- * Sent by the system to ask for user input.
- * content should be like:
- * "asking user for input: <prompt>"
+ * Message sent by the system to request user input.
+ *
+ * Content format: "asking user for input: <prompt>"
  */
 export interface PromptMessage extends Message {
     type: 'user_interaction';
+    /** Prompt-specific metadata */
     metadata: {
+        /** The prompt text to show the user */
         prompt: string;
-    }
+    };
 }
 
 /**
- * Sent by the system to ask for user choices.
- * content should be like:
+ * Message sent by the system to ask user to choose from multiple options.
+ *
+ * Content format example:
  * ```
- * asking user for choices: 
+ * asking user for choices:
  * <prompt>
  * - <choiceLabel> (<choiceValue>)
  * - <choiceLabel> (<choiceValue>)
@@ -69,40 +99,53 @@ export interface PromptMessage extends Message {
  */
 export interface ChoiceMessage extends PromptMessage {
     type: 'user_interaction';
+    /** Choice-specific metadata */
     metadata: {
+        /** The prompt text to show the user */
         prompt: string;
+        /** Available choices for the user to select from */
         choices: Array<{
+            /** Display label for this choice */
             label: string;
+            /** Internal value for this choice */
             value: string;
         }>;
-    }
+    };
 }
 
 /**
- * Sent by the user to indicate their choice.
- * content should be like:
- * "user has made a choice: <choiceLabel> (<choiceValue>)"
+ * Message sent by the user to indicate their choice selection.
+ *
+ * Content format: "user has made a choice: <choiceLabel> (<choiceValue>)"
  */
 export interface ChoiceInputMessage extends Message {
     type: 'user_interaction';
+    /** Choice input-specific metadata */
     metadata: {
-        choice: number,
+        /** Index of the selected choice */
+        choice: number;
+        /** The available choices that were presented */
         choices: Array<{
+            /** Display label for this choice */
             label: string;
+            /** Internal value for this choice */
             value: string;
         }>;
-    }
+    };
 }
 
 /**
- * Sent by the user to provide input.
- * content should be like:
- * user has provided an input: <input>
+ * Message sent by the user to provide text input in response to a prompt.
+ *
+ * Content format: "user has provided an input: <input>"
  */
 export interface PromptInputMessage extends PromptMessage {
     type: 'user_interaction';
+    /** Prompt input-specific metadata */
     metadata: {
+        /** The original prompt that was shown */
         prompt: string;
+        /** The user's input response */
         input: string;
-    }
+    };
 }
