@@ -11,7 +11,12 @@ export interface ToolDefinition {
     permission: PermissionLevel;
 }
 
+export interface ToolCallParameter {
+    name: string;
+    parameters: Record<string, any>;
+}
+
 export interface Toolbox { 
     tools: ToolDefinition[];
-    callTool(name: string, parameters: Record<string, any>): AsyncGenerator<Message, AsyncControlResponse, AsyncControl>;
+    callTool(parameter: ToolCallParameter): AsyncGenerator<Message, AsyncControlResponse, AsyncControl>;
 }
