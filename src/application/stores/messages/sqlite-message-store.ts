@@ -1,0 +1,328 @@
+import Database from 'better-sqlite3';
+import { MessageStore } from '../../interfaces/message-store';
+import { SessionManager } from '../../interfaces/session-manager';
+import { Message } from '../../models/messages';
+import { MessageRow } from '../../models/sqlite-message';
+import { SessionChangeEvent } from '../../models/session-events';
+import { parseMessageFromRow } from './sqlite-message-parser';
+
+/**
+ * SQLite-based message store implementation.
+ *
+ * Provides persistent storage for conversation messages using SQLite database.
+ * Supports message history retrieval with summary boundaries, regex search,
+ * and efficient message storage operations. Automatically switches databases
+ * when the active session changes.
+ */
+export class SQLiteMessageStore implements MessageStore {
+    private db: Database.Database | null = null;
+    private sessionManager: SessionManager;
+
+    /**
+     * Creates a new SQLiteMessageStore instance.
+     *
+     * @param sessionManager - Session manager to get database path from
+     */
+    constructor(sessionManager: SessionManager) {
+        this.sessionManager = sessionManager;
+        this.setupSessionChangeListener();
+    }
+
+    /**
+     * Store a single message (replace if same ID exists).
+     *
+     * @param message - The message to store
+     * @returns Promise<void> Resolves when the message is stored
+     */
+    async storeMessage(message: Message): Promise<void> {
+        const db = await this.getDb();
+
+        const stmt = db.prepare(`
+            INSERT OR REPLACE INTO messages (id, content, type, sender, timestamp, metadata)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `);
+
+        // Serialize metadata to JSON string if it exists
+        const metadata = (message as any).metadata
+            ? JSON.stringify((message as any).metadata)
+            : null;
+
+        stmt.run(
+            message.id,
+            message.content,
+            message.type,
+            message.sender,
+            message.timestamp.getTime(),
+            metadata
+        );
+    }
+
+    /**
+     * Store multiple messages.
+     *
+     * @param messages - Array of messages to store
+     * @returns Promise<void> Resolves when all messages are stored
+     */
+    async storeMessages(messages: Message[]): Promise<void> {
+        const db = await this.getDb();
+
+        const stmt = db.prepare(`
+            INSERT OR REPLACE INTO messages (id, content, type, sender, timestamp, metadata)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `);
+
+        const transaction = db.transaction((msgs: Message[]) => {
+            for (const message of msgs) {
+                // Serialize metadata to JSON string if it exists
+                const metadata = (message as any).metadata
+                    ? JSON.stringify((message as any).metadata)
+                    : null;
+
+                stmt.run(
+                    message.id,
+                    message.content,
+                    message.type,
+                    message.sender,
+                    message.timestamp.getTime(),
+                    metadata
+                );
+            }
+        });
+
+        transaction(messages);
+    }
+
+    /**
+     * Get message history with optional limit.
+     * Returns last n messages or until it encounters a message type 'summary'
+     * (which is a summary of last messages).
+     *
+     * @param limit - Maximum number of messages to return (optional)
+     * @returns Promise<Message[]> Array of messages in chronological order
+     */
+    async getMessageHistory(limit?: number): Promise<Message[]> {
+        const db = await this.getDb();
+
+        // First, get all messages in chronological order to find summary boundary
+        const allQuery = `
+            SELECT id, content, type, sender, timestamp, metadata
+            FROM messages
+            ORDER BY created_at ASC
+        `;
+
+        const allRows = db.prepare(allQuery).all() as MessageRow[];
+        const allMessages = allRows.map((row) => parseMessageFromRow(row));
+
+        // Find the most recent summary message
+        let summaryIndex = -1;
+        for (let i = allMessages.length - 1; i >= 0; i--) {
+            if (allMessages[i]?.type === 'summary') {
+                summaryIndex = i;
+                break;
+            }
+        }
+
+        // If summary found, return messages up to and including the summary
+        if (summaryIndex >= 0) {
+            const messagesToSummary = allMessages.slice(0, summaryIndex + 1);
+            // Apply limit if specified
+            return limit && limit > 0
+                ? messagesToSummary.slice(-limit)
+                : messagesToSummary;
+        }
+
+        // No summary found, apply normal limit
+        return limit && limit > 0 ? allMessages.slice(-limit) : allMessages;
+    }
+
+    /**
+     * Get messages by type.
+     *
+     * @param type - The message type to filter by
+     * @param limit - Maximum number of messages to return
+     * @returns Promise<Message[]> Array of messages of the specified type
+     */
+    async getMessagesByType(
+        type: Message['type'],
+        limit?: number
+    ): Promise<Message[]> {
+        const db = await this.getDb();
+
+        let query = `
+            SELECT id, content, type, sender, timestamp, metadata
+            FROM messages
+            WHERE type = ?
+            ORDER BY timestamp ASC
+        `;
+
+        if (limit && limit > 0) {
+            // To get the most recent N messages, we need to order by DESC, limit, then reverse
+            query = `
+                SELECT id, content, type, sender, timestamp, metadata
+                FROM (
+                    SELECT id, content, type, sender, timestamp, metadata
+                    FROM messages
+                    WHERE type = ?
+                    ORDER BY timestamp DESC
+                    LIMIT ${limit}
+                ) 
+                ORDER BY timestamp ASC
+            `;
+        }
+
+        const rows = db.prepare(query).all(type) as MessageRow[];
+        return rows.map((row) => parseMessageFromRow(row));
+    }
+
+    /**
+     * Search messages by pattern with optional type filtering.
+     *
+     * Note: Uses SQL LIKE pattern matching. Use % for wildcards.
+     * For regex-like behavior, convert pattern to LIKE format.
+     *
+     * @param pattern - Search pattern (SQL LIKE format with % wildcards)
+     * @param limit - Maximum number of messages to return (optional)
+     * @param type - Message type to filter by (optional)
+     * @returns Promise<Message[]> Array of matching messages
+     */
+    async searchByRegex(
+        pattern: string,
+        limit?: number,
+        type?: Message['type']
+    ): Promise<Message[]> {
+        const db = await this.getDb();
+
+        // Convert simple patterns to LIKE format if needed
+        let likePattern = pattern;
+        if (!pattern.includes('%')) {
+            likePattern = `%${pattern}%`;
+        }
+
+        let query = `
+            SELECT id, content, type, sender, timestamp, metadata
+            FROM messages
+            WHERE content LIKE ?
+        `;
+
+        const params: any[] = [likePattern];
+
+        if (type) {
+            query += ` AND type = ?`;
+            params.push(type);
+        }
+
+        query += ` ORDER BY created_at DESC`;
+
+        if (limit) {
+            query += ` LIMIT ${limit}`;
+        }
+
+        const rows = db.prepare(query).all(...params) as MessageRow[];
+
+        return rows.map((row) => parseMessageFromRow(row));
+    }
+
+    /**
+     * Get message by ID.
+     *
+     * @param messageId - The ID of the message to retrieve
+     * @returns Promise<Message | null> The message if found, null otherwise
+     */
+    async getMessageById(messageId: string): Promise<Message | null> {
+        const db = await this.getDb();
+
+        const row = db
+            .prepare(
+                `
+            SELECT id, content, type, sender, timestamp, metadata
+            FROM messages
+            WHERE id = ?
+        `
+            )
+            .get(messageId) as MessageRow | undefined;
+
+        if (!row) {
+            return null;
+        }
+
+        return parseMessageFromRow(row);
+    }
+
+    /**
+     * Close the database connection and clean up event listeners.
+     *
+     * @returns Promise<void> Resolves when the connection is closed
+     */
+    async close(): Promise<void> {
+        // Remove session change listener
+        this.sessionManager.removeListener(
+            'session-changed',
+            this.handleSessionChange.bind(this)
+        );
+
+        // Close database connection
+        if (this.db) {
+            this.db.close();
+            this.db = null;
+        }
+    }
+
+    private setupSessionChangeListener(): void {
+        this.sessionManager.on(
+            'session-changed',
+            this.handleSessionChange.bind(this)
+        );
+    }
+
+    private async handleSessionChange(
+        event: SessionChangeEvent
+    ): Promise<void> {
+        if (event.type !== 'session-switched' && this.db) {
+            return;
+        }
+        try {
+            if (this.db) {
+                this.db.close();
+                this.db = null;
+            }
+            // Re-initialize the database for the new session
+            await this.initializeDatabase();
+        } catch (error) {
+            console.error('Error handling session change:', error);
+        }
+    }
+
+    private async initializeDatabase(): Promise<void> {
+        if (this.db) return;
+
+        const session = await this.sessionManager.getActiveSession();
+        this.db = new Database(session.messageDbPath);
+
+        // Create messages table if it doesn't exist
+        this.db.exec(`
+            CREATE TABLE IF NOT EXISTS messages (
+                id TEXT PRIMARY KEY,
+                content TEXT NOT NULL,
+                type TEXT NOT NULL,
+                sender TEXT NOT NULL,
+                timestamp INTEGER NOT NULL,
+                metadata TEXT,
+                created_at INTEGER DEFAULT (strftime('%s', 'now'))
+            );
+        `);
+
+        // Create index for faster queries
+        this.db.exec(`
+            CREATE INDEX IF NOT EXISTS idx_messages_timestamp ON messages(timestamp);
+            CREATE INDEX IF NOT EXISTS idx_messages_type ON messages(type);
+            CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);
+        `);
+    }
+
+    private async getDb(): Promise<Database.Database> {
+        if (!this.db) {
+            await this.initializeDatabase();
+        }
+        return this.db!;
+    }
+}
