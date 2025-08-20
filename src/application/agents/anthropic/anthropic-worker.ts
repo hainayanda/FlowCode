@@ -1,7 +1,7 @@
-import { AgentExecutionParameters, AgentSummarizer, AgentWorker } from '../../interfaces/agents.js';
+import { AgentExecutionParameters } from '../../interfaces/agents.js';
 import { AsyncControl, AsyncControlResponse } from '../../models/async-control.js';
 import { ErrorMessage, Message } from '../../models/messages.js';
-import { Toolbox, ToolDefinition } from '../../interfaces/toolbox.js';
+import { Toolbox, ToolCallParameter, ToolDefinition } from '../../interfaces/toolbox.js';
 import { AgentModelConfig } from '../../models/config.js';
 import Anthropic from '@anthropic-ai/sdk';
 import { ToolUseBlock } from '@anthropic-ai/sdk/resources';
@@ -12,8 +12,8 @@ export class AnthropicWorker extends BaseWorker {
 
     private client: Anthropic;
 
-    constructor(name: string, config: AgentModelConfig, toolbox?: Toolbox, summarizer?: AgentSummarizer) {
-        super(name, config, toolbox, summarizer);
+    constructor(name: string, config: AgentModelConfig, toolbox?: Toolbox) {
+        super(name, config, toolbox);
         this.client = new Anthropic({
             apiKey: config.apiKey,
             baseURL: config.baseUrl,
@@ -67,72 +67,25 @@ export class AnthropicWorker extends BaseWorker {
             yield message;
             allMessages.push(message);
         }
-        return yield* this.finalizeProcess(allMessages, toolUses);
+        return yield* this.finalizeProcess(allMessages, this.convertToToolCallParameters(toolUses));
     }
 
-    private async* finalizeProcess(accumulatedMessages: Message[], toolUses: ToolUseBlock[]): AsyncGenerator<Message, AsyncControlResponse, AsyncControl> {
-        if (!this.toolbox) {
-            return { 
-                messages: accumulatedMessages,
-                usage: { 
-                    inputTokens: 0,
-                    outputTokens: 0,
-                    toolsUsed: 0
-                }
-            };
-        }
-
-        let allMessages: Message[] = accumulatedMessages
-        let inputTokens: number = 0;
-        let outputTokens: number = 0;
-        let toolsUsed: number = 0;
-        let input: AsyncControl = { type: 'continue' };
-
-        for (const toolUse of toolUses) {
+    private convertToToolCallParameters(toolCalls: ToolUseBlock[]): ToolCallParameter[] {
+        return toolCalls.map(antrhopicToolCall => {
+            if (!antrhopicToolCall.name) { return null; }
+            if (!antrhopicToolCall.input) { return null; }
             let parsedInput: Record<string, any>;
             try {
-                parsedInput = JSON.parse(toolUse.input as string);
-            } catch (error) {
-                const errorMessage = this.errorMessageFrom(error as Error, `Error occurred while using tool ${toolUse.name}`);
-                yield errorMessage;
-                allMessages.push(errorMessage);
-                continue;
+                parsedInput = JSON.parse(antrhopicToolCall.input as string);
+            } catch {
+                return null;
             }
-            const toolResult = this.toolbox.callTool(toolUse.name, parsedInput);
-            while (true) {
-                const { done, value } = await toolResult.next(input);
-                if (done) {
-                    allMessages.push(...value.messages);
-                    toolsUsed += 1 + value.usage.toolsUsed;
-                    inputTokens += value.usage.inputTokens;
-                    outputTokens += value.usage.outputTokens;
-                    break;
-                } else {
-                    input = yield value;
-                }
-            }
-        }
-        return {
-            messages: allMessages,
-            usage: {
-                inputTokens,
-                outputTokens,
-                toolsUsed
-            }
-        };
-    }
-
-    private errorMessageFrom(error: Error, message: string): ErrorMessage {
-        return {
-            id: generateUniqueId('error'),
-            type: 'system',
-            sender: this.name,
-            content: `${message}: ${error.message}`,
-            timestamp: new Date(),
-            metadata: {
-                error: error
-            }
-        };
+            return {
+                name: antrhopicToolCall.name,
+                parameters: parsedInput
+            };
+        })
+        .filter((tc): tc is ToolCallParameter => tc !== null);
     }
 
     private textMessageFrom(accumulatedText: string, id: string, date?: Date): Message {

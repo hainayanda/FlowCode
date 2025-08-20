@@ -1,7 +1,7 @@
-import { AgentExecutionParameters, AgentSummarizer, AgentWorker } from '../../interfaces/agents.js';
+import { AgentExecutionParameters } from '../../interfaces/agents.js';
 import { AsyncControl, AsyncControlResponse } from '../../models/async-control.js';
 import { ErrorMessage, Message } from '../../models/messages.js';
-import { Toolbox, ToolDefinition } from '../../interfaces/toolbox.js';
+import { Toolbox, ToolCallParameter, ToolDefinition } from '../../interfaces/toolbox.js';
 import { AgentModelConfig } from '../../models/config.js';
 import OpenAI from 'openai';
 import { generateUniqueId } from '../../../utils/id-generator.js';
@@ -11,8 +11,8 @@ export abstract class OpenAICompatibleWorker extends BaseWorker {
     
     private client: OpenAI;
 
-    constructor(name: string, config: AgentModelConfig, toolbox?: Toolbox, summarizer?: AgentSummarizer) {
-        super(name, config, toolbox, summarizer);
+    constructor(name: string, config: AgentModelConfig, toolbox?: Toolbox) {
+        super(name, config, toolbox);
         this.client = this.createClient(config);
     }
 
@@ -77,83 +77,7 @@ export abstract class OpenAICompatibleWorker extends BaseWorker {
             allMessages.push(message);
         }
 
-        return yield* this.finalizeProcess(allMessages, toolCalls.filter(tc => tc.id));
-    }
-
-    private async* finalizeProcess(
-        accumulatedMessages: Message[], 
-        toolCalls: OpenAI.Chat.Completions.ChatCompletionChunk.Choice.Delta.ToolCall[]
-    ): AsyncGenerator<Message, AsyncControlResponse, AsyncControl> {
-        if (!this.toolbox) {
-            return { 
-                messages: accumulatedMessages,
-                usage: { 
-                    inputTokens: 0,
-                    outputTokens: 0,
-                    toolsUsed: 0
-                }
-            };
-        }
-
-        let allMessages: Message[] = accumulatedMessages
-        let inputTokens: number = 0;
-        let outputTokens: number = 0;
-        let toolsUsed: number = 0;
-        let input: AsyncControl = { type: 'continue' };
-
-        for (const toolCall of toolCalls) {
-            if (!toolCall.function || !toolCall.function.name || !toolCall.function?.arguments) continue;
-
-            let parsedInput: Record<string, any>;
-            try {
-                parsedInput = JSON.parse(toolCall.function.arguments);
-            } catch (error) {
-                const errorMessage = this.errorMessageFrom(
-                    error instanceof Error ? error : new Error(String(error)), 
-                    `Error occurred while using tool ${toolCall.function.name}`
-                );
-                yield errorMessage;
-                allMessages.push(errorMessage);
-                continue;
-            }
-
-            const toolResult = this.toolbox.callTool(toolCall.function.name, parsedInput);
-            while (true) {
-                const { done, value } = await toolResult.next(input);
-                if (done) {
-                    const response = value;
-                    allMessages.push(...response.messages);
-                    toolsUsed += 1 + response.usage.toolsUsed;
-                    inputTokens += response.usage.inputTokens;
-                    outputTokens += response.usage.outputTokens;
-                    break;
-                } else {
-                    input = yield value;
-                }
-            }
-        }
-
-        return {
-            messages: allMessages,
-            usage: {
-                inputTokens,
-                outputTokens,
-                toolsUsed
-            }
-        };
-    }
-
-    private errorMessageFrom(error: Error, message: string): ErrorMessage {
-        return {
-            id: generateUniqueId('error'),
-            type: 'system',
-            sender: this.name,
-            content: `${message}: ${error.message}`,
-            timestamp: new Date(),
-            metadata: {
-                error: error
-            }
-        };
+        return yield* this.finalizeProcess(allMessages, this.convertToToolCallParameters(toolCalls));
     }
 
     private textMessageFrom(accumulatedText: string, id: string, date?: Date): Message {
@@ -164,6 +88,24 @@ export abstract class OpenAICompatibleWorker extends BaseWorker {
             content: accumulatedText,
             timestamp: date || new Date()
         };
+    }
+
+    private convertToToolCallParameters(toolCalls: OpenAI.Chat.Completions.ChatCompletionChunk.Choice.Delta.ToolCall[]): ToolCallParameter[] {
+        return toolCalls.map(openAIToolCall => {
+            if (!openAIToolCall.function?.name) { return null; }
+            if (!openAIToolCall.function?.arguments) { return null; }
+            let parsedArguments: Record<string, any>;
+            try {
+                parsedArguments = JSON.parse(openAIToolCall.function.arguments);
+            } catch {
+                return null;
+            }
+            return {
+                name: openAIToolCall.function.name,
+                parameters: parsedArguments
+            };
+        })
+        .filter((tc): tc is ToolCallParameter => tc !== null);
     }
 
     private convertToOpenAIMessages(messages: Message[], systemPrompt: string): OpenAI.Chat.Completions.ChatCompletionMessageParam[] {
