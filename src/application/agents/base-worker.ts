@@ -1,28 +1,48 @@
-import { generateUniqueId } from "../../utils/id-generator";
-import { AgentExecutionParameters, AgentWorker } from "../interfaces/agents";
-import { Toolbox, ToolCallParameter } from "../interfaces/toolbox";
-import { AsyncControlResponse, AsyncControl } from "../models/async-control";
-import { AgentModelConfig } from "../models/config";
-import { Message } from "../models/messages";
-import { SummaryResult } from "../models/summary";
+import { generateUniqueId } from '../../utils/id-generator';
+import { AgentExecutionParameters, AgentWorker } from '../interfaces/agents';
+import { Toolbox, ToolCallParameter } from '../interfaces/toolbox';
+import { AsyncControlResponse, AsyncControl } from '../models/async-control';
+import { AgentModelConfig } from '../models/config';
+import { Message } from '../models/messages';
+import { SummaryResult } from '../models/summary';
 
+/**
+ * Abstract base class for agent workers that provides common iteration and message handling logic.
+ * Concrete implementations must provide the singleProcess method for their specific agent behavior.
+ */
 export abstract class BaseWorker implements AgentWorker {
-
     protected name: string;
     protected config: AgentModelConfig;
     protected toolbox: Toolbox | undefined;
 
+    /**
+     * Creates a new BaseWorker instance.
+     * @param name - The name identifier for this worker
+     * @param config - Configuration for the agent model
+     * @param toolbox - Optional toolbox for tool execution capabilities
+     */
     constructor(name: string, config: AgentModelConfig, toolbox?: Toolbox) {
         this.name = name;
         this.toolbox = toolbox;
         this.config = config;
     }
 
-    async* process(parameters: AgentExecutionParameters, maxIterations?: number): AsyncGenerator<Message, AsyncControlResponse, AsyncControl> {
+    /**
+     * Processes multiple iterations of the agent workflow until completion or max iterations.
+     * Handles message accumulation, abort signals, and conversation history management.
+     *
+     * @param parameters - The execution parameters containing prompt and message history
+     * @param maxIterations - Maximum number of iterations to run (defaults to 25)
+     * @returns AsyncGenerator that yields intermediate messages and returns final accumulated response
+     */
+    async *process(
+        parameters: AgentExecutionParameters,
+        maxIterations?: number
+    ): AsyncGenerator<Message, AsyncControlResponse, AsyncControl> {
         const iterations = maxIterations || 25;
         let originalPrompt = parameters.prompt;
 
-        let outputMessages: Message[] = []
+        let outputMessages: Message[] = [];
         let inputTokens: number = 0;
         let outputTokens: number = 0;
         let toolsUsed: number = 0;
@@ -32,7 +52,7 @@ export abstract class BaseWorker implements AgentWorker {
 
         for (let i = 0; i < iterations && canContinue; i++) {
             parameters.prompt = `${originalPrompt}\n\n${this.processInstructions(i + 1, iterations)}`;
-            const process = this.singleProcess(parameters)
+            const process = this.singleProcess(parameters);
             while (true) {
                 const { done, value } = await process.next(input);
                 if (done) {
@@ -54,7 +74,9 @@ export abstract class BaseWorker implements AgentWorker {
                         canContinue = false;
                         break;
                     } else {
-                        canContinue = value.messages.length > 0 || value.usage.toolsUsed > 0;
+                        canContinue =
+                            value.messages.length > 0 ||
+                            value.usage.toolsUsed > 0;
                     }
 
                     input = { type: 'continue' };
@@ -70,28 +92,48 @@ export abstract class BaseWorker implements AgentWorker {
                 }
             }
         }
-        return { 
-            messages: outputMessages, 
+        return {
+            messages: outputMessages,
             completedReason,
-            usage: { inputTokens, outputTokens, toolsUsed } 
+            usage: { inputTokens, outputTokens, toolsUsed },
         };
     }
 
-    abstract singleProcess(parameters: AgentExecutionParameters): AsyncGenerator<Message, AsyncControlResponse, AsyncControl>
+    /**
+     * Abstract method that concrete implementations must provide to handle a single iteration.
+     * This method should contain the core agent logic for processing one round of interaction.
+     *
+     * @param parameters - The execution parameters containing prompt and message history
+     * @returns AsyncGenerator that yields intermediate messages and returns single iteration response
+     */
+    abstract singleProcess(
+        parameters: AgentExecutionParameters
+    ): AsyncGenerator<Message, AsyncControlResponse, AsyncControl>;
 
-    protected async* finalizeProcess(accumulatedMessages: Message[], toolCalls: ToolCallParameter[]): AsyncGenerator<Message, AsyncControlResponse, AsyncControl> {
+    /**
+     * Finalizes the agent process by executing any pending tool calls.
+     * Handles tool execution, message accumulation, and abort signal propagation.
+     *
+     * @param accumulatedMessages - Messages collected so far in the process
+     * @param toolCalls - Array of tool calls to execute
+     * @returns AsyncGenerator that yields tool messages and returns final response with all results
+     */
+    protected async *finalizeProcess(
+        accumulatedMessages: Message[],
+        toolCalls: ToolCallParameter[]
+    ): AsyncGenerator<Message, AsyncControlResponse, AsyncControl> {
         if (!this.toolbox) {
-            return { 
+            return {
                 messages: accumulatedMessages,
                 completedReason: 'completed',
-                usage: { 
+                usage: {
                     inputTokens: 0,
                     outputTokens: 0,
-                    toolsUsed: 0
-                }
+                    toolsUsed: 0,
+                },
             };
         }
-        
+
         let allMessages: Message[] = accumulatedMessages;
         let inputTokens: number = 0;
         let outputTokens: number = 0;
@@ -116,12 +158,15 @@ export abstract class BaseWorker implements AgentWorker {
             usage: {
                 inputTokens,
                 outputTokens,
-                toolsUsed
-            }
+                toolsUsed,
+            },
         };
     }
-    
-    private processInstructions(iteration: number, maxIterations: number): string {
+
+    private processInstructions(
+        iteration: number,
+        maxIterations: number
+    ): string {
         const isLastIteration = iteration === maxIterations;
 
         return `
@@ -147,9 +192,11 @@ ${isLastIteration ? '- ⚠️ THIS IS YOUR FINAL ITERATION - You must complete y
 - Provide meaningful output in each iteration to continue the process
 - If you've completed your task, you can end early by sending no output and making no tool calls
 
-${isLastIteration ?
-                '**FINAL ITERATION:** This is your last chance to complete the task. Provide your final response now.' :
-                '**Next Steps:** Plan what you want to accomplish in this iteration and what might be needed in subsequent iterations.'}
+${
+    isLastIteration
+        ? '**FINAL ITERATION:** This is your last chance to complete the task. Provide your final response now.'
+        : '**Next Steps:** Plan what you want to accomplish in this iteration and what might be needed in subsequent iterations.'
+}
         `;
     }
 }

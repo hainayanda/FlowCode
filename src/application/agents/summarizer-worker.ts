@@ -1,24 +1,46 @@
-import { AgentExecutionParameters, AgentWorker, AgentSummarizer } from "../interfaces/agents";
-import { SummaryResult } from "../models/summary";
+import {
+    AgentExecutionParameters,
+    AgentWorker,
+    AgentSummarizer,
+} from '../interfaces/agents';
+import { SummaryResult } from '../models/summary';
 
+/**
+ * Worker that wraps any AgentWorker to provide conversation summarization capabilities.
+ * Uses the underlying agent to condense conversation history for cost and context efficiency.
+ */
 export class SummarizerWorker implements AgentSummarizer {
-
     private worker: AgentWorker;
 
+    /**
+     * Creates a new SummarizerWorker instance.
+     * @param worker - The underlying agent worker to use for summarization
+     */
     constructor(worker: AgentWorker) {
         this.worker = worker;
     }
 
-    async summarize(parameters: AgentExecutionParameters): Promise<SummaryResult> {
+    /**
+     * Summarizes the conversation history to reduce token usage.
+     * Processes the conversation through the wrapped agent with special summarization instructions.
+     *
+     * @param parameters - The execution parameters containing the conversation to summarize
+     * @returns Promise resolving to summary result with condensed content and usage metrics
+     */
+    async summarize(
+        parameters: AgentExecutionParameters
+    ): Promise<SummaryResult> {
         parameters.prompt = `${parameters.prompt}\n\n${this.summarizeInstructions()}`;
         let result = this.worker.singleProcess(parameters);
         while (true) {
             const { done, value } = await result.next();
             if (done) {
                 return {
-                    summary: value.messages.map(msg => msg.content).join("\n"),
+                    summary: value.messages
+                        .map((msg) => msg.content)
+                        .join('\n'),
                     messageCount: value.messages.length,
-                    usage: value.usage
+                    usage: value.usage,
                 };
             }
         }

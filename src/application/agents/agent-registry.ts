@@ -1,63 +1,74 @@
-import { AgentFactory, EmbedderFactory } from "../interfaces/agent-factory";
-import { AgentSummarizer, AgentWorker, AgentEmbedder } from "../interfaces/agents";
-import { ConfigReader } from "../interfaces/config-store";
-import { Toolbox } from "../interfaces/toolbox";
-import { AgentModel } from "../models/agent-model";
-import { AgentModelConfig, EmbeddingConfig } from "../models/config";
-import { SummarizerWorker } from "./summarizer-worker";
+import { AgentFactory, EmbedderFactory } from '../interfaces/agent-factory';
+import { AgentWorker, AgentEmbedder } from '../interfaces/agents';
+import { Toolbox } from '../interfaces/toolbox';
+import { AgentModel } from '../models/agent-model';
+import { AgentModelConfig, EmbeddingConfig } from '../models/config';
 
-export class AgentRegistry implements AgentFactory, EmbedderFactory { 
-
-    private underlyingAgentFactories: AgentFactory[]
+/**
+ * Central registry for managing multiple agent and embedder factories.
+ *
+ * Aggregates models from multiple providers and routes worker creation requests
+ * to the appropriate factory based on the requested model alias.
+ */
+export class AgentRegistry implements AgentFactory, EmbedderFactory {
+    private underlyingAgentFactories: AgentFactory[];
     private underlyingEmbedderFactory: EmbedderFactory;
-    private configReader: ConfigReader;
 
+    /**
+     * Aggregated models from all registered agent factories.
+     * Flattens the model catalogs from all providers into a single array.
+     */
     get models(): AgentModel[] {
-        return this.underlyingAgentFactories.flatMap(factory => factory.models);
+        return this.underlyingAgentFactories.flatMap(
+            (factory) => factory.models
+        );
     }
 
-    constructor(agentFactories: AgentFactory[], embedderFactory: EmbedderFactory, configReader: ConfigReader) {
+    /**
+     * Creates a new AgentRegistry with the specified factories.
+     *
+     * @param agentFactories - Array of agent factories to register
+     * @param embedderFactory - Factory for creating embedder instances
+     */
+    constructor(
+        agentFactories: AgentFactory[],
+        embedderFactory: EmbedderFactory
+    ) {
         this.underlyingAgentFactories = agentFactories;
         this.underlyingEmbedderFactory = embedderFactory;
-        this.configReader = configReader;
     }
 
-    createWorker(name: string, config: AgentModelConfig, summarizer?: AgentSummarizer, toolbox?: Toolbox): AgentWorker {
-        const factory = this.underlyingAgentFactories.find(f => f.models.some(m => m.alias === config.model));
-        if (!factory) throw new Error(`No factory found for model ${config.model}`);
-        
-        // If no summarizer provided, try to create one based on config
-        const effectiveSummarizer = summarizer ?? this.createSummarizer();
-        
-        return factory.createWorker(name, config, effectiveSummarizer, toolbox);
-    }
-
-    private createSummarizer(): AgentSummarizer | undefined {
-        const summarizerConfig = this.configReader.summarizerConfig;
-        
-        if (!summarizerConfig?.enabled) {
-            return undefined;
-        }
-
-        const factory = this.underlyingAgentFactories.find(f => 
-            f.models.some(m => m.alias === summarizerConfig.model)
+    /**
+     * Creates an agent worker by routing to the appropriate factory.
+     *
+     * Searches through registered factories to find one that supports
+     * the requested model alias, then delegates worker creation.
+     *
+     * @param name - Unique identifier for the worker instance
+     * @param config - Configuration including model alias and settings
+     * @param toolbox - Optional toolbox providing additional capabilities
+     * @returns Configured agent worker from the appropriate factory
+     * @throws Error if no factory supports the requested model
+     */
+    createWorker(
+        name: string,
+        config: AgentModelConfig,
+        toolbox?: Toolbox
+    ): AgentWorker {
+        const factory = this.underlyingAgentFactories.find((f) =>
+            f.models.some((m) => m.alias === config.model)
         );
-        
-        if (!factory) {
-            return undefined;
-        }
-
-        const summarizerWorkerConfig: AgentModelConfig = {
-            model: summarizerConfig.model,
-            provider: summarizerConfig.provider,
-            apiKey: summarizerConfig.apiKey,
-            maxTokens: summarizerConfig.maxTokens || 4096
-        };
-
-        const summarizerWorker = factory.createWorker(`${summarizerConfig.model}-summarizer`, summarizerWorkerConfig, undefined, undefined);
-        return new SummarizerWorker(summarizerWorker);
+        if (!factory)
+            throw new Error(`No factory found for model ${config.model}`);
+        return factory.createWorker(name, config, toolbox);
     }
 
+    /**
+     * Creates an embedder instance using the registered embedder factory.
+     *
+     * @param config - Configuration for the embedding model
+     * @returns Configured embedder instance
+     */
     createEmbedder(config: EmbeddingConfig): AgentEmbedder {
         return this.underlyingEmbedderFactory.createEmbedder(config);
     }
