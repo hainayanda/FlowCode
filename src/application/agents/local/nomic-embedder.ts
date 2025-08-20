@@ -1,22 +1,41 @@
-import { AgentEmbedder } from "../../interfaces/agents";
-import { EmbeddingConfig } from "../../models/config";
+import { AgentEmbedder } from '../../interfaces/agents';
+import { EmbeddingConfig } from '../../models/config';
 import { pipeline, FeatureExtractionPipeline } from '@xenova/transformers';
 
+/**
+ * Local embedder implementation using Nomic's text embedding model.
+ * Runs completely offline using the @xenova/transformers library for browser/Node.js compatibility.
+ */
 export class NomicEmbedder implements AgentEmbedder {
     private config: EmbeddingConfig;
     private embeddingPipeline: FeatureExtractionPipeline | null = null;
 
+    /**
+     * Whether the embedder is available for use based on configuration.
+     */
     get isAvailable(): boolean {
         return this.config.enabled;
     }
 
+    /**
+     * Creates a new NomicEmbedder instance.
+     * @param config - Configuration controlling whether embedding is enabled
+     */
     constructor(config: EmbeddingConfig) {
         this.config = config;
     }
 
+    /**
+     * Generates an embedding vector from the input text using Nomic's model.
+     * Uses local processing with quantized model for better performance.
+     *
+     * @param text - The text to embed
+     * @returns Promise resolving to the embedding vector as a number array
+     * @throws Error if embedder is not available or processing fails
+     */
     async embed(text: string): Promise<number[]> {
         if (!this.isAvailable) {
-            throw new Error("Embedder is not available");
+            throw new Error('Embedder is not available');
         }
 
         const pipeline = await this.initialize();
@@ -38,9 +57,13 @@ export class NomicEmbedder implements AgentEmbedder {
         if (this.embeddingPipeline) {
             return this.embeddingPipeline;
         }
-        this.embeddingPipeline = await pipeline('feature-extraction', 'nomic-embed-text-v1.5', {
-            quantized: true, // Use quantized model for better performance
-        });
+        this.embeddingPipeline = await pipeline(
+            'feature-extraction',
+            'nomic-embed-text-v1.5',
+            {
+                quantized: true, // Use quantized model for better performance
+            }
+        );
         return this.embeddingPipeline;
     }
 }
