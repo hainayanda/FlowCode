@@ -25,20 +25,40 @@ export class AgentRegistry implements AgentFactory, EmbedderFactory {
     createWorker(name: string, config: AgentModelConfig, summarizer?: AgentSummarizer, toolbox?: Toolbox): AgentWorker {
         const factory = this.underlyingAgentFactories.find(f => f.models.some(m => m.alias === config.model));
         if (!factory) throw new Error(`No factory found for model ${config.model}`);
-        const summarizerUsed = summarizer || this.createSummarizer();
-        return factory.createWorker(name, config, summarizerUsed || undefined, toolbox);
+        
+        // If no summarizer provided, try to create one based on config
+        const effectiveSummarizer = summarizer ?? this.createSummarizer();
+        
+        return factory.createWorker(name, config, effectiveSummarizer, toolbox);
+    }
+
+    private createSummarizer(): AgentSummarizer | undefined {
+        const summarizerConfig = this.configReader.summarizerConfig;
+        
+        if (!summarizerConfig?.enabled) {
+            return undefined;
+        }
+
+        const factory = this.underlyingAgentFactories.find(f => 
+            f.models.some(m => m.alias === summarizerConfig.model)
+        );
+        
+        if (!factory) {
+            return undefined;
+        }
+
+        const summarizerWorkerConfig: AgentModelConfig = {
+            model: summarizerConfig.model,
+            provider: summarizerConfig.provider,
+            apiKey: summarizerConfig.apiKey,
+            maxTokens: summarizerConfig.maxTokens || 4096
+        };
+
+        const summarizerWorker = factory.createWorker(`${summarizerConfig.model}-summarizer`, summarizerWorkerConfig, undefined, undefined);
+        return new SummarizerWorker(summarizerWorker);
     }
 
     createEmbedder(config: EmbeddingConfig): AgentEmbedder {
         return this.underlyingEmbedderFactory.createEmbedder(config);
-    }
-
-    private createSummarizer(): AgentSummarizer | null {
-        const summarizerConfig = this.configReader.summarizerConfig;
-        if (!summarizerConfig.enabled) return null;
-        const factory = this.underlyingAgentFactories.find(f => f.models.some(m => m.alias === summarizerConfig.model));
-        if (!factory) return null;
-        const worker = factory.createWorker("summarizer", summarizerConfig);
-        return new SummarizerWorker(worker);
     }
 }
