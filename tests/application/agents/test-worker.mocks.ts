@@ -1,9 +1,12 @@
-import { BaseWorker } from "../../../src/application/agents/base-worker";
-import { AgentExecutionParameters } from "../../../src/application/interfaces/agents";
-import { AsyncControl, AsyncControlResponse } from "../../../src/application/models/async-control";
-import { Message } from "../../../src/application/models/messages";
-import { AgentModelConfig } from "../../../src/application/models/config";
-import { generateUniqueId } from "../../../src/utils/id-generator";
+import { BaseWorker } from '../../../src/application/agents/base-worker';
+import { AgentExecutionParameters } from '../../../src/application/interfaces/agents';
+import {
+    AsyncControl,
+    AsyncControlResponse,
+} from '../../../src/application/models/async-control';
+import { Message } from '../../../src/application/models/messages';
+import { AgentModelConfig } from '../../../src/application/models/config';
+import { generateUniqueId } from '../../../src/utils/id-generator';
 
 export class TestWorker extends BaseWorker {
     public mockMessages: Message[] = [];
@@ -12,7 +15,9 @@ export class TestWorker extends BaseWorker {
     public shouldYieldMessages: Message[] = [];
     public processedPrompts: string[] = [];
 
-    public async* singleProcess(parameters: AgentExecutionParameters): AsyncGenerator<Message, AsyncControlResponse, AsyncControl> {
+    public async *singleProcess(
+        parameters: AgentExecutionParameters
+    ): AsyncGenerator<Message, AsyncControlResponse, AsyncControl> {
         // Store the processed prompt for testing
         this.processedPrompts.push(parameters.prompt);
 
@@ -24,7 +29,7 @@ export class TestWorker extends BaseWorker {
         return {
             messages: this.mockMessages,
             completedReason: this.mockCompletedReason,
-            usage: this.mockUsage
+            usage: this.mockUsage,
         };
     }
 
@@ -61,16 +66,18 @@ export function createMockMessage(overrides: Partial<Message> = {}): Message {
         type: 'agent',
         sender: 'test-worker',
         timestamp: new Date(),
-        ...overrides
+        ...overrides,
     };
 }
 
-export function createMockConfig(overrides: Partial<AgentModelConfig> = {}): AgentModelConfig {
+export function createMockConfig(
+    overrides: Partial<AgentModelConfig> = {}
+): AgentModelConfig {
     return {
         model: 'test-model',
         provider: 'test-provider',
         apiKey: 'test-key',
         maxTokens: 4096,
-        ...overrides
+        ...overrides,
     };
 }

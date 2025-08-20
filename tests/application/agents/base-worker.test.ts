@@ -1,7 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { AgentExecutionParameters } from '../../../src/application/interfaces/agents';
 import { AsyncControl } from '../../../src/application/models/async-control';
-import { TestWorker, createMockMessage, createMockConfig } from './test-worker.mocks';
+import {
+    TestWorker,
+    createMockMessage,
+    createMockConfig,
+} from './test-worker.mocks';
 import { MockToolbox } from './toolbox.mocks';
 
 describe('BaseWorker', () => {
@@ -31,7 +35,7 @@ describe('BaseWorker', () => {
 
             const parameters: AgentExecutionParameters = {
                 prompt: 'Test prompt',
-                messages: []
+                messages: [],
             };
 
             const generator = worker.process(parameters, 1);
@@ -56,12 +60,12 @@ describe('BaseWorker', () => {
 
             const parameters: AgentExecutionParameters = {
                 prompt: 'Test prompt',
-                messages: []
+                messages: [],
             };
 
             const messages: any[] = [];
             const generator = worker.process(parameters, 3);
-            
+
             // Manually iterate through the generator to handle AsyncControl properly
             let result = await generator.next({ type: 'continue' });
             while (!result.done) {
@@ -84,7 +88,7 @@ describe('BaseWorker', () => {
 
             const parameters: AgentExecutionParameters = {
                 prompt: 'Test prompt',
-                messages: []
+                messages: [],
             };
 
             const generator = worker.process(parameters, 5);
@@ -102,12 +106,12 @@ describe('BaseWorker', () => {
 
             const parameters: AgentExecutionParameters = {
                 prompt: 'Test prompt',
-                messages: []
+                messages: [],
             };
 
             const generator = worker.process(parameters, 2);
             let result = await generator.next({ type: 'continue' });
-            
+
             // Should terminate immediately since no messages and no tools after first iteration
             expect(result.done).toBe(true);
         });
@@ -119,12 +123,12 @@ describe('BaseWorker', () => {
 
             const parameters: AgentExecutionParameters = {
                 prompt: 'Test prompt',
-                messages: []
+                messages: [],
             };
 
             const generator = worker.process(parameters, 3);
             let result = await generator.next({ type: 'continue' });
-            
+
             // Process a few iterations manually
             let iterations = 0;
             while (!result.done && iterations < 3) {
@@ -144,7 +148,7 @@ describe('BaseWorker', () => {
 
             const parameters: AgentExecutionParameters = {
                 prompt: 'Test prompt',
-                messages: []
+                messages: [],
             };
 
             // Process without maxIterations - should default to 25
@@ -166,7 +170,7 @@ describe('BaseWorker', () => {
 
             const parameters: AgentExecutionParameters = {
                 prompt: 'Original prompt',
-                messages: []
+                messages: [],
             };
 
             const generator = worker.process(parameters, 2);
@@ -174,7 +178,9 @@ describe('BaseWorker', () => {
 
             const processedPrompts = worker.getProcessedPrompts();
             expect(processedPrompts[0]).toContain('Original prompt');
-            expect(processedPrompts[0]).toContain('## Iterative Mode Instructions');
+            expect(processedPrompts[0]).toContain(
+                '## Iterative Mode Instructions'
+            );
             expect(processedPrompts[0]).toContain('iteration 1 of 2');
         });
 
@@ -185,12 +191,12 @@ describe('BaseWorker', () => {
 
             const parameters: AgentExecutionParameters = {
                 prompt: 'Test prompt',
-                messages: []
+                messages: [],
             };
 
             const generator = worker.process(parameters, 2);
             let result = await generator.next({ type: 'continue' });
-            
+
             // The key test is that the process runs successfully
             expect(result.done).toBeTruthy(); // Should complete based on our mock setup
         });
@@ -203,22 +209,32 @@ describe('BaseWorker', () => {
 
             const parameters: AgentExecutionParameters = {
                 prompt: 'Test prompt',
-                messages: []
+                messages: [],
             };
 
             const generator = worker.process(parameters, 2);
             let result = await generator.next({ type: 'continue' });
-            
-            // Should process successfully  
+
+            // Should process successfully
             expect(result.done).toBeTruthy();
         });
 
         it('should handle queuedMessages in AsyncControl input', async () => {
-            const firstIterationMessage = createMockMessage({ content: 'First iteration message' });
-            const secondIterationMessage = createMockMessage({ content: 'Second iteration message' });
-            const queuedMessage1 = createMockMessage({ content: 'Queued message 1' });
-            const queuedMessage2 = createMockMessage({ content: 'Queued message 2' });
-            const existingMessage = createMockMessage({ content: 'Existing message' });
+            const firstIterationMessage = createMockMessage({
+                content: 'First iteration message',
+            });
+            const secondIterationMessage = createMockMessage({
+                content: 'Second iteration message',
+            });
+            const queuedMessage1 = createMockMessage({
+                content: 'Queued message 1',
+            });
+            const queuedMessage2 = createMockMessage({
+                content: 'Queued message 2',
+            });
+            const existingMessage = createMockMessage({
+                content: 'Existing message',
+            });
 
             // Set up TestWorker to yield a message on first iteration, then complete on second
             worker.setShouldYieldMessages([firstIterationMessage]);
@@ -227,25 +243,25 @@ describe('BaseWorker', () => {
 
             const parameters: AgentExecutionParameters = {
                 prompt: 'Test prompt',
-                messages: [existingMessage]
+                messages: [existingMessage],
             };
 
             const generator = worker.process(parameters, 2);
-            
+
             // First iteration - yields message and waits for AsyncControl
             let result = await generator.next({ type: 'continue' });
             expect(result.done).toBe(false);
             expect(result.value).toEqual(firstIterationMessage);
-            
+
             // Set up for second iteration to complete
             worker.setShouldYieldMessages([]);
             worker.setMockMessages([secondIterationMessage]);
             worker.setMockUsage(60, 120, 0); // No tools to terminate
-            
+
             // Second iteration with queuedMessages
-            result = await generator.next({ 
-                type: 'continue', 
-                queuedMessages: [queuedMessage1, queuedMessage2] 
+            result = await generator.next({
+                type: 'continue',
+                queuedMessages: [queuedMessage1, queuedMessage2],
             });
 
             expect(result.done).toBe(true);
@@ -263,11 +279,21 @@ describe('BaseWorker', () => {
         });
 
         it('should handle summarizedMessages in AsyncControl input', async () => {
-            const firstIterationMessage = createMockMessage({ content: 'First iteration message' });
-            const secondIterationMessage = createMockMessage({ content: 'Second iteration message' });
-            const summarizedMessage1 = createMockMessage({ content: 'Summarized message 1' });
-            const summarizedMessage2 = createMockMessage({ content: 'Summarized message 2' });
-            const existingMessage = createMockMessage({ content: 'Existing message' });
+            const firstIterationMessage = createMockMessage({
+                content: 'First iteration message',
+            });
+            const secondIterationMessage = createMockMessage({
+                content: 'Second iteration message',
+            });
+            const summarizedMessage1 = createMockMessage({
+                content: 'Summarized message 1',
+            });
+            const summarizedMessage2 = createMockMessage({
+                content: 'Summarized message 2',
+            });
+            const existingMessage = createMockMessage({
+                content: 'Existing message',
+            });
 
             // Set up TestWorker to yield a message on first iteration, then complete on second
             worker.setShouldYieldMessages([firstIterationMessage]);
@@ -276,67 +302,77 @@ describe('BaseWorker', () => {
 
             const parameters: AgentExecutionParameters = {
                 prompt: 'Test prompt',
-                messages: [existingMessage]
+                messages: [existingMessage],
             };
 
             const generator = worker.process(parameters, 2);
-            
+
             // First iteration - yields message and waits for AsyncControl
             let result = await generator.next({ type: 'continue' });
             expect(result.done).toBe(false);
             expect(result.value).toEqual(firstIterationMessage);
-            
+
             // Set up for second iteration to complete
             worker.setShouldYieldMessages([]);
             worker.setMockMessages([secondIterationMessage]);
             worker.setMockUsage(60, 120, 0); // No tools to terminate
-            
+
             // Second iteration with summarizedMessages
-            result = await generator.next({ 
-                type: 'continue', 
-                summarizedMessages: [summarizedMessage1, summarizedMessage2] 
+            result = await generator.next({
+                type: 'continue',
+                summarizedMessages: [summarizedMessage1, summarizedMessage2],
             });
 
             expect(result.done).toBe(true);
             if (result.done) {
                 // Current behavior: summarizedMessages are set when the iteration completes
                 // But the current iteration's messages are also added to parameters.messages
-                expect(parameters.messages).toHaveLength(3); // summarized + current iteration  
+                expect(parameters.messages).toHaveLength(3); // summarized + current iteration
                 expect(parameters.messages[0]).toEqual(summarizedMessage1);
                 expect(parameters.messages[1]).toEqual(summarizedMessage2);
                 expect(parameters.messages[2]).toEqual(secondIterationMessage);
                 // Previous messages should not be present
-                expect(parameters.messages).not.toContain(firstIterationMessage);
+                expect(parameters.messages).not.toContain(
+                    firstIterationMessage
+                );
                 expect(parameters.messages).not.toContain(existingMessage);
             }
         });
 
         it('should prioritize summarizedMessages over queuedMessages', async () => {
-            const iterationMessage = createMockMessage({ content: 'Iteration message' });
-            const summarizedMessage = createMockMessage({ content: 'Summarized message' });
-            const queuedMessage = createMockMessage({ content: 'Queued message' });
-            const existingMessage = createMockMessage({ content: 'Existing message' });
+            const iterationMessage = createMockMessage({
+                content: 'Iteration message',
+            });
+            const summarizedMessage = createMockMessage({
+                content: 'Summarized message',
+            });
+            const queuedMessage = createMockMessage({
+                content: 'Queued message',
+            });
+            const existingMessage = createMockMessage({
+                content: 'Existing message',
+            });
 
             worker.setMockMessages([iterationMessage]);
             worker.setMockUsage(50, 100, 0); // No tools to terminate
 
             const parameters: AgentExecutionParameters = {
                 prompt: 'Test prompt',
-                messages: [existingMessage]
+                messages: [existingMessage],
             };
 
             const generator = worker.process(parameters, 1);
-            
+
             // With singleProcess completing immediately, this should complete on first call
-            const result = await generator.next({ 
-                type: 'continue', 
+            const result = await generator.next({
+                type: 'continue',
                 summarizedMessages: [summarizedMessage],
-                queuedMessages: [queuedMessage]
+                queuedMessages: [queuedMessage],
             });
 
             expect(result.done).toBe(true);
             if (result.done) {
-                // When there's no yield (singleProcess completes immediately), 
+                // When there's no yield (singleProcess completes immediately),
                 // AsyncControl input isn't used because there's no intermediate yield
                 // So parameters.messages should still have existing + iteration message
                 expect(parameters.messages).toHaveLength(2);
@@ -346,23 +382,27 @@ describe('BaseWorker', () => {
         });
 
         it('should handle empty queuedMessages array', async () => {
-            const iterationMessage = createMockMessage({ content: 'Iteration message' });
-            const existingMessage = createMockMessage({ content: 'Existing message' });
+            const iterationMessage = createMockMessage({
+                content: 'Iteration message',
+            });
+            const existingMessage = createMockMessage({
+                content: 'Existing message',
+            });
 
             worker.setMockMessages([iterationMessage]);
             worker.setMockUsage(50, 100, 0); // No tools to terminate
 
             const parameters: AgentExecutionParameters = {
                 prompt: 'Test prompt',
-                messages: [existingMessage]
+                messages: [existingMessage],
             };
 
             const generator = worker.process(parameters, 1);
-            
+
             // With singleProcess completing immediately, this should complete on first call
-            const result = await generator.next({ 
-                type: 'continue', 
-                queuedMessages: [] 
+            const result = await generator.next({
+                type: 'continue',
+                queuedMessages: [],
             });
 
             expect(result.done).toBe(true);
@@ -375,23 +415,27 @@ describe('BaseWorker', () => {
         });
 
         it('should handle empty summarizedMessages array', async () => {
-            const iterationMessage = createMockMessage({ content: 'Iteration message' });
-            const existingMessage = createMockMessage({ content: 'Existing message' });
+            const iterationMessage = createMockMessage({
+                content: 'Iteration message',
+            });
+            const existingMessage = createMockMessage({
+                content: 'Existing message',
+            });
 
             worker.setMockMessages([iterationMessage]);
             worker.setMockUsage(50, 100, 0); // No tools to terminate
 
             const parameters: AgentExecutionParameters = {
                 prompt: 'Test prompt',
-                messages: [existingMessage]
+                messages: [existingMessage],
             };
 
             const generator = worker.process(parameters, 1);
-            
+
             // With singleProcess completing immediately, this should complete on first call
-            const result = await generator.next({ 
-                type: 'continue', 
-                summarizedMessages: [] 
+            const result = await generator.next({
+                type: 'continue',
+                summarizedMessages: [],
             });
 
             expect(result.done).toBe(true);
@@ -406,8 +450,12 @@ describe('BaseWorker', () => {
         });
 
         it('should handle abort signal and stop iterations', async () => {
-            const firstIterationMessage = createMockMessage({ content: 'First iteration message' });
-            const existingMessage = createMockMessage({ content: 'Existing message' });
+            const firstIterationMessage = createMockMessage({
+                content: 'First iteration message',
+            });
+            const existingMessage = createMockMessage({
+                content: 'Existing message',
+            });
 
             // Set up TestWorker to yield a message on first iteration
             worker.setShouldYieldMessages([firstIterationMessage]);
@@ -416,16 +464,16 @@ describe('BaseWorker', () => {
 
             const parameters: AgentExecutionParameters = {
                 prompt: 'Test prompt',
-                messages: [existingMessage]
+                messages: [existingMessage],
             };
 
             const generator = worker.process(parameters, 5); // Multiple iterations allowed
-            
+
             // First iteration - yields message and waits for AsyncControl
             let result = await generator.next({ type: 'continue' });
             expect(result.done).toBe(false);
             expect(result.value).toEqual(firstIterationMessage);
-            
+
             // Send abort signal - should terminate the process
             result = await generator.next({ type: 'abort' });
 
@@ -434,7 +482,7 @@ describe('BaseWorker', () => {
                 // Should have stopped and returned results from first iteration only
                 expect(result.value.messages).toHaveLength(1);
                 expect(result.value.messages[0]).toEqual(firstIterationMessage);
-                
+
                 // Parameters should only have existing message (first iteration was yielded, not added)
                 expect(parameters.messages).toHaveLength(1);
                 expect(parameters.messages[0]).toEqual(existingMessage);
@@ -442,8 +490,12 @@ describe('BaseWorker', () => {
         });
 
         it('should handle abort signal in first iteration', async () => {
-            const firstIterationMessage = createMockMessage({ content: 'First iteration message' });
-            const existingMessage = createMockMessage({ content: 'Existing message' });
+            const firstIterationMessage = createMockMessage({
+                content: 'First iteration message',
+            });
+            const existingMessage = createMockMessage({
+                content: 'Existing message',
+            });
 
             // Set up TestWorker to yield then complete (simulating intermediate output)
             worker.setShouldYieldMessages([firstIterationMessage]);
@@ -452,16 +504,16 @@ describe('BaseWorker', () => {
 
             const parameters: AgentExecutionParameters = {
                 prompt: 'Test prompt',
-                messages: [existingMessage]
+                messages: [existingMessage],
             };
 
             const generator = worker.process(parameters, 5); // Multiple iterations allowed
-            
+
             // First call should yield the message
             let result = await generator.next({ type: 'continue' });
             expect(result.done).toBe(false);
             expect(result.value).toEqual(firstIterationMessage);
-            
+
             // Send abort signal - should stop processing and return accumulated results
             result = await generator.next({ type: 'abort' });
 
@@ -475,8 +527,10 @@ describe('BaseWorker', () => {
         });
 
         it('should handle completedReason aborted from singleProcess', async () => {
-            const abortedMessage = createMockMessage({ content: 'Process was aborted' });
-            
+            const abortedMessage = createMockMessage({
+                content: 'Process was aborted',
+            });
+
             // Set up TestWorker to return aborted status
             worker.setMockMessages([abortedMessage]);
             worker.setMockUsage(50, 100, 0);
@@ -484,7 +538,7 @@ describe('BaseWorker', () => {
 
             const parameters: AgentExecutionParameters = {
                 prompt: 'Test prompt',
-                messages: []
+                messages: [],
             };
 
             const generator = worker.process(parameters, 5);
@@ -499,15 +553,17 @@ describe('BaseWorker', () => {
         });
 
         it('should return completed reason for normal completion', async () => {
-            const normalMessage = createMockMessage({ content: 'Normal completion' });
-            
+            const normalMessage = createMockMessage({
+                content: 'Normal completion',
+            });
+
             worker.setMockMessages([normalMessage]);
             worker.setMockUsage(50, 100, 0); // No tools to terminate naturally
             worker.setMockCompletedReason('completed');
 
             const parameters: AgentExecutionParameters = {
                 prompt: 'Test prompt',
-                messages: []
+                messages: [],
             };
 
             const generator = worker.process(parameters, 1);
@@ -522,9 +578,13 @@ describe('BaseWorker', () => {
         });
 
         it('should stop iterations when singleProcess returns aborted', async () => {
-            const firstMessage = createMockMessage({ content: 'First iteration' });
-            const abortedMessage = createMockMessage({ content: 'Aborted iteration' });
-            
+            const firstMessage = createMockMessage({
+                content: 'First iteration',
+            });
+            const abortedMessage = createMockMessage({
+                content: 'Aborted iteration',
+            });
+
             // First iteration: normal completion with tools to continue
             worker.setShouldYieldMessages([firstMessage]);
             worker.setMockMessages([firstMessage]);
@@ -533,19 +593,19 @@ describe('BaseWorker', () => {
 
             const parameters: AgentExecutionParameters = {
                 prompt: 'Test prompt',
-                messages: []
+                messages: [],
             };
 
             const generator = worker.process(parameters, 5);
-            
+
             // First iteration yields message
             let result = await generator.next({ type: 'continue' });
             expect(result.done).toBe(false);
             expect(result.value).toEqual(firstMessage);
-            
+
             // Complete first iteration - it should continue to second iteration
             result = await generator.next({ type: 'continue' });
-            
+
             // If first iteration completed and continued, we need to set up for second iteration
             if (!result.done) {
                 // We're in second iteration now, set up abort
@@ -553,7 +613,7 @@ describe('BaseWorker', () => {
                 worker.setMockMessages([abortedMessage]);
                 worker.setMockUsage(60, 120, 0);
                 worker.setMockCompletedReason('aborted');
-                
+
                 // Complete second iteration with abort
                 result = await generator.next({ type: 'continue' });
             }
@@ -575,7 +635,7 @@ describe('BaseWorker', () => {
 
             const parameters: AgentExecutionParameters = {
                 prompt: 'Test prompt',
-                messages: []
+                messages: [],
             };
 
             const generator = worker.process(parameters, 3);
@@ -584,7 +644,9 @@ describe('BaseWorker', () => {
             const processedPrompt = worker.getProcessedPrompts()[0];
             expect(processedPrompt).toContain('iteration 1 of 3');
             expect(processedPrompt).toContain('## Iterative Mode Instructions');
-            expect(processedPrompt).toContain('Each iteration processes your previous output');
+            expect(processedPrompt).toContain(
+                'Each iteration processes your previous output'
+            );
             expect(processedPrompt).not.toContain('FINAL ITERATION');
         });
 
@@ -595,12 +657,12 @@ describe('BaseWorker', () => {
 
             const parameters: AgentExecutionParameters = {
                 prompt: 'Test prompt',
-                messages: []
+                messages: [],
             };
 
             const generator = worker.process(parameters, 2);
             let result = await generator.next({ type: 'continue' });
-            
+
             // Process through iterations to get to final one
             let iterations = 0;
             while (!result.done && iterations < 2) {
@@ -610,9 +672,12 @@ describe('BaseWorker', () => {
 
             const processedPrompts = worker.getProcessedPrompts();
             if (processedPrompts.length > 1) {
-                const finalPrompt = processedPrompts[processedPrompts.length - 1];
+                const finalPrompt =
+                    processedPrompts[processedPrompts.length - 1];
                 expect(finalPrompt).toContain('iteration 2 of 2');
-                expect(finalPrompt).toContain('⚠️ THIS IS YOUR FINAL ITERATION');
+                expect(finalPrompt).toContain(
+                    '⚠️ THIS IS YOUR FINAL ITERATION'
+                );
                 expect(finalPrompt).toContain('**FINAL ITERATION:**');
             }
         });
@@ -623,15 +688,19 @@ describe('BaseWorker', () => {
 
             const parameters: AgentExecutionParameters = {
                 prompt: 'Test prompt',
-                messages: []
+                messages: [],
             };
 
             const generator = worker.process(parameters, 5);
             await generator.next();
 
             const processedPrompt = worker.getProcessedPrompts()[0];
-            expect(processedPrompt).toContain('Make the most of your limited iterations');
-            expect(processedPrompt).toContain('Use tool calls when you need external information');
+            expect(processedPrompt).toContain(
+                'Make the most of your limited iterations'
+            );
+            expect(processedPrompt).toContain(
+                'Use tool calls when you need external information'
+            );
             expect(processedPrompt).toContain('break complex tasks into steps');
         });
     });

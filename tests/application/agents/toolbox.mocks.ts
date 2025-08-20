@@ -1,15 +1,22 @@
-import { Toolbox, ToolDefinition, ToolCallParameter } from "../../../src/application/interfaces/toolbox";
-import { AsyncControl, AsyncControlResponse } from "../../../src/application/models/async-control";
-import { Message } from "../../../src/application/models/messages";
+import {
+    Toolbox,
+    ToolDefinition,
+    ToolCallParameter,
+} from '../../../src/application/interfaces/toolbox';
+import {
+    AsyncControl,
+    AsyncControlResponse,
+} from '../../../src/application/models/async-control';
+import { Message } from '../../../src/application/models/messages';
 
 export class MockToolbox implements Toolbox {
     public tools: ToolDefinition[] = [
         {
-            name: "test-tool",
-            description: "A test tool",
-            parameters: { param1: "string" },
-            permission: "always"
-        }
+            name: 'test-tool',
+            description: 'A test tool',
+            parameters: { param1: 'string' },
+            permission: 'always',
+        },
     ];
 
     public mockMessages: Message[] = [];
@@ -17,7 +24,9 @@ export class MockToolbox implements Toolbox {
     public mockCompletedReason: 'completed' | 'aborted' = 'completed';
     public shouldYieldMessages: Message[] = [];
 
-    async* callTool(parameter: ToolCallParameter): AsyncGenerator<Message, AsyncControlResponse, AsyncControl> {
+    async *callTool(
+        parameter: ToolCallParameter
+    ): AsyncGenerator<Message, AsyncControlResponse, AsyncControl> {
         // Yield any intermediate messages if configured
         for (const message of this.shouldYieldMessages) {
             yield message;
@@ -26,7 +35,7 @@ export class MockToolbox implements Toolbox {
         return {
             messages: this.mockMessages,
             completedReason: this.mockCompletedReason,
-            usage: this.mockUsage
+            usage: this.mockUsage,
         };
     }
 

@@ -1,15 +1,15 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { AgentRegistry } from '../../../src/application/agents/agent-registry';
-import { AgentFactory, EmbedderFactory } from '../../../src/application/interfaces/agent-factory';
-import { ConfigReader } from '../../../src/application/interfaces/config-store';
-import { AgentModel } from '../../../src/application/models/agent-model';
+import {
+    AgentFactory,
+    EmbedderFactory,
+} from '../../../src/application/interfaces/agent-factory';
 import {
     MockAgentFactory,
     MockEmbedderFactory,
-    MockConfigReader,
     createMockAgentModel,
     createMockAgentModelConfig,
-    createMockEmbeddingConfig
+    createMockEmbeddingConfig,
 } from './agent-registry.mocks';
 import { MockToolbox } from './toolbox.mocks';
 
@@ -18,21 +18,28 @@ describe('AgentRegistry', () => {
     let mockAgentFactory1: MockAgentFactory;
     let mockAgentFactory2: MockAgentFactory;
     let mockEmbedderFactory: MockEmbedderFactory;
-    let mockConfigReader: MockConfigReader;
     let agentFactories: AgentFactory[];
 
     beforeEach(() => {
-        const model1 = createMockAgentModel({ alias: 'model-1', provider: 'provider-1' });
-        const model2 = createMockAgentModel({ alias: 'model-2', provider: 'provider-1' });
-        const model3 = createMockAgentModel({ alias: 'model-3', provider: 'provider-2' });
+        const model1 = createMockAgentModel({
+            alias: 'model-1',
+            provider: 'provider-1',
+        });
+        const model2 = createMockAgentModel({
+            alias: 'model-2',
+            provider: 'provider-1',
+        });
+        const model3 = createMockAgentModel({
+            alias: 'model-3',
+            provider: 'provider-2',
+        });
 
         mockAgentFactory1 = new MockAgentFactory([model1, model2]);
         mockAgentFactory2 = new MockAgentFactory([model3]);
         mockEmbedderFactory = new MockEmbedderFactory();
-        mockConfigReader = new MockConfigReader();
 
         agentFactories = [mockAgentFactory1, mockAgentFactory2];
-        agentRegistry = new AgentRegistry(agentFactories, mockEmbedderFactory, mockConfigReader);
+        agentRegistry = new AgentRegistry(agentFactories, mockEmbedderFactory);
     });
 
     describe('constructor', () => {
@@ -53,7 +60,10 @@ describe('AgentRegistry', () => {
 
         it('should return empty array when no factories have models', () => {
             const emptyFactories = [new MockAgentFactory([])];
-            const registry = new AgentRegistry(emptyFactories, mockEmbedderFactory, mockConfigReader);
+            const registry = new AgentRegistry(
+                emptyFactories,
+                mockEmbedderFactory
+            );
             expect(registry.models).toEqual([]);
         });
     });
@@ -63,7 +73,11 @@ describe('AgentRegistry', () => {
             const config = createMockAgentModelConfig({ model: 'model-1' });
             const mockToolbox = new MockToolbox();
 
-            const worker = agentRegistry.createWorker('test-worker', config, undefined, mockToolbox);
+            const worker = agentRegistry.createWorker(
+                'test-worker',
+                config,
+                mockToolbox
+            );
 
             expect(worker).toBeDefined();
             expect(mockAgentFactory1.getCreatedWorkers()).toHaveLength(1);
@@ -74,72 +88,15 @@ describe('AgentRegistry', () => {
             const config = createMockAgentModelConfig({ model: 'model-3' });
             const mockToolbox = new MockToolbox();
 
-            const worker = agentRegistry.createWorker('test-worker', config, undefined, mockToolbox);
+            const worker = agentRegistry.createWorker(
+                'test-worker',
+                config,
+                mockToolbox
+            );
 
             expect(worker).toBeDefined();
             expect(mockAgentFactory1.getCreatedWorkers()).toHaveLength(0);
             expect(mockAgentFactory2.getCreatedWorkers()).toHaveLength(1);
-        });
-
-        it('should throw error when no factory supports the model', () => {
-            const config = createMockAgentModelConfig({ model: 'unknown-model' });
-
-            expect(() => {
-                agentRegistry.createWorker('test-worker', config);
-            }).toThrow('No factory found for model unknown-model');
-        });
-
-        it('should pass provided summarizer to factory', () => {
-            const config = createMockAgentModelConfig({ model: 'model-1' });
-            const mockSummarizer = {} as any; // Mock summarizer
-            const mockToolbox = new MockToolbox();
-
-            const worker = agentRegistry.createWorker('test-worker', config, mockSummarizer, mockToolbox);
-
-            expect(worker).toBeDefined();
-            expect(mockAgentFactory1.getCreatedWorkers()).toHaveLength(1);
-        });
-
-        it('should create summarizer when none provided and summarizer is enabled', () => {
-            // Set up config reader to have enabled summarizer with matching model
-            mockConfigReader.setSummarizerEnabled(true);
-            mockConfigReader.setSummarizerModel('model-2');
-
-            const config = createMockAgentModelConfig({ model: 'model-1' });
-            const mockToolbox = new MockToolbox();
-
-            const worker = agentRegistry.createWorker('test-worker', config, undefined, mockToolbox);
-
-            expect(worker).toBeDefined();
-            // Should create both the requested worker and a summarizer worker
-            expect(mockAgentFactory1.getCreatedWorkers()).toHaveLength(2);
-        });
-
-        it('should not create summarizer when disabled', () => {
-            mockConfigReader.setSummarizerEnabled(false);
-
-            const config = createMockAgentModelConfig({ model: 'model-1' });
-            const mockToolbox = new MockToolbox();
-
-            const worker = agentRegistry.createWorker('test-worker', config, undefined, mockToolbox);
-
-            expect(worker).toBeDefined();
-            // Should only create the requested worker, not a summarizer
-            expect(mockAgentFactory1.getCreatedWorkers()).toHaveLength(1);
-        });
-
-        it('should handle case when no factory supports summarizer model', () => {
-            mockConfigReader.setSummarizerEnabled(true);
-            mockConfigReader.setSummarizerModel('unknown-summarizer-model');
-
-            const config = createMockAgentModelConfig({ model: 'model-1' });
-            const mockToolbox = new MockToolbox();
-
-            const worker = agentRegistry.createWorker('test-worker', config, undefined, mockToolbox);
-
-            expect(worker).toBeDefined();
-            // Should still create the requested worker even if summarizer creation fails
-            expect(mockAgentFactory1.getCreatedWorkers()).toHaveLength(1);
         });
     });
 
@@ -160,43 +117,6 @@ describe('AgentRegistry', () => {
 
             expect(embedder).toBeDefined();
             expect(mockEmbedderFactory.getCreatedEmbedders()).toHaveLength(1);
-        });
-    });
-
-    describe('createSummarizer (private method behavior)', () => {
-        it('should return null when summarizer is disabled', () => {
-            mockConfigReader.setSummarizerEnabled(false);
-
-            const config = createMockAgentModelConfig({ model: 'model-1' });
-            const worker = agentRegistry.createWorker('test-worker', config);
-
-            expect(worker).toBeDefined();
-            // Only the main worker should be created, not a summarizer
-            expect(mockAgentFactory1.getCreatedWorkers()).toHaveLength(1);
-        });
-
-        it('should return null when no factory supports summarizer model', () => {
-            mockConfigReader.setSummarizerEnabled(true);
-            mockConfigReader.setSummarizerModel('nonexistent-model');
-
-            const config = createMockAgentModelConfig({ model: 'model-1' });
-            const worker = agentRegistry.createWorker('test-worker', config);
-
-            expect(worker).toBeDefined();
-            // Only the main worker should be created
-            expect(mockAgentFactory1.getCreatedWorkers()).toHaveLength(1);
-        });
-
-        it('should create summarizer when enabled and factory exists', () => {
-            mockConfigReader.setSummarizerEnabled(true);
-            mockConfigReader.setSummarizerModel('model-2');
-
-            const config = createMockAgentModelConfig({ model: 'model-1' });
-            const worker = agentRegistry.createWorker('test-worker', config);
-
-            expect(worker).toBeDefined();
-            // Should create both main worker and summarizer worker
-            expect(mockAgentFactory1.getCreatedWorkers()).toHaveLength(2);
         });
     });
 
@@ -227,10 +147,10 @@ describe('AgentRegistry', () => {
         });
 
         it('should work with empty factory list', () => {
-            const emptyRegistry = new AgentRegistry([], mockEmbedderFactory, mockConfigReader);
-            
+            const emptyRegistry = new AgentRegistry([], mockEmbedderFactory);
+
             expect(emptyRegistry.models).toEqual([]);
-            
+
             const config = createMockAgentModelConfig({ model: 'any-model' });
             expect(() => {
                 emptyRegistry.createWorker('test', config);
