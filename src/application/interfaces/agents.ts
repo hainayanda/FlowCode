@@ -8,9 +8,15 @@ export interface AgentExecutionParameters {
 }
 
 export interface AgentWorker {
-    process(parameters: AgentExecutionParameters, maxIterations: number): AsyncGenerator<Message, AsyncControlResponse, AsyncControl>;
+    singleProcess(parameters: AgentExecutionParameters): AsyncGenerator<Message, AsyncControlResponse, AsyncControl>;
+    process(parameters: AgentExecutionParameters, maxIterations?: number): AsyncGenerator<Message, AsyncControlResponse, AsyncControl>;
 }
 
-export interface SummarizerAgent {
+export interface AgentSummarizer {
     summarize(parameters: AgentExecutionParameters): Promise<SummaryResult>;
+}
+
+export interface AgentEmbedder {
+    isAvailable: boolean;
+    embed(text: string): Promise<number[]>;
 }
