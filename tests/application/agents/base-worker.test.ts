@@ -214,44 +214,6 @@ describe('BaseWorker', () => {
         });
     });
 
-    describe('summarize', () => {
-        it('should create summary from single process', async () => {
-            const mockMessage1 = createMockMessage({ content: 'Summary line 1' });
-            const mockMessage2 = createMockMessage({ content: 'Summary line 2' });
-
-            worker.setMockMessages([mockMessage1, mockMessage2]);
-            worker.setMockUsage(100, 200, 1);
-
-            const parameters: AgentExecutionParameters = {
-                prompt: 'Summarize this',
-                messages: []
-            };
-
-            const result = await worker.summarize(parameters);
-
-            expect(result.summary).toBe('Summary line 1\nSummary line 2');
-            expect(result.messageCount).toBe(2);
-            expect(result.usage.inputTokens).toBe(100);
-            expect(result.usage.outputTokens).toBe(200);
-            expect(result.usage.toolsUsed).toBe(1);
-        });
-
-        it('should handle empty messages in summary', async () => {
-            worker.setMockMessages([]);
-            worker.setMockUsage(50, 0, 0);
-
-            const parameters: AgentExecutionParameters = {
-                prompt: 'Summarize this',
-                messages: []
-            };
-
-            const result = await worker.summarize(parameters);
-
-            expect(result.summary).toBe('');
-            expect(result.messageCount).toBe(0);
-        });
-    });
-
     describe('processInstructions', () => {
         it('should generate correct instructions for first iteration', async () => {
             worker.setMockMessages([]);

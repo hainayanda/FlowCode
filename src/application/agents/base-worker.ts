@@ -1,21 +1,23 @@
 import { generateUniqueId } from "../../utils/id-generator";
-import { AgentExecutionParameters, AgentWorker, SummarizerAgent } from "../interfaces/agents";
+import { AgentExecutionParameters, AgentSummarizer, AgentWorker } from "../interfaces/agents";
 import { Toolbox } from "../interfaces/toolbox";
 import { AsyncControlResponse, AsyncControl } from "../models/async-control";
 import { AgentModelConfig } from "../models/config";
 import { Message } from "../models/messages";
 import { SummaryResult } from "../models/summary";
 
-export abstract class BaseWorker implements AgentWorker, SummarizerAgent {
+export abstract class BaseWorker implements AgentWorker {
 
     protected name: string;
-    protected toolbox: Toolbox;
     protected config: AgentModelConfig;
+    protected toolbox: Toolbox | undefined;
+    protected summarizer: AgentSummarizer | undefined;
 
-    constructor(name: string, config: AgentModelConfig, toolbox: Toolbox) {
+    constructor(name: string, config: AgentModelConfig, toolbox?: Toolbox, summarizer?: AgentSummarizer) {
         this.name = name;
         this.toolbox = toolbox;
         this.config = config;
+        this.summarizer = summarizer;
     }
 
     async* process(parameters: AgentExecutionParameters, maxIterations?: number): AsyncGenerator<Message, AsyncControlResponse, AsyncControl> {
@@ -51,22 +53,7 @@ export abstract class BaseWorker implements AgentWorker, SummarizerAgent {
         return { messages: outputMessages, usage: { inputTokens, outputTokens, toolsUsed } };
     }
 
-    async summarize(parameters: AgentExecutionParameters): Promise<SummaryResult> {
-        parameters.prompt = `${parameters.prompt}\n\n${this.summarizeInstructions()}`;
-        let result = this.singleProcess(parameters);
-        while (true) {
-            const { done, value } = await result.next();
-            if (done) {
-                return {
-                    summary: value.messages.map(msg => msg.content).join("\n"),
-                    messageCount: value.messages.length,
-                    usage: value.usage
-                };
-            }
-        }
-    }
-
-    protected abstract singleProcess(parameters: AgentExecutionParameters): AsyncGenerator<Message, AsyncControlResponse, AsyncControl>
+    abstract singleProcess(parameters: AgentExecutionParameters): AsyncGenerator<Message, AsyncControlResponse, AsyncControl>
 
     private userTextMessages(input: AsyncControl): Message[] {
         if (input.payload) {
@@ -110,17 +97,6 @@ ${isLastIteration ? '- ⚠️ THIS IS YOUR FINAL ITERATION - You must complete y
 ${isLastIteration ? 
 '**FINAL ITERATION:** This is your last chance to complete the task. Provide your final response now.' : 
 '**Next Steps:** Plan what you want to accomplish in this iteration and what might be needed in subsequent iterations.'}
-        `;
-    }
-
-    private summarizeInstructions(): string { 
-        return `
-## Summarizer Mode Instructions
-
-You are a summarizer. 
-Your task is to condense the information provided in the messages into a concise summary. 
-Focus on the key points and main ideas, and avoid unnecessary details. 
-Use clear and straightforward language to convey the essence of the content.
         `;
     }
 }

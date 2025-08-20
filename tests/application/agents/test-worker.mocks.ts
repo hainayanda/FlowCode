@@ -11,7 +11,7 @@ export class TestWorker extends BaseWorker {
     public shouldYieldMessages: Message[] = [];
     public processedPrompts: string[] = [];
 
-    protected async* singleProcess(parameters: AgentExecutionParameters): AsyncGenerator<Message, AsyncControlResponse, AsyncControl> {
+    public async* singleProcess(parameters: AgentExecutionParameters): AsyncGenerator<Message, AsyncControlResponse, AsyncControl> {
         // Store the processed prompt for testing
         this.processedPrompts.push(parameters.prompt);
 
