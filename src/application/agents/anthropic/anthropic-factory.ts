@@ -93,7 +93,6 @@ export class AnthropicFactory implements AgentFactory {
      *
      * @param name - Unique identifier for the worker instance
      * @param config - Configuration settings for the Anthropic model
-     * @param summarizer - Optional summarizer for conversation management (unused in current implementation)
      * @param toolbox - Optional toolbox providing additional capabilities to the agent
      * @returns Configured AnthropicWorker instance ready for use
      */
