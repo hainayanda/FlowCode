@@ -1,6 +1,6 @@
+import { FeatureExtractionPipeline, pipeline } from '@xenova/transformers';
 import { AgentEmbedder } from '../../interfaces/agent';
 import { EmbeddingConfig } from '../../models/config';
-import { pipeline, FeatureExtractionPipeline } from '@xenova/transformers';
 
 /**
  * Local embedder implementation using Nomic's text embedding model.
@@ -11,18 +11,18 @@ export class NomicEmbedder implements AgentEmbedder {
     private embeddingPipeline: FeatureExtractionPipeline | null = null;
 
     /**
-     * Whether the embedder is available for use based on configuration.
-     */
-    get isAvailable(): boolean {
-        return this.config.enabled;
-    }
-
-    /**
      * Creates a new NomicEmbedder instance.
      * @param config - Configuration controlling whether embedding is enabled
      */
     constructor(config: EmbeddingConfig) {
         this.config = config;
+    }
+
+    /**
+     * Whether the embedder is available for use based on configuration.
+     */
+    get isAvailable(): boolean {
+        return this.config.enabled;
     }
 
     /**

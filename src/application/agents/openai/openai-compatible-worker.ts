@@ -1,14 +1,14 @@
+import OpenAI from 'openai';
+import { generateUniqueId } from '../../../utils/id-generator';
 import { AgentExecutionParameters } from '../../interfaces/agent';
-import { AsyncControl, AsyncControlResponse } from '../../models/async-control';
-import { Message } from '../../models/messages';
 import {
     Toolbox,
     ToolCallParameter,
     ToolDefinition,
 } from '../../interfaces/toolbox';
+import { AsyncControl, AsyncControlResponse } from '../../models/async-control';
 import { AgentModelConfig } from '../../models/config';
-import OpenAI from 'openai';
-import { generateUniqueId } from '../../../utils/id-generator';
+import { Message } from '../../models/messages';
 import { BaseWorker } from '../base-worker';
 
 /**

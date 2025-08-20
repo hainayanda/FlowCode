@@ -1,15 +1,15 @@
+import Anthropic from '@anthropic-ai/sdk';
+import { ToolUseBlock } from '@anthropic-ai/sdk/resources';
+import { generateUniqueId } from '../../../utils/id-generator';
 import { AgentExecutionParameters } from '../../interfaces/agent';
-import { AsyncControl, AsyncControlResponse } from '../../models/async-control';
-import { ErrorMessage, Message } from '../../models/messages';
 import {
     Toolbox,
     ToolCallParameter,
     ToolDefinition,
 } from '../../interfaces/toolbox';
+import { AsyncControl, AsyncControlResponse } from '../../models/async-control';
 import { AgentModelConfig } from '../../models/config';
-import Anthropic from '@anthropic-ai/sdk';
-import { ToolUseBlock } from '@anthropic-ai/sdk/resources';
-import { generateUniqueId } from '../../../utils/id-generator';
+import { Message } from '../../models/messages';
 import { BaseWorker } from '../base-worker';
 
 /**

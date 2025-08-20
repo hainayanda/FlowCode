@@ -1,5 +1,5 @@
+import { AgentEmbedder, AgentWorker } from '../interfaces/agent';
 import { AgentFactory, EmbedderFactory } from '../interfaces/agent-factory';
-import { AgentWorker, AgentEmbedder } from '../interfaces/agent';
 import { Toolbox } from '../interfaces/toolbox';
 import { AgentModel } from '../models/agent-model';
 import { AgentModelConfig, EmbeddingConfig } from '../models/config';
@@ -15,16 +15,6 @@ export class AgentRegistry implements AgentFactory, EmbedderFactory {
     private underlyingEmbedderFactory: EmbedderFactory;
 
     /**
-     * Aggregated models from all registered agent factories.
-     * Flattens the model catalogs from all providers into a single array.
-     */
-    get models(): AgentModel[] {
-        return this.underlyingAgentFactories.flatMap(
-            (factory) => factory.models
-        );
-    }
-
-    /**
      * Creates a new AgentRegistry with the specified factories.
      *
      * @param agentFactories - Array of agent factories to register
@@ -36,6 +26,15 @@ export class AgentRegistry implements AgentFactory, EmbedderFactory {
     ) {
         this.underlyingAgentFactories = agentFactories;
         this.underlyingEmbedderFactory = embedderFactory;
+    }
+    /**
+     * Aggregated models from all registered agent factories.
+     * Flattens the model catalogs from all providers into a single array.
+     */
+    get models(): AgentModel[] {
+        return this.underlyingAgentFactories.flatMap(
+            (factory) => factory.models
+        );
     }
 
     /**

@@ -1,6 +1,5 @@
 import { EventEmitter } from 'events';
 import { SessionInfo } from '../models/sessions';
-import { SessionChangeEvent } from '../models/session-events';
 
 /**
  * Interface for managing FlowCode sessions

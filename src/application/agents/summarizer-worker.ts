@@ -1,7 +1,7 @@
 import {
     AgentExecutionParameters,
-    AgentWorker,
     AgentSummarizer,
+    AgentWorker,
 } from '../interfaces/agent';
 import { SummaryResult } from '../models/summary';
 
@@ -32,6 +32,7 @@ export class SummarizerWorker implements AgentSummarizer {
     ): Promise<SummaryResult> {
         parameters.prompt = `${parameters.prompt}\n\n${this.summarizeInstructions()}`;
         let result = this.worker.singleProcess(parameters);
+        // eslint-disable-next-line no-constant-condition
         while (true) {
             const { done, value } = await result.next();
             if (done) {

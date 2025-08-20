@@ -1,10 +1,10 @@
 import OpenAI from 'openai';
+import { Toolbox } from '../../interfaces/toolbox';
 import {
     AgentModelConfig,
     OpenRouterAgentModelConfig,
 } from '../../models/config';
 import { OpenAICompatibleWorker } from '../openai/openai-compatible-worker';
-import { Toolbox } from '../../interfaces/toolbox';
 
 /**
  * Agent worker implementation for OpenRouter's multi-model API.

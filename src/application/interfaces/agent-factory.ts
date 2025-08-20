@@ -1,6 +1,6 @@
 import { AgentModel } from '../models/agent-model';
 import { AgentModelConfig, EmbeddingConfig } from '../models/config';
-import { AgentEmbedder, AgentSummarizer, AgentWorker } from './agent';
+import { AgentEmbedder, AgentWorker } from './agent';
 import { Toolbox } from './toolbox';
 
 /**

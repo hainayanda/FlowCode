@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
+import { Toolbox } from '../../interfaces/toolbox';
 import { AgentModelConfig } from '../../models/config';
 import { OpenAICompatibleWorker } from '../openai/openai-compatible-worker';
-import { Toolbox } from '../../interfaces/toolbox';
 
 /**
  * Agent worker implementation for Moonshot AI's models.
