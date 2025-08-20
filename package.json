@@ -13,7 +13,8 @@
         "start": "node dist/index.js",
         "clean": "rm -rf dist",
         "format": "npx prettier --write .",
-        "lint": "eslint src --ext .ts",
+        "lint": "eslint \"**/*.ts\"",
+        "lint:fix": "eslint --fix \"**/*.ts\"",
         "typecheck": "tsc --noEmit",
         "test": "vitest --run",
         "test:watch": "vitest --watch",
@@ -35,10 +36,11 @@
     },
     "devDependencies": {
         "@types/node": "^20.0.0",
-        "@typescript-eslint/eslint-plugin": "^6.0.0",
-        "@typescript-eslint/parser": "^6.0.0",
+        "@typescript-eslint/eslint-plugin": "^8.40.0",
+        "@typescript-eslint/parser": "^8.40.0",
         "@vitest/coverage-v8": "^1.0.0",
         "eslint": "^8.0.0",
+        "eslint-plugin-sort-class-members": "^1.21.0",
         "prettier": "3.6.2",
         "typescript": "^5.0.0",
         "vitest": "^1.0.0"

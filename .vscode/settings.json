@@ -1,0 +1,11 @@
+{
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": "explicit",
+        "source.fixAll": "explicit",
+        "source.addMissingImports": "explicit"
+    },
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "typescript.preferences.organizeImportsIgnoreCase": false,
+    "typescript.preferences.organizeImportsCollation": "ordinal"
+}
