@@ -121,10 +121,10 @@ export abstract class OpenAICompatibleWorker extends BaseWorker {
                 case 'file_operation':
                 case 'user_interaction':
                 case 'system':
-                    return { role: 'user', content: JSON.stringify(msg.content) };
+                    return { role: 'user', content: msg.content };
                 case 'agent':
                 case 'taskmaster':
-                    return { role: 'assistant', content: JSON.stringify(msg.content) };
+                    return { role: 'assistant', content: msg.content };
             }
         }));
     }
