@@ -1,4 +1,4 @@
-import { AgentEmbedder } from '../../interfaces/agents';
+import { AgentEmbedder } from '../../interfaces/agent';
 import { EmbeddingConfig } from '../../models/config';
 import { pipeline, FeatureExtractionPipeline } from '@xenova/transformers';
 

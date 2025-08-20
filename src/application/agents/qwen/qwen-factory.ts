@@ -1,5 +1,5 @@
 import { AgentFactory } from '../../interfaces/agent-factory';
-import { AgentSummarizer, AgentWorker } from '../../interfaces/agents';
+import { AgentWorker } from '../../interfaces/agent';
 import { Toolbox } from '../../interfaces/toolbox';
 import { AgentModel } from '../../models/agent-model';
 import { AgentModelConfig } from '../../models/config';

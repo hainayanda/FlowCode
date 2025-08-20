@@ -1,18 +1,15 @@
-import { AgentExecutionParameters } from '../../interfaces/agents.js';
-import {
-    AsyncControl,
-    AsyncControlResponse,
-} from '../../models/async-control.js';
-import { ErrorMessage, Message } from '../../models/messages.js';
+import { AgentExecutionParameters } from '../../interfaces/agent';
+import { AsyncControl, AsyncControlResponse } from '../../models/async-control';
+import { Message } from '../../models/messages';
 import {
     Toolbox,
     ToolCallParameter,
     ToolDefinition,
-} from '../../interfaces/toolbox.js';
-import { AgentModelConfig } from '../../models/config.js';
+} from '../../interfaces/toolbox';
+import { AgentModelConfig } from '../../models/config';
 import OpenAI from 'openai';
-import { generateUniqueId } from '../../../utils/id-generator.js';
-import { BaseWorker } from '../base-worker.js';
+import { generateUniqueId } from '../../../utils/id-generator';
+import { BaseWorker } from '../base-worker';
 
 /**
  * Abstract base class for OpenAI-compatible API workers.

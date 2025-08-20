@@ -1,10 +1,9 @@
 import { generateUniqueId } from '../../utils/id-generator';
-import { AgentExecutionParameters, AgentWorker } from '../interfaces/agents';
+import { AgentExecutionParameters, AgentWorker } from '../interfaces/agent';
 import { Toolbox, ToolCallParameter } from '../interfaces/toolbox';
 import { AsyncControlResponse, AsyncControl } from '../models/async-control';
 import { AgentModelConfig } from '../models/config';
 import { Message } from '../models/messages';
-import { SummaryResult } from '../models/summary';
 
 /**
  * Abstract base class for agent workers that provides common iteration and message handling logic.

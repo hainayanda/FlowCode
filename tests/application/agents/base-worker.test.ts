@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { AgentExecutionParameters } from '../../../src/application/interfaces/agents';
+import { AgentExecutionParameters } from '../../../src/application/interfaces/agent';
 import { AsyncControl } from '../../../src/application/models/async-control';
 import {
     TestWorker,

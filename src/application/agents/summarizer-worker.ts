@@ -2,7 +2,7 @@ import {
     AgentExecutionParameters,
     AgentWorker,
     AgentSummarizer,
-} from '../interfaces/agents';
+} from '../interfaces/agent';
 import { SummaryResult } from '../models/summary';
 
 /**

@@ -1,5 +1,5 @@
 import { AgentFactory, EmbedderFactory } from '../interfaces/agent-factory';
-import { AgentWorker, AgentEmbedder } from '../interfaces/agents';
+import { AgentWorker, AgentEmbedder } from '../interfaces/agent';
 import { Toolbox } from '../interfaces/toolbox';
 import { AgentModel } from '../models/agent-model';
 import { AgentModelConfig, EmbeddingConfig } from '../models/config';

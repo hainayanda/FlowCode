@@ -5,7 +5,7 @@ import {
 import {
     AgentEmbedder,
     AgentWorker,
-} from '../../../src/application/interfaces/agents';
+} from '../../../src/application/interfaces/agent';
 import { Toolbox } from '../../../src/application/interfaces/toolbox';
 import { AgentModel } from '../../../src/application/models/agent-model';
 import {
