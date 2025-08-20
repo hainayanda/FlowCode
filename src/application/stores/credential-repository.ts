@@ -1,9 +1,9 @@
 import * as fs from 'fs/promises';
-import * as path from 'path';
 import * as os from 'os';
+import * as path from 'path';
+import { createFlowcodeDirectoryIfNeeded } from '../../utils/flowcode-directory';
 import { CredentialStore } from '../interfaces/credential-store';
 import { Credentials, ProviderCredential } from '../models/credential';
-import { createFlowcodeDirectoryIfNeeded } from '../../utils/flowcode-directory';
 
 /**
  * File-based credential repository.

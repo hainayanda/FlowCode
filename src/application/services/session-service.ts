@@ -1,10 +1,10 @@
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import * as os from 'os';
 import { EventEmitter } from 'events';
+import * as fs from 'fs/promises';
+import * as os from 'os';
+import * as path from 'path';
 import { SessionManager } from '../interfaces/session-manager';
-import { SessionInfo } from '../models/sessions';
 import { SessionChangeEvent } from '../models/session-events';
+import { SessionInfo } from '../models/sessions';
 
 /**
  * Service for managing FlowCode sessions
@@ -77,11 +77,8 @@ export class SessionService extends EventEmitter implements SessionManager {
                         const sessionInfo =
                             await this.loadSessionInfo(sessionDir);
                         sessions.push(sessionInfo);
-                    } catch (error) {
+                    } catch {
                         // Skip invalid session directories
-                        console.warn(
-                            `Skipping invalid session directory: ${sessionDir}`
-                        );
                     }
                 }
             }
@@ -91,7 +88,7 @@ export class SessionService extends EventEmitter implements SessionManager {
                 (a, b) =>
                     b.lastActiveDate.getTime() - a.lastActiveDate.getTime()
             );
-        } catch (error) {
+        } catch {
             // If session directory doesn't exist or other error, return empty array
             return [];
         }

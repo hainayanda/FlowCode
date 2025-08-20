@@ -161,7 +161,7 @@ export class CachedMessageStore implements MessageStore {
             }
 
             return filteredMessages;
-        } catch (error) {
+        } catch {
             // If regex is invalid, treat it as a simple string search
             const searchText = pattern.toLowerCase();
             let filteredMessages = this.messages.filter((message) => {

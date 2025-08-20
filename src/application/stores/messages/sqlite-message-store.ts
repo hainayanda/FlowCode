@@ -2,8 +2,8 @@ import Database from 'better-sqlite3';
 import { MessageStore } from '../../interfaces/message-store';
 import { SessionManager } from '../../interfaces/session-manager';
 import { Message } from '../../models/messages';
-import { MessageRow } from '../../models/sqlite-message';
 import { SessionChangeEvent } from '../../models/session-events';
+import { MessageRow } from '../../models/sqlite-message';
 import { parseMessageFromRow } from './sqlite-message-parser';
 
 /**

@@ -1,12 +1,12 @@
 import {
-    Message,
-    PlainMessage,
+    ChoiceInputMessage,
+    ChoiceMessage,
     ErrorMessage,
     FileOperationMessage,
-    PromptMessage,
-    ChoiceMessage,
-    ChoiceInputMessage,
+    Message,
+    PlainMessage,
     PromptInputMessage,
+    PromptMessage,
 } from '../../models/messages';
 import { MessageRow } from '../../models/sqlite-message';
 

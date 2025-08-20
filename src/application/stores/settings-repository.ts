@@ -1,8 +1,8 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { createFlowcodeDirectoryIfNeeded } from '../../utils/flowcode-directory';
 import { SettingsStore } from '../interfaces/settings-store';
 import { Settings } from '../models/settings';
-import { createFlowcodeDirectoryIfNeeded } from '../../utils/flowcode-directory';
 
 /**
  * Creates default settings.
