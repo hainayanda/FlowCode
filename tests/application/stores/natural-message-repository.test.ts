@@ -2,19 +2,19 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { Message } from '../../../src/application/models/messages';
 import { NaturalMessageRepository } from '../../../src/application/stores/natural-message-repository';
 import {
-    MockAgentEmbedder,
+    MockEmbedder,
     MockMessageStore,
     MockVectorStore,
 } from './natural-message-repository.mocks';
 
 describe('NaturalMessageRepository', () => {
     let repository: NaturalMessageRepository;
-    let mockEmbedder: MockAgentEmbedder;
+    let mockEmbedder: MockEmbedder;
     let mockVectorStore: MockVectorStore;
     let mockMessageStore: MockMessageStore;
 
     beforeEach(() => {
-        mockEmbedder = new MockAgentEmbedder(true);
+        mockEmbedder = new MockEmbedder(true);
         mockVectorStore = new MockVectorStore();
         mockMessageStore = new MockMessageStore();
         repository = new NaturalMessageRepository(

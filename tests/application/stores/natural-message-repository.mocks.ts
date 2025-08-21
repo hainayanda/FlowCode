@@ -1,13 +1,13 @@
-import { AgentEmbedder } from '../../../src/application/interfaces/agent';
+import { Embedder } from '../../../src/application/interfaces/embedder';
 import { MessageStore } from '../../../src/application/interfaces/message-store';
 import { VectorStore } from '../../../src/application/interfaces/vector-store';
 import { Message } from '../../../src/application/models/messages';
 import { VectorSearchResult } from '../../../src/application/models/sqlite-message';
 
 /**
- * Mock AgentEmbedder for testing
+ * Mock Embedder for testing
  */
-export class MockAgentEmbedder implements AgentEmbedder {
+export class MockEmbedder implements Embedder {
     private _isAvailable: boolean;
     private embeddings: Map<string, number[]> = new Map();
 

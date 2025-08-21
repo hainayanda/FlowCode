@@ -1,30 +1,30 @@
-import { AgentEmbedder } from '../interfaces/agent';
+import { Embedder } from '../interfaces/embedder';
 import { MessageStore, NaturalMessageStore } from '../interfaces/message-store';
 import { VectorStore } from '../interfaces/vector-store';
 import { Message } from '../models/messages';
 
 /**
  * Repository that combines vector search capabilities with message storage.
- * Uses AgentEmbedder for text-to-vector conversion, VectorStore for similarity search,
+ * Uses Embedder for text-to-vector conversion, VectorStore for similarity search,
  * and MessageStore for message persistence.
  */
 export class NaturalMessageRepository implements NaturalMessageStore {
-    private agentEmbedder: AgentEmbedder;
+    private embedder: Embedder;
     private vectorStore: VectorStore;
     private messageStore: MessageStore;
 
     /**
      * Creates a new NaturalMessageRepository instance.
-     * @param agentEmbedder - Embedder for converting text to vectors (optional)
+     * @param embedder - Embedder for converting text to vectors (optional)
      * @param vectorStore - Store for vector operations
      * @param messageStore - Store for message operations
      */
     constructor(
-        agentEmbedder: AgentEmbedder,
+        embedder: Embedder,
         vectorStore: VectorStore,
         messageStore: MessageStore
     ) {
-        this.agentEmbedder = agentEmbedder;
+        this.embedder = embedder;
         this.vectorStore = vectorStore;
         this.messageStore = messageStore;
     }
@@ -33,12 +33,12 @@ export class NaturalMessageRepository implements NaturalMessageStore {
      * Whether vector search is available based on embedder availability.
      */
     get isVectorSearchAvailable(): boolean {
-        return this.agentEmbedder.isAvailable;
+        return this.embedder.isAvailable;
     }
 
     /**
      * Searches for similar messages using vector similarity.
-     * If AgentEmbedder is not available, falls back to empty results.
+     * If Embedder is not available, falls back to empty results.
      *
      * @param message - The message text to search for
      * @param limit - Maximum number of results to return
@@ -55,7 +55,7 @@ export class NaturalMessageRepository implements NaturalMessageStore {
         }
 
         try {
-            const vector = await this.agentEmbedder.embed(message);
+            const vector = await this.embedder.embed(message);
             const vectorResults = await this.vectorStore.searchSimilar(
                 vector,
                 limit
@@ -79,7 +79,7 @@ export class NaturalMessageRepository implements NaturalMessageStore {
 
     /**
      * Stores a message with optional vector embedding.
-     * If AgentEmbedder is available, also stores the vector for similarity search.
+     * If Embedder is available, also stores the vector for similarity search.
      *
      * @param message - The message to store
      */
@@ -88,7 +88,7 @@ export class NaturalMessageRepository implements NaturalMessageStore {
 
         if (this.isVectorSearchAvailable) {
             try {
-                const vector = await this.agentEmbedder.embed(message.content);
+                const vector = await this.embedder.embed(message.content);
                 await this.vectorStore.storeVector(vector, message.id);
             } catch (error) {
                 throw new Error(`Vector storage failed: ${error}`);
@@ -107,9 +107,7 @@ export class NaturalMessageRepository implements NaturalMessageStore {
         if (this.isVectorSearchAvailable) {
             for (const message of messages) {
                 try {
-                    const vector = await this.agentEmbedder!.embed(
-                        message.content
-                    );
+                    const vector = await this.embedder!.embed(message.content);
                     await this.vectorStore.storeVector(vector, message.id);
                 } catch (error) {
                     throw new Error(
