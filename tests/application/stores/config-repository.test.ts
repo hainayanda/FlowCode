@@ -1,6 +1,6 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
     AgentModelConfig,
     EmbeddingConfig,
@@ -472,6 +472,59 @@ describe('ConfigRepository', () => {
             expect(freshRepository.taskMasterConfig).toBeUndefined();
             expect(freshRepository.summarizerConfig).toBeUndefined();
         });
+
+        it('should emit embedding-config-changed event when embedding config is updated', async () => {
+            await repository.writeConfig(mockConfig);
+
+            const eventListener = vi.fn();
+            repository.on('embedding-config-changed', eventListener);
+
+            const newEmbeddingConfig: EmbeddingConfig = {
+                enabled: false,
+            };
+
+            await repository.writeEmbeddingConfig(newEmbeddingConfig);
+
+            expect(eventListener).toHaveBeenCalledTimes(1);
+            expect(repository.embeddingConfig).toEqual(newEmbeddingConfig);
+        });
+
+        it('should emit event for multiple embedding config updates', async () => {
+            await repository.writeConfig(mockConfig);
+
+            const eventListener = vi.fn();
+            repository.on('embedding-config-changed', eventListener);
+
+            // First update
+            await repository.writeEmbeddingConfig({ enabled: false });
+            expect(eventListener).toHaveBeenCalledTimes(1);
+
+            // Second update
+            await repository.writeEmbeddingConfig({ enabled: true });
+            expect(eventListener).toHaveBeenCalledTimes(2);
+
+            // Third update
+            await repository.writeEmbeddingConfig({ enabled: false });
+            expect(eventListener).toHaveBeenCalledTimes(3);
+        });
+
+        it('should support multiple event listeners for embedding config changes', async () => {
+            await repository.writeConfig(mockConfig);
+
+            const listener1 = vi.fn();
+            const listener2 = vi.fn();
+            const listener3 = vi.fn();
+
+            repository.on('embedding-config-changed', listener1);
+            repository.on('embedding-config-changed', listener2);
+            repository.on('embedding-config-changed', listener3);
+
+            await repository.writeEmbeddingConfig({ enabled: false });
+
+            expect(listener1).toHaveBeenCalledTimes(1);
+            expect(listener2).toHaveBeenCalledTimes(1);
+            expect(listener3).toHaveBeenCalledTimes(1);
+        });
     });
 
     describe('writeAgentConfig', () => {
@@ -538,6 +591,115 @@ describe('ConfigRepository', () => {
         });
     });
 
+    describe('EventEmitter functionality', () => {
+        beforeEach(async () => {
+            await repository.writeConfig(mockConfig);
+        });
+
+        it('should extend EventEmitter correctly', () => {
+            expect(repository.on).toBeDefined();
+            expect(repository.emit).toBeDefined();
+            expect(repository.removeListener).toBeDefined();
+            expect(repository.listenerCount).toBeDefined();
+        });
+
+        it('should allow adding and removing event listeners', () => {
+            const listener = vi.fn();
+
+            // Add listener
+            repository.on('embedding-config-changed', listener);
+            expect(repository.listenerCount('embedding-config-changed')).toBe(
+                1
+            );
+
+            // Remove listener
+            repository.removeListener('embedding-config-changed', listener);
+            expect(repository.listenerCount('embedding-config-changed')).toBe(
+                0
+            );
+        });
+
+        it('should handle listener errors gracefully', async () => {
+            const errorListener = vi.fn().mockImplementation(() => {
+                throw new Error('Listener error');
+            });
+            const normalListener = vi.fn();
+
+            repository.on('embedding-config-changed', errorListener);
+            repository.on('embedding-config-changed', normalListener);
+
+            // Node.js EventEmitter throws by default if a listener throws
+            // This test checks that the error is propagated (expected behavior)
+            await expect(
+                repository.writeEmbeddingConfig({ enabled: false })
+            ).rejects.toThrow('Listener error');
+
+            expect(errorListener).toHaveBeenCalledTimes(1);
+            // Normal listener may or may not be called depending on order
+        });
+
+        it('should support once listeners', async () => {
+            const onceListener = vi.fn();
+            const regularListener = vi.fn();
+
+            repository.once('embedding-config-changed', onceListener);
+            repository.on('embedding-config-changed', regularListener);
+
+            // First event
+            await repository.writeEmbeddingConfig({ enabled: false });
+            expect(onceListener).toHaveBeenCalledTimes(1);
+            expect(regularListener).toHaveBeenCalledTimes(1);
+
+            // Second event
+            await repository.writeEmbeddingConfig({ enabled: true });
+            expect(onceListener).toHaveBeenCalledTimes(1); // Should not be called again
+            expect(regularListener).toHaveBeenCalledTimes(2);
+        });
+
+        it('should not emit events for other write operations', async () => {
+            const embeddingListener = vi.fn();
+            repository.on('embedding-config-changed', embeddingListener);
+
+            // These operations should not trigger embedding config events
+            await repository.writeTaskmasterConfig({
+                model: 'gpt-4',
+                provider: 'openai',
+                maxContext: 100,
+                minContext: 5,
+            });
+
+            await repository.writeSummarizerConfig({
+                enabled: true,
+                model: 'gpt-3.5-turbo',
+                provider: 'openai',
+                apiKey: 'test-key',
+                maxTokens: 1000,
+            });
+
+            await repository.writeAgentConfig('new-agent', {
+                model: 'claude-3',
+                provider: 'anthropic',
+                apiKey: 'test-key',
+                maxTokens: 1500,
+            });
+
+            expect(embeddingListener).not.toHaveBeenCalled();
+        });
+
+        it('should emit events only for embedding config changes', async () => {
+            const embeddingListener = vi.fn();
+            const genericListener = vi.fn();
+
+            repository.on('embedding-config-changed', embeddingListener);
+            repository.on('config-changed', genericListener); // This event doesn't exist, should not be called
+
+            await repository.writeEmbeddingConfig({ enabled: false });
+
+            expect(embeddingListener).toHaveBeenCalledTimes(1);
+            expect(genericListener).not.toHaveBeenCalled();
+        });
+    });
+
     describe('error handling', () => {
         it('should handle file write permissions error', async () => {
             // Create a read-only directory to simulate permission error
@@ -550,6 +712,18 @@ describe('ConfigRepository', () => {
 
             // Restore permissions for cleanup
             await fs.chmod(configDir, 0o755);
+        });
+
+        it('should emit events after successful write operations', async () => {
+            await repository.writeConfig(mockConfig);
+
+            const listener = vi.fn();
+            repository.on('embedding-config-changed', listener);
+
+            // Normal write operation should emit event
+            await repository.writeEmbeddingConfig({ enabled: false });
+
+            expect(listener).toHaveBeenCalledTimes(1);
         });
     });
 });

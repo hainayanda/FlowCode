@@ -1,5 +1,6 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { EventEmitter } from 'events';
 import { createFlowcodeDirectoryIfNeeded } from '../../utils/flowcode-directory';
 import { ConfigStore } from '../interfaces/config-store';
 import {
@@ -15,9 +16,9 @@ import {
  *
  * Manages configuration persistence through config.json in the .flowcode directory
  * at the workspace root. Provides caching for efficient access and ensures data
- * consistency through read-after-write operations.
+ * consistency through read-after-write operations. Emits events when configurations change.
  */
-export class ConfigRepository implements ConfigStore {
+export class ConfigRepository extends EventEmitter implements ConfigStore {
     private _config: FlowCodeConfig = {
         version: '1.0.0',
         embedding: {
@@ -33,6 +34,7 @@ export class ConfigRepository implements ConfigStore {
      * @param workspaceRoot - The root directory of the workspace (process.cwd())
      */
     constructor(workspaceRoot: string = process.cwd()) {
+        super();
         this.workspaceRoot = workspaceRoot;
         this.configPath = path.join(workspaceRoot, '.flowcode', 'config.json');
     }
@@ -201,6 +203,7 @@ export class ConfigRepository implements ConfigStore {
             embedding: config,
         };
         await this.writeConfig(updatedConfig);
+        this.emit('embedding-config-changed');
     }
 
     /**

@@ -1,3 +1,4 @@
+import { EventEmitter } from 'events';
 import {
     AgentModelConfig,
     EmbeddingConfig,
@@ -10,9 +11,10 @@ import {
  * Interface for reading configuration data.
  *
  * Provides access to various configuration objects and methods to fetch
- * the latest configuration from persistent storage.
+ * the latest configuration from persistent storage. Supports reactive
+ * notifications for configuration changes via EventEmitter.
  */
-export interface ConfigReader {
+export interface ConfigReader extends EventEmitter {
     /** Main FlowCode application configuration */
     config: FlowCodeConfig;
 
