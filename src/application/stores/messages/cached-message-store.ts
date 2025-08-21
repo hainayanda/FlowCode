@@ -214,8 +214,8 @@ export class CachedMessageStore implements MessageStore {
                 this.clearMessages();
                 this.currentSessionName = event.activeSession.name;
             }
-        } catch (error) {
-            console.error('Error handling session change:', error);
+        } catch {
+            // Ignore errors
         }
     }
 

@@ -3,6 +3,7 @@ import { MessageStore } from '../../interfaces/message-store';
 import { SessionManager } from '../../interfaces/session-manager';
 import { Message } from '../../models/messages';
 import { SessionChangeEvent } from '../../models/session-events';
+import { SessionInfo } from '../../models/sessions';
 import { MessageRow } from '../../models/sqlite-message';
 import { parseMessageFromRow } from './sqlite-message-parser';
 
@@ -15,8 +16,9 @@ import { parseMessageFromRow } from './sqlite-message-parser';
  * when the active session changes.
  */
 export class SQLiteMessageStore implements MessageStore {
-    private db: Database.Database | null = null;
     private sessionManager: SessionManager;
+    private isClosed: boolean = false;
+    private isInitialized: boolean = false;
 
     /**
      * Creates a new SQLiteMessageStore instance.
@@ -35,9 +37,10 @@ export class SQLiteMessageStore implements MessageStore {
      * @returns Promise<void> Resolves when the message is stored
      */
     async storeMessage(message: Message): Promise<void> {
-        const db = await this.getDb();
+        const session = await this.getSession();
+        await this.ensureInitialized(session.database);
 
-        const stmt = db.prepare(`
+        const stmt = session.database.prepare(`
             INSERT OR REPLACE INTO messages (id, content, type, sender, timestamp, metadata)
             VALUES (?, ?, ?, ?, ?, ?)
         `);
@@ -64,14 +67,15 @@ export class SQLiteMessageStore implements MessageStore {
      * @returns Promise<void> Resolves when all messages are stored
      */
     async storeMessages(messages: Message[]): Promise<void> {
-        const db = await this.getDb();
+        const session = await this.getSession();
+        await this.ensureInitialized(session.database);
 
-        const stmt = db.prepare(`
+        const stmt = session.database.prepare(`
             INSERT OR REPLACE INTO messages (id, content, type, sender, timestamp, metadata)
             VALUES (?, ?, ?, ?, ?, ?)
         `);
 
-        const transaction = db.transaction((msgs: Message[]) => {
+        const transaction = session.database.transaction((msgs: Message[]) => {
             for (const message of msgs) {
                 // Serialize metadata to JSON string if it exists
                 const metadata = (message as any).metadata
@@ -101,7 +105,8 @@ export class SQLiteMessageStore implements MessageStore {
      * @returns Promise<Message[]> Array of messages in chronological order
      */
     async getMessageHistory(limit?: number): Promise<Message[]> {
-        const db = await this.getDb();
+        const session = await this.getSession();
+        await this.ensureInitialized(session.database);
 
         // First, get all messages in chronological order to find summary boundary
         const allQuery = `
@@ -110,7 +115,9 @@ export class SQLiteMessageStore implements MessageStore {
             ORDER BY created_at ASC
         `;
 
-        const allRows = db.prepare(allQuery).all() as MessageRow[];
+        const allRows = session.database
+            .prepare(allQuery)
+            .all() as MessageRow[];
         const allMessages = allRows.map((row) => parseMessageFromRow(row));
 
         // Find the most recent summary message
@@ -146,7 +153,8 @@ export class SQLiteMessageStore implements MessageStore {
         type: Message['type'],
         limit?: number
     ): Promise<Message[]> {
-        const db = await this.getDb();
+        const session = await this.getSession();
+        await this.ensureInitialized(session.database);
 
         let query = `
             SELECT id, content, type, sender, timestamp, metadata
@@ -170,7 +178,7 @@ export class SQLiteMessageStore implements MessageStore {
             `;
         }
 
-        const rows = db.prepare(query).all(type) as MessageRow[];
+        const rows = session.database.prepare(query).all(type) as MessageRow[];
         return rows.map((row) => parseMessageFromRow(row));
     }
 
@@ -190,7 +198,8 @@ export class SQLiteMessageStore implements MessageStore {
         limit?: number,
         type?: Message['type']
     ): Promise<Message[]> {
-        const db = await this.getDb();
+        const session = await this.getSession();
+        await this.ensureInitialized(session.database);
 
         // Convert simple patterns to LIKE format if needed
         let likePattern = pattern;
@@ -217,7 +226,9 @@ export class SQLiteMessageStore implements MessageStore {
             query += ` LIMIT ${limit}`;
         }
 
-        const rows = db.prepare(query).all(...params) as MessageRow[];
+        const rows = session.database
+            .prepare(query)
+            .all(...params) as MessageRow[];
 
         return rows.map((row) => parseMessageFromRow(row));
     }
@@ -229,9 +240,10 @@ export class SQLiteMessageStore implements MessageStore {
      * @returns Promise<Message | null> The message if found, null otherwise
      */
     async getMessageById(messageId: string): Promise<Message | null> {
-        const db = await this.getDb();
+        const session = await this.getSession();
+        await this.ensureInitialized(session.database);
 
-        const row = db
+        const row = session.database
             .prepare(
                 `
             SELECT id, content, type, sender, timestamp, metadata
@@ -249,22 +261,21 @@ export class SQLiteMessageStore implements MessageStore {
     }
 
     /**
-     * Close the database connection and clean up event listeners.
+     * Close the message store and clean up event listeners.
      *
-     * @returns Promise<void> Resolves when the connection is closed
+     * @returns Promise<void> Resolves when cleanup is complete
      */
     async close(): Promise<void> {
+        this.isClosed = true;
+
         // Remove session change listener
         this.sessionManager.removeListener(
             'session-changed',
             this.handleSessionChange.bind(this)
         );
 
-        // Close database connection
-        if (this.db) {
-            this.db.close();
-            this.db = null;
-        }
+        // Note: Database is managed by session, not closed here
+        this.isInitialized = false;
     }
 
     private setupSessionChangeListener(): void {
@@ -277,29 +288,30 @@ export class SQLiteMessageStore implements MessageStore {
     private async handleSessionChange(
         event: SessionChangeEvent
     ): Promise<void> {
-        if (event.type !== 'session-switched' && this.db) {
+        if (event.type !== 'session-switched') {
             return;
         }
-        try {
-            if (this.db) {
-                this.db.close();
-                this.db = null;
-            }
-            // Re-initialize the database for the new session
-            await this.initializeDatabase();
-        } catch (error) {
-            console.error('Error handling session change:', error);
-        }
+
+        // Reset initialization state when session changes
+        // Database will be re-initialized on next use
+        this.isInitialized = false;
     }
 
-    private async initializeDatabase(): Promise<void> {
-        if (this.db) return;
+    private async getSession(): Promise<SessionInfo> {
+        if (this.isClosed) {
+            throw new Error('Message store has been closed');
+        }
 
-        const session = await this.sessionManager.getActiveSession();
-        this.db = new Database(session.messageDbPath);
+        return await this.sessionManager.getActiveSession();
+    }
+
+    private async ensureInitialized(
+        database: Database.Database
+    ): Promise<void> {
+        if (this.isInitialized) return;
 
         // Create messages table if it doesn't exist
-        this.db.exec(`
+        database.exec(`
             CREATE TABLE IF NOT EXISTS messages (
                 id TEXT PRIMARY KEY,
                 content TEXT NOT NULL,
@@ -312,17 +324,12 @@ export class SQLiteMessageStore implements MessageStore {
         `);
 
         // Create index for faster queries
-        this.db.exec(`
+        database.exec(`
             CREATE INDEX IF NOT EXISTS idx_messages_timestamp ON messages(timestamp);
             CREATE INDEX IF NOT EXISTS idx_messages_type ON messages(type);
             CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);
         `);
-    }
 
-    private async getDb(): Promise<Database.Database> {
-        if (!this.db) {
-            await this.initializeDatabase();
-        }
-        return this.db!;
+        this.isInitialized = true;
     }
 }

@@ -24,19 +24,11 @@ export class SQLiteMessageParser {
      * @param messageId - Message ID for error logging
      * @returns Parsed metadata object or null if parsing fails
      */
-    static parseMetadata(
-        metadataJson: string | null,
-        messageId: string
-    ): any | null {
+    static parseMetadata(metadataJson: string | null): any | null {
         if (!metadataJson) return null;
-
         try {
             return JSON.parse(metadataJson);
-        } catch (error) {
-            console.warn(
-                `Failed to parse metadata for message ${messageId}:`,
-                error
-            );
+        } catch {
             return null;
         }
     }
@@ -181,10 +173,7 @@ export class SQLiteMessageParser {
      * @returns Properly typed Message object (ErrorMessage, FileOperationMessage, etc.)
      */
     static parseMessageFromRow(row: MessageRow): Message {
-        const metadata = SQLiteMessageParser.parseMetadata(
-            row.metadata,
-            row.id
-        );
+        const metadata = SQLiteMessageParser.parseMetadata(row.metadata);
 
         switch (row.type) {
             case 'error':

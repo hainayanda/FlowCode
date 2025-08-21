@@ -558,10 +558,12 @@ describe('SQLiteMessageStore', () => {
             await store.storeMessage(message);
             await store.close();
 
-            // After closing, should be able to use again (will reinitialize)
-            await store.storeMessage(message);
-            const retrieved = await store.getMessageById('close-test');
+            // After closing, create a new store instance
+            const newStore = new SQLiteMessageStore(mockSessionManager);
+            await newStore.storeMessage(message);
+            const retrieved = await newStore.getMessageById('close-test');
             expect(retrieved).toEqual(message);
+            await newStore.close();
         });
     });
 

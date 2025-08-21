@@ -18,3 +18,13 @@ export interface MessageRow {
     /** Serialized metadata as JSON string, null if no metadata */
     metadata: string | null;
 }
+
+export interface VectorRow {
+    id: string;
+    messageId: string;
+    vector: number[];
+}
+
+export interface VectorSearchResult extends VectorRow {
+    similarity: number;
+}

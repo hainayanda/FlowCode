@@ -30,33 +30,20 @@ describe('SQLiteMessageParser', () => {
         it('should parse valid JSON metadata', () => {
             const metadata = { test: 'value', number: 42 };
             const result = SQLiteMessageParser.parseMetadata(
-                JSON.stringify(metadata),
-                'test-id'
+                JSON.stringify(metadata)
             );
             expect(result).toEqual(metadata);
         });
 
         it('should return null for null metadata', () => {
-            const result = SQLiteMessageParser.parseMetadata(null, 'test-id');
+            const result = SQLiteMessageParser.parseMetadata(null);
             expect(result).toBeNull();
         });
 
-        it('should return null and log warning for invalid JSON', () => {
-            const consoleSpy = vi
-                .spyOn(console, 'warn')
-                .mockImplementation(() => {});
-            const result = SQLiteMessageParser.parseMetadata(
-                'invalid-json',
-                'test-id'
-            );
+        it('should return null for invalid JSON', () => {
+            const result = SQLiteMessageParser.parseMetadata('invalid-json');
 
             expect(result).toBeNull();
-            expect(consoleSpy).toHaveBeenCalledWith(
-                'Failed to parse metadata for message test-id:',
-                expect.any(Error)
-            );
-
-            consoleSpy.mockRestore();
         });
     });
 
@@ -366,9 +353,6 @@ describe('SQLiteMessageParser', () => {
         });
 
         it('should handle invalid metadata gracefully', () => {
-            const consoleSpy = vi
-                .spyOn(console, 'warn')
-                .mockImplementation(() => {});
             const row: MessageRow = {
                 ...baseRow,
                 type: 'error',
@@ -377,8 +361,7 @@ describe('SQLiteMessageParser', () => {
             const result = SQLiteMessageParser.parseMessageFromRow(row);
 
             expect(result.type).toBe('error');
-            expect(consoleSpy).toHaveBeenCalled();
-            consoleSpy.mockRestore();
+            expect((result as any).metadata).toBeNull();
         });
     });
 
