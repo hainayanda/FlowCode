@@ -1,4 +1,5 @@
 import { EventEmitter } from 'events';
+import Database from 'better-sqlite3';
 import { SessionManager } from '../../../../src/application/interfaces/session-manager';
 import { SessionChangeEvent } from '../../../../src/application/models/session-events';
 import { SessionInfo } from '../../../../src/application/models/sessions';
@@ -15,8 +16,7 @@ export class MockSessionManager extends EventEmitter implements SessionManager {
         this.mockActiveSession = {
             name: 'test-session',
             lastActiveDate: new Date(),
-            messageDbPath: mockDbPath,
-            vectorDbPath: '/tmp/test-vector.db',
+            database: new Database(mockDbPath),
         };
     }
 
@@ -27,8 +27,7 @@ export class MockSessionManager extends EventEmitter implements SessionManager {
             this.mockActiveSession = {
                 name: 'test-session',
                 lastActiveDate: new Date(),
-                messageDbPath: ':memory:',
-                vectorDbPath: '/tmp/test-vector.db',
+                database: new Database(':memory:'),
             };
             this.emitSessionChangeEvent(
                 this.mockActiveSession,
@@ -68,8 +67,7 @@ export class MockSessionManager extends EventEmitter implements SessionManager {
             this.mockActiveSession = {
                 name: sessionId,
                 lastActiveDate: new Date(),
-                messageDbPath: ':memory:',
-                vectorDbPath: '/tmp/test-vector.db',
+                database: new Database(':memory:'),
             };
         }
 
@@ -94,17 +92,31 @@ export class MockSessionManager extends EventEmitter implements SessionManager {
     }
 
     setMockDbPath(dbPath: string) {
-        this.mockActiveSession.messageDbPath = dbPath;
+        // Close old database if it exists
+        if (this.mockActiveSession.database) {
+            this.mockActiveSession.database.close();
+        }
+        this.mockActiveSession.database = new Database(dbPath);
     }
 
     /**
      * Helper method to simulate session change for testing
      */
-    simulateSessionChange(newSession: SessionInfo) {
+    simulateSessionChange(newSession: Partial<SessionInfo> & { name: string }) {
         const previousSession = this.mockActiveSession
             ? { ...this.mockActiveSession }
             : undefined;
-        this.mockActiveSession = newSession;
+
+        // Close previous database if switching to a new one
+        if (this.mockActiveSession?.database && newSession.database) {
+            this.mockActiveSession.database.close();
+        }
+
+        this.mockActiveSession = {
+            name: newSession.name,
+            lastActiveDate: newSession.lastActiveDate || new Date(),
+            database: newSession.database || new Database(':memory:'),
+        };
 
         this.emitSessionChangeEvent(this.mockActiveSession, previousSession);
     }

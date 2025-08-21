@@ -1,7 +1,9 @@
+import Database from 'better-sqlite3';
+
 /**
  * Information about a FlowCode session
  *
- * Contains all metadata and file paths associated with a user session.
+ * Contains all metadata and database instance associated with a user session.
  * Each session maintains its own isolated message history and vector database.
  */
 export interface SessionInfo {
@@ -22,20 +24,11 @@ export interface SessionInfo {
     lastActiveDate: Date;
 
     /**
-     * Absolute path to the message database file
+     * SQLite database instance for this session
      *
-     * Points to the SQLite database file containing the conversation history
-     * for this session. The file is created automatically when the session
-     * is initialized.
+     * Contains both the conversation history and vector embeddings.
+     * The database instance is managed by the session and shared
+     * between message and vector stores.
      */
-    messageDbPath: string;
-
-    /**
-     * Absolute path to the vector database file
-     *
-     * Points to the vector database file used for semantic search and
-     * context retrieval within this session. The file is created automatically
-     * when the session is initialized.
-     */
-    vectorDbPath: string;
+    database: Database.Database;
 }

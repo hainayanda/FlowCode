@@ -34,27 +34,21 @@ describe('SessionService', () => {
             expect(session).toBeDefined();
             expect(session.name).toMatch(/^[0-9a-f]+$/); // hex format
             expect(session.lastActiveDate).toBeInstanceOf(Date);
-            expect(session.messageDbPath).toContain('message.db');
-            expect(session.vectorDbPath).toContain('vector.db');
+            expect(session.database.name).toContain('message.db');
 
             // Verify files were created
-            const messageDbExists = await fs
-                .access(session.messageDbPath)
-                .then(() => true)
-                .catch(() => false);
-            const vectorDbExists = await fs
-                .access(session.vectorDbPath)
+            const dbExists = await fs
+                .access(session.database.name)
                 .then(() => true)
                 .catch(() => false);
             const infoJsonExists = await fs
                 .access(
-                    path.join(path.dirname(session.messageDbPath), 'info.json')
+                    path.join(path.dirname(session.database.name), 'info.json')
                 )
                 .then(() => true)
                 .catch(() => false);
 
-            expect(messageDbExists).toBe(true);
-            expect(vectorDbExists).toBe(true);
+            expect(dbExists).toBe(true);
             expect(infoJsonExists).toBe(true);
         });
 
@@ -154,27 +148,25 @@ describe('SessionService', () => {
     describe('session directory structure', () => {
         it('should create proper directory structure', async () => {
             const session = await sessionService.getActiveSession();
-            const sessionDir = path.dirname(session.messageDbPath);
+            const sessionDir = path.dirname(session.database.name);
 
             // Check that session directory exists
             const dirStat = await fs.stat(sessionDir);
             expect(dirStat.isDirectory()).toBe(true);
 
             // Check that all required files exist
-            const messageDbStat = await fs.stat(session.messageDbPath);
-            const vectorDbStat = await fs.stat(session.vectorDbPath);
+            const dbStat = await fs.stat(session.database.name);
             const infoJsonStat = await fs.stat(
                 path.join(sessionDir, 'info.json')
             );
 
-            expect(messageDbStat.isFile()).toBe(true);
-            expect(vectorDbStat.isFile()).toBe(true);
+            expect(dbStat.isFile()).toBe(true);
             expect(infoJsonStat.isFile()).toBe(true);
         });
 
         it('should save and load info.json correctly', async () => {
             const session = await sessionService.getActiveSession();
-            const sessionDir = path.dirname(session.messageDbPath);
+            const sessionDir = path.dirname(session.database.name);
             const infoPath = path.join(sessionDir, 'info.json');
 
             const infoContent = await fs.readFile(infoPath, 'utf-8');

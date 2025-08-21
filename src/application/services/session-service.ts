@@ -2,6 +2,7 @@ import { EventEmitter } from 'events';
 import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
+import Database from 'better-sqlite3';
 import { SessionManager } from '../interfaces/session-manager';
 import { SessionChangeEvent } from '../models/session-events';
 import { SessionInfo } from '../models/sessions';
@@ -148,17 +149,16 @@ export class SessionService extends EventEmitter implements SessionManager {
         // Create session directory
         await fs.mkdir(sessionDir, { recursive: true });
 
+        // Create database instance for the session
+        const dbPath = path.join(sessionDir, 'message.db');
+        const database = new Database(dbPath);
+
         // Create session info
         const sessionInfo: SessionInfo = {
             name: sessionName,
             lastActiveDate: now,
-            messageDbPath: path.join(sessionDir, 'message.db'),
-            vectorDbPath: path.join(sessionDir, 'vector.db'),
+            database: database,
         };
-
-        // Create empty database files
-        await fs.writeFile(sessionInfo.messageDbPath, '');
-        await fs.writeFile(sessionInfo.vectorDbPath, '');
 
         // Save session info
         await this.saveSessionInfo(sessionInfo);
@@ -175,21 +175,18 @@ export class SessionService extends EventEmitter implements SessionManager {
         const sessionDir = path.join(this.sessionBasePath, sessionName);
         const infoPath = path.join(sessionDir, 'info.json');
 
-        try {
-            const infoContent = await fs.readFile(infoPath, 'utf-8');
-            const info = JSON.parse(infoContent);
+        const infoContent = await fs.readFile(infoPath, 'utf-8');
+        const info = JSON.parse(infoContent);
 
-            return {
-                name: sessionName,
-                lastActiveDate: new Date(info.lastActiveDate),
-                messageDbPath: path.join(sessionDir, 'message.db'),
-                vectorDbPath: path.join(sessionDir, 'vector.db'),
-            };
-        } catch (error) {
-            throw new Error(
-                `Failed to load session info for ${sessionName}: ${error}`
-            );
-        }
+        // Create database instance for the session
+        const dbPath = path.join(sessionDir, 'message.db');
+        const database = new Database(dbPath);
+
+        return {
+            name: sessionName,
+            lastActiveDate: new Date(info.lastActiveDate),
+            database: database,
+        };
     }
 
     private async saveSessionInfo(sessionInfo: SessionInfo): Promise<void> {
