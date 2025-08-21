@@ -167,8 +167,11 @@ export class SessionService extends EventEmitter implements SessionManager {
     }
 
     private generateHexSessionName(date: Date): string {
+        // Use high-resolution timestamp for better uniqueness
         const timestamp = date.getTime();
-        return timestamp.toString(16);
+        const nanoTime = process.hrtime.bigint();
+        const uniqueTimestamp = timestamp + Number(nanoTime % 1000n);
+        return uniqueTimestamp.toString(16);
     }
 
     private async loadSessionInfo(sessionName: string): Promise<SessionInfo> {
