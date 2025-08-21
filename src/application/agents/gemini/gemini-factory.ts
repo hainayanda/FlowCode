@@ -1,5 +1,5 @@
 import { AgentWorker } from '../../interfaces/agent';
-import { AgentFactory } from '../../interfaces/agent-factory';
+import { AgentWorkerFactory } from '../../interfaces/agent-worker-factory';
 import { Toolbox } from '../../interfaces/toolbox';
 import { AgentModel } from '../../models/agent-model';
 import { AgentModelConfig } from '../../models/config';
@@ -11,7 +11,7 @@ import { GeminiWorker } from './gemini-worker';
  * Provides access to Google's Gemini model family, including the latest 2.5 series
  * with thinking capabilities and the 2.0 series with experimental features.
  */
-export class GeminiFactory implements AgentFactory {
+export class GeminiFactory implements AgentWorkerFactory {
     /**
      * Available Google Gemini models.
      *

@@ -1,5 +1,5 @@
 import { AgentWorker } from '../../interfaces/agent';
-import { AgentFactory } from '../../interfaces/agent-factory';
+import { AgentWorkerFactory } from '../../interfaces/agent-worker-factory';
 import { Toolbox } from '../../interfaces/toolbox';
 import { AgentModel } from '../../models/agent-model';
 import { AgentModelConfig } from '../../models/config';
@@ -11,7 +11,7 @@ import { QwenWorker } from './qwen-worker';
  * Provides access to Alibaba's Qwen model family, including the latest Qwen2.5 series
  * and specialized models for vision, audio, and various parameter sizes.
  */
-export class QwenFactory implements AgentFactory {
+export class QwenFactory implements AgentWorkerFactory {
     /**
      * Available Qwen models.
      *

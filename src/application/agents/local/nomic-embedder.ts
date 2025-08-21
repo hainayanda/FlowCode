@@ -1,12 +1,12 @@
 import { FeatureExtractionPipeline, pipeline } from '@xenova/transformers';
-import { AgentEmbedder } from '../../interfaces/agent';
 import { EmbeddingConfig } from '../../models/config';
+import { Embedder } from '../../interfaces/embedder';
 
 /**
  * Local embedder implementation using Nomic's text embedding model.
  * Runs completely offline using the @xenova/transformers library for browser/Node.js compatibility.
  */
-export class NomicEmbedder implements AgentEmbedder {
+export class NomicEmbedder implements Embedder {
     private config: EmbeddingConfig;
     private embeddingPipeline: FeatureExtractionPipeline | null = null;
 

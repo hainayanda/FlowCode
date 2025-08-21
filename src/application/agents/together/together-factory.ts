@@ -1,5 +1,5 @@
 import { AgentWorker } from '../../interfaces/agent';
-import { AgentFactory } from '../../interfaces/agent-factory';
+import { AgentWorkerFactory } from '../../interfaces/agent-worker-factory';
 import { Toolbox } from '../../interfaces/toolbox';
 import { AgentModel } from '../../models/agent-model';
 import { AgentModelConfig } from '../../models/config';
@@ -11,7 +11,7 @@ import { TogetherWorker } from './together-worker';
  * Provides access to various open-source and high-performance models through Together's
  * infrastructure, including Meta Llama, DeepSeek, Qwen, Mistral, and other leading models.
  */
-export class TogetherFactory implements AgentFactory {
+export class TogetherFactory implements AgentWorkerFactory {
     /**
      * Available models through Together AI platform.
      *

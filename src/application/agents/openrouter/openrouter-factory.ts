@@ -1,5 +1,5 @@
 import { AgentWorker } from '../../interfaces/agent';
-import { AgentFactory } from '../../interfaces/agent-factory';
+import { AgentWorkerFactory } from '../../interfaces/agent-worker-factory';
 import { Toolbox } from '../../interfaces/toolbox';
 import { AgentModel } from '../../models/agent-model';
 import { OpenRouterAgentModelConfig } from '../../models/config';
@@ -11,7 +11,7 @@ import { OpenRouterWorker } from './openrouter-worker';
  * Provides access to a wide variety of models from different providers through OpenRouter's
  * unified API, including OpenAI, Anthropic, Google, DeepSeek, and other leading AI models.
  */
-export class OpenRouterFactory implements AgentFactory {
+export class OpenRouterFactory implements AgentWorkerFactory {
     /**
      * Available models through OpenRouter gateway.
      *

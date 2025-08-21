@@ -1,5 +1,5 @@
 import { AgentWorker } from '../../interfaces/agent';
-import { AgentFactory } from '../../interfaces/agent-factory';
+import { AgentWorkerFactory } from '../../interfaces/agent-worker-factory';
 import { Toolbox } from '../../interfaces/toolbox';
 import { AgentModel } from '../../models/agent-model';
 import { AgentModelConfig } from '../../models/config';
@@ -11,7 +11,7 @@ import { OpenAIWorker } from './openai-worker';
  * Provides access to OpenAI's latest models including GPT-5 series with built-in thinking,
  * reasoning models (o3, o4), and legacy GPT-4 variants.
  */
-export class OpenAIFactory implements AgentFactory {
+export class OpenAIFactory implements AgentWorkerFactory {
     /**
      * Available OpenAI models.
      *

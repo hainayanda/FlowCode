@@ -1,5 +1,5 @@
 import { AgentWorker } from '../../interfaces/agent';
-import { AgentFactory } from '../../interfaces/agent-factory';
+import { AgentWorkerFactory } from '../../interfaces/agent-worker-factory';
 import { Toolbox } from '../../interfaces/toolbox';
 import { AgentModel } from '../../models/agent-model';
 import { AgentModelConfig } from '../../models/config';
@@ -11,7 +11,7 @@ import { AnthropicWorker } from './anthropic-worker';
  * Provides access to various Claude models from legacy versions to the latest releases,
  * including specialized models for different use cases like reasoning, speed, and complexity.
  */
-export class AnthropicFactory implements AgentFactory {
+export class AnthropicFactory implements AgentWorkerFactory {
     /**
      * Available Anthropic Claude models.
      *

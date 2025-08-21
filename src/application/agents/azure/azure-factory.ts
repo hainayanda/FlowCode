@@ -1,5 +1,5 @@
 import { AgentWorker } from '../../interfaces/agent';
-import { AgentFactory } from '../../interfaces/agent-factory';
+import { AgentWorkerFactory } from '../../interfaces/agent-worker-factory';
 import { Toolbox } from '../../interfaces/toolbox';
 import { AgentModel } from '../../models/agent-model';
 import { AzureAgentModelConfig } from '../../models/config';
@@ -11,7 +11,7 @@ import { AzureWorker } from './azure-worker';
  * Provides access to OpenAI models through Azure's enterprise-grade infrastructure,
  * including the latest GPT-5 series and reasoning models with enhanced security and compliance.
  */
-export class AzureFactory implements AgentFactory {
+export class AzureFactory implements AgentWorkerFactory {
     /**
      * Available Azure OpenAI models.
      *

@@ -1,6 +1,6 @@
 import { AgentModel } from '../models/agent-model';
-import { AgentModelConfig, EmbeddingConfig } from '../models/config';
-import { AgentEmbedder, AgentWorker } from './agent';
+import { AgentModelConfig } from '../models/config';
+import { AgentWorker } from './agent';
 import { Toolbox } from './toolbox';
 
 /**
@@ -9,7 +9,7 @@ import { Toolbox } from './toolbox';
  * Provides a catalog of available models and creates configured worker instances
  * for interaction with AI providers. Factories abstract provider-specific details.
  */
-export interface AgentFactory {
+export interface AgentWorkerFactory {
     /**
      * Available AI models from this factory.
      * Each model includes provider, model name, alias, and description.
@@ -29,19 +29,4 @@ export interface AgentFactory {
         config: AgentModelConfig,
         toolbox?: Toolbox
     ): AgentWorker;
-}
-
-/**
- * Factory interface for creating embedding models.
- *
- * Handles creation of embedder instances for vector operations and semantic search.
- */
-export interface EmbedderFactory {
-    /**
-     * Creates a new embedder instance.
-     *
-     * @param config - Configuration for the embedding model
-     * @returns Configured embedder ready for vector operations
-     */
-    createEmbedder(config: EmbeddingConfig): AgentEmbedder;
 }

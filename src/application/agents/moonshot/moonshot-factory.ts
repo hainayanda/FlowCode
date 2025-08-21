@@ -1,5 +1,5 @@
 import { AgentWorker } from '../../interfaces/agent';
-import { AgentFactory } from '../../interfaces/agent-factory';
+import { AgentWorkerFactory } from '../../interfaces/agent-worker-factory';
 import { Toolbox } from '../../interfaces/toolbox';
 import { AgentModel } from '../../models/agent-model';
 import { AgentModelConfig } from '../../models/config';
@@ -11,7 +11,7 @@ import { MoonshotWorker } from './moonshot-worker';
  * Provides access to Moonshot's Kimi model family, including the latest K2 series
  * with MoE architecture and specialized models for audio and vision tasks.
  */
-export class MoonshotFactory implements AgentFactory {
+export class MoonshotFactory implements AgentWorkerFactory {
     /**
      * Available Moonshot AI models.
      *
