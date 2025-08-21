@@ -1,5 +1,9 @@
 import { EmbeddingConfig } from '../models/config';
 
+/**
+ * Interface for text embedding services.
+ * Provides functionality to convert text into numerical vector representations for semantic operations.
+ */
 export interface Embedder {
     /** Whether the embedder is available for use */
     isAvailable: boolean;

@@ -19,12 +19,28 @@ export interface MessageRow {
     metadata: string | null;
 }
 
+/**
+ * Database row type for SQLite vector storage.
+ *
+ * Represents the structure of vector embeddings stored in the database,
+ * linking them to their associated messages for semantic search operations.
+ */
 export interface VectorRow {
+    /** Unique identifier for the vector record */
     id: string;
+    /** ID of the message this vector represents */
     messageId: string;
+    /** The embedding vector as an array of numbers */
     vector: number[];
 }
 
+/**
+ * Vector search result with similarity scoring.
+ *
+ * Extends VectorRow to include similarity score for ranking search results
+ * based on semantic proximity to the query vector.
+ */
 export interface VectorSearchResult extends VectorRow {
+    /** Similarity score between 0 and 1, where 1 is most similar */
     similarity: number;
 }

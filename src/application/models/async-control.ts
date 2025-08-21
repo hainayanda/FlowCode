@@ -7,6 +7,8 @@ import { Message } from './messages';
 export interface AsyncControl {
     /** The type of control action to take */
     type: `continue` | `abort`;
+    /** Message to send in response to the choice or prompt */
+    responseMessage?: Message;
     /** Additional messages to append to the conversation history for the next iteration */
     queuedMessages?: Message[];
     /** Summarized messages that replace the entire conversation history for cost efficiency */

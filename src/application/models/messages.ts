@@ -11,8 +11,10 @@ export interface Message {
     type:
         | 'user'
         | 'system'
+        | 'tool'
         | 'error'
         | 'agent'
+        | 'thinking'
         | 'taskmaster'
         | 'file_operation'
         | 'prompt'
@@ -28,6 +30,19 @@ export interface Message {
 
 export interface PlainMessage extends Message {
     type: 'system' | 'user' | 'agent' | 'taskmaster' | 'summary';
+}
+
+export interface ToolsMessage extends Message {
+    type: 'tool';
+    /** Tool-specific metadata */
+    metadata: {
+        /** Name of the tool being used */
+        toolName: string;
+        /** Parameters passed to the tool */
+        parameters: Record<string, any>;
+        /** Result returned by the tool */
+        result?: string;
+    };
 }
 
 /**
