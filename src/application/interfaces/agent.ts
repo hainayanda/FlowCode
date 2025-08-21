@@ -54,19 +54,3 @@ export interface AgentSummarizer {
      */
     summarize(parameters: AgentExecutionParameters): Promise<SummaryResult>;
 }
-
-/**
- * Interface for agents that can generate embeddings from text.
- * Used for semantic search and similarity operations.
- */
-export interface AgentEmbedder {
-    /** Whether the embedder is available for use */
-    isAvailable: boolean;
-
-    /**
-     * Generates an embedding vector from the input text.
-     * @param text - The text to embed
-     * @returns Promise resolving to the embedding vector
-     */
-    embed(text: string): Promise<number[]>;
-}

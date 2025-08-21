@@ -1,11 +1,9 @@
+import { AgentWorker } from '../../../src/application/interfaces/agent';
+import { AgentWorkerFactory } from '../../../src/application/interfaces/agent-worker-factory';
 import {
-    AgentEmbedder,
-    AgentWorker,
-} from '../../../src/application/interfaces/agent';
-import {
-    AgentFactory,
+    Embedder,
     EmbedderFactory,
-} from '../../../src/application/interfaces/agent-factory';
+} from '../../../src/application/interfaces/embedder';
 import { Toolbox } from '../../../src/application/interfaces/toolbox';
 import { AgentModel } from '../../../src/application/models/agent-model';
 import {
@@ -14,7 +12,7 @@ import {
 } from '../../../src/application/models/config';
 import { TestWorker } from './test-worker.mocks';
 
-export class MockAgentFactory implements AgentFactory {
+export class MockAgentWorkerFactory implements AgentWorkerFactory {
     public models: AgentModel[];
     private createdWorkers: AgentWorker[] = [];
 
@@ -42,15 +40,15 @@ export class MockAgentFactory implements AgentFactory {
 }
 
 export class MockEmbedderFactory implements EmbedderFactory {
-    private createdEmbedders: AgentEmbedder[] = [];
+    private createdEmbedders: Embedder[] = [];
 
-    createEmbedder(config: EmbeddingConfig): AgentEmbedder {
-        const embedder = new MockAgentEmbedder();
+    createEmbedder(config: EmbeddingConfig): Embedder {
+        const embedder = new MockEmbedder();
         this.createdEmbedders.push(embedder);
         return embedder;
     }
 
-    getCreatedEmbedders(): AgentEmbedder[] {
+    getCreatedEmbedders(): Embedder[] {
         return this.createdEmbedders;
     }
 
@@ -59,7 +57,7 @@ export class MockEmbedderFactory implements EmbedderFactory {
     }
 }
 
-export class MockAgentEmbedder implements AgentEmbedder {
+export class MockEmbedder implements Embedder {
     isAvailable: boolean = true;
     async embed(text: string): Promise<number[]> {
         return [0.1, 0.2, 0.3, 0.4, 0.5];
