@@ -22,3 +22,10 @@
 - When testing message flows, account for potential duplicate message IDs
 - Expect that message content may be updated/expanded across iterations
 - Test both chunked and complete message scenarios where applicable
+
+## Console Output Guidelines
+
+- **NEVER use console.log, console.error, or any console methods** - this is a console TUI application
+- Console output will interfere with the terminal user interface
+- Use proper error throwing and structured logging instead
+- Let errors bubble up to be handled by the application's error handling system
