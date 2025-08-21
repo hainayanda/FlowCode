@@ -178,6 +178,7 @@ export abstract class OpenAICompatibleWorker extends BaseWorker {
             messages.map((msg) => {
                 switch (msg.type) {
                     case 'user':
+                    case 'tool':
                     case 'file_operation':
                     case 'user-input':
                     case 'user-choice':
@@ -188,6 +189,7 @@ export abstract class OpenAICompatibleWorker extends BaseWorker {
                         return { role: 'user', content: msg.content };
                     case 'summary':
                     case 'agent':
+                    case 'thinking':
                     case 'taskmaster':
                         return { role: 'assistant', content: msg.content };
                 }
