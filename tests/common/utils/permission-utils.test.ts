@@ -1,14 +1,14 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
     generatePermissionKey,
     checkPermission,
     createPermissionChoiceMessage,
     handlePermissionResponse,
     handleToolPermission,
-} from '../../src/utils/permission-utils';
-import { SettingsStore } from '../../src/application/interfaces/settings-store';
-import { Message } from '../../src/application/models/messages';
-import { AsyncControl } from '../../src/application/models/async-control';
+} from '../../../src/common/utils/permission-utils';
+import { SettingsStore } from '../../../src/application/stores/interfaces/settings-store';
+import { Message } from '../../../src/application/stores/models/messages';
+import { AsyncControl } from '../../../src/common/models/async-control';
 
 // Mock settings store
 const createMockSettingsStore = (): SettingsStore =>
@@ -411,8 +411,10 @@ describe('permission-utils', () => {
             // First yield should be a choice message
             const choiceResult = await generator.next();
             expect(choiceResult.done).toBe(false);
-            expect(choiceResult.value?.type).toBe('choice');
-            expect(choiceResult.value?.content).toContain('Test prompt');
+            expect((choiceResult.value as Message)?.type).toBe('choice');
+            expect((choiceResult.value as Message)?.content).toContain(
+                'Test prompt'
+            );
 
             // Mock user response
             const userResponse = {

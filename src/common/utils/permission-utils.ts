@@ -1,7 +1,10 @@
+import { SettingsStore } from '../../application/stores/interfaces/settings-store';
+import {
+    ChoiceMessage,
+    Message,
+} from '../../application/stores/models/messages';
+import { AsyncControl } from '../models/async-control';
 import { generateUniqueId } from './id-generator';
-import { SettingsStore } from '../application/interfaces/settings-store';
-import { AsyncControl } from '../application/models/async-control';
-import { ChoiceMessage, Message } from '../application/models/messages';
 
 /**
  * Generates permission key for settings storage

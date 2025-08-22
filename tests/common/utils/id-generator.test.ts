@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { generateUniqueId } from '../../src/utils/id-generator';
+import { generateUniqueId } from '../../../src/common/utils/id-generator';
 
 describe('id-generator', () => {
     describe('generateUniqueId', () => {

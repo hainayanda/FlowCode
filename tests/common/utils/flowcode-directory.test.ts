@@ -1,7 +1,7 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { createFlowcodeDirectoryIfNeeded } from '../../src/utils/flowcode-directory';
+import { createFlowcodeDirectoryIfNeeded } from '../../../src/common/utils/flowcode-directory';
 
 describe('createFlowcodeDirectoryIfNeeded', () => {
     const testWorkspaceRoot = path.join(__dirname, 'test-workspace');
