@@ -150,3 +150,6 @@
 //     ): AsyncGenerator<Message, AsyncControlResponse, AsyncControl> {
 //     }
 // }
+
+// Ensure this file is treated as a module even if implementation is commented out
+export {};
