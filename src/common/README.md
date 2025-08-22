@@ -7,7 +7,7 @@ This directory contains shared utilities, models, and interfaces used across the
 - **Shared Interfaces**
   - `interfaces/` - Core interface definitions (embedder, summarizer)
 
-- **Data Models**  
+- **Data Models**
   - `models/` - Common data structures and types
     - `async-control.ts` - Async operation control structures
     - `diff.ts` - Diff and change tracking models
