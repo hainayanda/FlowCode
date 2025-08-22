@@ -18,7 +18,14 @@ This directory contains the data persistence layer with repositories, stores, an
 
 - **Core Abstractions**
   - `interfaces/` - Store interface definitions
-  - `models/` - Data model definitions
+  - `models/` - Data model definitions including:
+    - `config.ts` - Configuration data structures
+    - `credential.ts` - Credential storage models
+    - `messages.ts` - Message data structures
+    - `session-events.ts` - Session event data structures
+    - `sessions.ts` - Session management models
+    - `settings.ts` - User settings models
+    - `sqlite-message.ts` - SQLite message storage models
 
 ## Key Concepts
 
