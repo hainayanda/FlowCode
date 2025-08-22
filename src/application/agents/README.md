@@ -11,7 +11,7 @@ This directory contains the agent system that handles AI model interactions and 
 
 - **Provider-Specific Workers**
   - `anthropic/` - Claude/Anthropic AI integration
-  - `azure/` - Azure OpenAI integration  
+  - `azure/` - Azure OpenAI integration
   - `gemini/` - Google Gemini integration
   - `local/` - Local embedding models (Nomic)
   - `moonshot/` - Moonshot AI integration
