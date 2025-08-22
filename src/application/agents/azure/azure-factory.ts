@@ -1,8 +1,8 @@
-import { AgentWorker } from '../../interfaces/agent';
-import { AgentWorkerFactory } from '../../interfaces/agent-worker-factory';
-import { Toolbox } from '../../interfaces/toolbox';
-import { AgentModel } from '../../models/agent-model';
-import { AzureAgentModelConfig } from '../../models/config';
+import { AgentWorkerFactory } from '../interfaces/agent-worker-factory';
+import { AzureAgentModelConfig } from '../../stores/models/config';
+import { Toolbox } from '../../tools/interfaces/toolbox';
+import { AgentWorker } from '../interfaces/agent';
+import { AgentModel } from '../models/agent-model';
 import { AzureWorker } from './azure-worker';
 
 /**

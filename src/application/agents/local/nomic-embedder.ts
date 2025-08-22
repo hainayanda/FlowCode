@@ -1,6 +1,6 @@
 import { FeatureExtractionPipeline, pipeline } from '@xenova/transformers';
-import { EmbeddingConfig } from '../../models/config';
-import { Embedder } from '../../interfaces/embedder';
+import { Embedder } from '../../../common/interfaces/embedder';
+import { EmbeddingConfig } from '../../stores/models/config';
 
 /**
  * Local embedder implementation using Nomic's text embedding model.

@@ -1,6 +1,9 @@
 import TurndownService from 'turndown';
-import { WebBrowser } from '../interfaces/web-browser';
-import { WebSearchOptions, WebSearchResult } from '../models/web-search';
+import {
+    WebSearchOptions,
+    WebSearchResult,
+} from '../../common/models/web-search';
+import { WebBrowser } from './interfaces/web-browser';
 
 /**
  * Configuration options for the WebBrowserService

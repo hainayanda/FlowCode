@@ -1,9 +1,9 @@
+import { SummaryResult } from '../../common/models/summary';
 import {
     AgentExecutionParameters,
     AgentSummarizer,
     AgentWorker,
-} from '../interfaces/agent';
-import { SummaryResult } from '../models/summary';
+} from './interfaces/agent';
 
 /**
  * Worker that wraps any AgentWorker to provide conversation summarization capabilities.

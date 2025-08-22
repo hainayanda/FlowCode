@@ -1,6 +1,9 @@
 import OpenAI from 'openai';
-import { Toolbox } from '../../interfaces/toolbox';
-import { AgentModelConfig, AzureAgentModelConfig } from '../../models/config';
+import {
+    AgentModelConfig,
+    AzureAgentModelConfig,
+} from '../../stores/models/config';
+import { Toolbox } from '../../tools/interfaces/toolbox';
 import { OpenAICompatibleWorker } from '../openai/openai-compatible-worker';
 
 /**

@@ -1,5 +1,5 @@
-import { VectorStore } from '../../interfaces/vector-store';
-import { VectorSearchResult } from '../../models/sqlite-message';
+import { VectorStore } from '../interfaces/vector-store';
+import { VectorSearchResult } from '../models/sqlite-message';
 
 /**
  * Repository pattern implementation for vector storage using dual stores.

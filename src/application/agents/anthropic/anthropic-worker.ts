@@ -1,16 +1,19 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { ToolUseBlock } from '@anthropic-ai/sdk/resources';
-import { generateUniqueId } from '../../../utils/id-generator';
-import { AgentExecutionParameters } from '../../interfaces/agent';
+import {
+    AsyncControl,
+    AsyncControlResponse,
+} from '../../../common/models/async-control';
+import { generateUniqueId } from '../../../common/utils/id-generator';
+import { AgentModelConfig } from '../../stores/models/config';
+import { Message } from '../../stores/models/messages';
 import {
     Toolbox,
     ToolCallParameter,
     ToolDefinition,
-} from '../../interfaces/toolbox';
-import { AsyncControl, AsyncControlResponse } from '../../models/async-control';
-import { AgentModelConfig } from '../../models/config';
-import { Message } from '../../models/messages';
+} from '../../tools/interfaces/toolbox';
 import { BaseWorker } from '../base-worker';
+import { AgentExecutionParameters } from '../interfaces/agent';
 
 /**
  * Agent worker implementation for Anthropic's Claude AI models.

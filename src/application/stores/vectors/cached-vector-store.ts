@@ -1,8 +1,8 @@
-import { VectorStore } from '../../interfaces/vector-store';
-import { SessionManager } from '../../interfaces/session-manager';
-import { SessionChangeEvent } from '../../models/session-events';
-import { VectorSearchResult } from '../../models/sqlite-message';
-import { calculateCosineSimilarity } from '../../../utils/vector-similarity';
+import { calculateCosineSimilarity } from '../../../common/utils/vector-similarity';
+import { SessionManager } from '../../services/interfaces/session-manager';
+import { VectorStore } from '../interfaces/vector-store';
+import { SessionChangeEvent } from '../models/session-events';
+import { VectorSearchResult } from '../models/sqlite-message';
 
 /**
  * In-memory vector store implementation.

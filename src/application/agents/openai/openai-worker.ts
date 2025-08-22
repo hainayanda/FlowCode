@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { AgentModelConfig } from '../../models/config';
+import { AgentModelConfig } from '../../stores/models/config';
 import { OpenAICompatibleWorker } from './openai-compatible-worker';
 
 /**

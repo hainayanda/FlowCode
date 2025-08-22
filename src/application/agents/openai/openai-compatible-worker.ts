@@ -1,15 +1,18 @@
 import OpenAI from 'openai';
-import { generateUniqueId } from '../../../utils/id-generator';
-import { AgentExecutionParameters } from '../../interfaces/agent';
+import {
+    AsyncControl,
+    AsyncControlResponse,
+} from '../../../common/models/async-control';
+import { generateUniqueId } from '../../../common/utils/id-generator';
+import { AgentModelConfig } from '../../stores/models/config';
+import { Message } from '../../stores/models/messages';
 import {
     Toolbox,
     ToolCallParameter,
     ToolDefinition,
-} from '../../interfaces/toolbox';
-import { AsyncControl, AsyncControlResponse } from '../../models/async-control';
-import { AgentModelConfig } from '../../models/config';
-import { Message } from '../../models/messages';
+} from '../../tools/interfaces/toolbox';
 import { BaseWorker } from '../base-worker';
+import { AgentExecutionParameters } from '../interfaces/agent';
 
 /**
  * Abstract base class for OpenAI-compatible API workers.

@@ -1,8 +1,11 @@
-import { AgentExecutionParameters, AgentWorker } from '../interfaces/agent';
-import { Toolbox, ToolCallParameter } from '../interfaces/toolbox';
-import { AsyncControl, AsyncControlResponse } from '../models/async-control';
-import { AgentModelConfig } from '../models/config';
-import { Message } from '../models/messages';
+import {
+    AsyncControl,
+    AsyncControlResponse,
+} from '../../common/models/async-control';
+import { AgentModelConfig } from '../stores/models/config';
+import { Message } from '../stores/models/messages';
+import { Toolbox, ToolCallParameter } from '../tools/interfaces/toolbox';
+import { AgentExecutionParameters, AgentWorker } from './interfaces/agent';
 
 /**
  * Abstract base class for agent workers that provides common iteration and message handling logic.

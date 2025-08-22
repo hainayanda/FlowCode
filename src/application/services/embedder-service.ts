@@ -1,5 +1,5 @@
-import { Embedder, EmbedderFactory } from '../interfaces/embedder';
-import { ConfigReader } from '../interfaces/config-store';
+import { Embedder, EmbedderFactory } from '../../common/interfaces/embedder';
+import { ConfigReader } from '../stores/interfaces/config-store';
 
 /**
  * Service for handling text embeddings through dependency injection.

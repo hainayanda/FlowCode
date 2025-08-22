@@ -1,4 +1,4 @@
-import { TokenStore } from '../interfaces/token-store';
+import { TokenStore } from './interfaces/token-store';
 
 /**
  * In-memory token usage repository.

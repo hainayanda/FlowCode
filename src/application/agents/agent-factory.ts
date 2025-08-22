@@ -1,20 +1,20 @@
-import { AgentWorker } from '../interfaces/agent';
-import { AgentWorkerFactory } from '../interfaces/agent-worker-factory';
-import { Embedder, EmbedderFactory } from '../interfaces/embedder';
-import { Toolbox } from '../interfaces/toolbox';
-import { AgentModel } from '../models/agent-model';
-import { AgentModelConfig, EmbeddingConfig } from '../models/config';
+import { AgentWorkerFactory } from './interfaces/agent-worker-factory';
+import { Embedder, EmbedderFactory } from '../../common/interfaces/embedder';
+import { AgentModelConfig, EmbeddingConfig } from '../stores/models/config';
+import { Toolbox } from '../tools/interfaces/toolbox';
+import { AgentWorker } from './interfaces/agent';
+import { AgentModel } from './models/agent-model';
 
 // Import all provider factories
 import { AnthropicFactory } from './anthropic/anthropic-factory';
 import { AzureFactory } from './azure/azure-factory';
 import { GeminiFactory } from './gemini/gemini-factory';
+import { NomicFactory } from './local/nomic-factory';
 import { MoonshotFactory } from './moonshot/moonshot-factory';
 import { OpenAIFactory } from './openai/openai-factory';
 import { OpenRouterFactory } from './openrouter/openrouter-factory';
 import { QwenFactory } from './qwen/qwen-factory';
 import { TogetherFactory } from './together/together-factory';
-import { NomicFactory } from './local/nomic-factory';
 
 /**
  * Central agent factory that constructs all provider factories internally.

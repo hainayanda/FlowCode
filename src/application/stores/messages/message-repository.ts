@@ -1,5 +1,5 @@
-import { MessageStore } from '../../interfaces/message-store';
-import { Message } from '../../models/messages';
+import { MessageStore } from '../interfaces/message-store';
+import { Message } from '../models/messages';
 
 /**
  * Repository pattern implementation for message storage using dual stores.

@@ -2,12 +2,12 @@ import {
     Toolbox,
     ToolCallParameter,
     ToolDefinition,
-} from '../../../src/application/interfaces/toolbox';
+} from '../../../src/application/tools/interfaces/toolbox';
 import {
     AsyncControl,
     AsyncControlResponse,
-} from '../../../src/application/models/async-control';
-import { Message } from '../../../src/application/models/messages';
+} from '../../../src/common/models/async-control';
+import { Message } from '../../../src/application/stores/models/messages';
 
 export class MockToolbox implements Toolbox {
     public tools: ToolDefinition[] = [
@@ -26,6 +26,21 @@ export class MockToolbox implements Toolbox {
 
     async *callTool(
         parameter: ToolCallParameter
+    ): AsyncGenerator<Message, AsyncControlResponse, AsyncControl> {
+        // Yield any intermediate messages if configured
+        for (const message of this.shouldYieldMessages) {
+            yield message;
+        }
+
+        return {
+            messages: this.mockMessages,
+            completedReason: this.mockCompletedReason,
+            usage: this.mockUsage,
+        };
+    }
+
+    async *callTools(
+        parameters: ToolCallParameter[]
     ): AsyncGenerator<Message, AsyncControlResponse, AsyncControl> {
         // Yield any intermediate messages if configured
         for (const message of this.shouldYieldMessages) {

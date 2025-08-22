@@ -1,15 +1,15 @@
+import { EventEmitter } from 'events';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { EventEmitter } from 'events';
-import { createFlowcodeDirectoryIfNeeded } from '../../utils/flowcode-directory';
-import { ConfigStore } from '../interfaces/config-store';
+import { createFlowcodeDirectoryIfNeeded } from '../../common/utils/flowcode-directory';
+import { ConfigStore } from './interfaces/config-store';
 import {
     AgentModelConfig,
     EmbeddingConfig,
     FlowCodeConfig,
     SummarizerConfig,
     TaskmasterConfig,
-} from '../models/config';
+} from './models/config';
 
 /**
  * File-based configuration repository.

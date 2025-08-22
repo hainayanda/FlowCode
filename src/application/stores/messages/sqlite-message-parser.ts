@@ -7,8 +7,8 @@ import {
     PlainMessage,
     PromptInputMessage,
     PromptMessage,
-} from '../../models/messages';
-import { MessageRow } from '../../models/sqlite-message';
+} from '../models/messages';
+import { MessageRow } from '../models/sqlite-message';
 
 /**
  * SQLite message parser utility

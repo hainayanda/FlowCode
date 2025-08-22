@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
-import { Toolbox } from '../../interfaces/toolbox';
-import { AgentModelConfig } from '../../models/config';
+import { AgentModelConfig } from '../../stores/models/config';
+import { Toolbox } from '../../tools/interfaces/toolbox';
 import { OpenAICompatibleWorker } from '../openai/openai-compatible-worker';
 
 /**

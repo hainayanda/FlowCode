@@ -1,22 +1,22 @@
-import { Embedder } from '../interfaces/embedder';
-import { MessageStore, NaturalMessageStore } from '../interfaces/message-store';
-import { VectorStore } from '../interfaces/vector-store';
-import { SessionManager } from '../interfaces/session-manager';
-import { ConfigStore } from '../interfaces/config-store';
-import { CredentialStore } from '../interfaces/credential-store';
-import { SettingsStore } from '../interfaces/settings-store';
-import { TokenStore } from '../interfaces/token-store';
+import { Embedder } from '../../common/interfaces/embedder';
+import { SessionManager } from '../services/interfaces/session-manager';
 import { ConfigRepository } from './config-repository';
 import { CredentialRepository } from './credential-repository';
+import { ConfigStore } from './interfaces/config-store';
+import { CredentialStore } from './interfaces/credential-store';
+import { MessageStore, NaturalMessageStore } from './interfaces/message-store';
+import { SettingsStore } from './interfaces/settings-store';
+import { TokenStore } from './interfaces/token-store';
+import { VectorStore } from './interfaces/vector-store';
+import { CachedMessageStore } from './messages/cached-message-store';
+import { MessageRepository } from './messages/message-repository';
+import { SQLiteMessageStore } from './messages/sqlite-message-store';
 import { NaturalMessageRepository } from './natural-message-repository';
 import { SettingsRepository } from './settings-repository';
 import { TokenRepository } from './token-repository';
-import { VectorRepository } from './vectors/vector-repository';
-import { MessageRepository } from './messages/message-repository';
 import { CachedVectorStore } from './vectors/cached-vector-store';
 import { SQLiteVectorStore } from './vectors/sqlite-vector-store';
-import { CachedMessageStore } from './messages/cached-message-store';
-import { SQLiteMessageStore } from './messages/sqlite-message-store';
+import { VectorRepository } from './vectors/vector-repository';
 
 /**
  * Factory for creating and managing store instances with lazy initialization.

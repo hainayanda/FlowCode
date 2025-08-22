@@ -1,5 +1,5 @@
-import { Embedder, EmbedderFactory } from '../../interfaces/embedder';
-import { EmbeddingConfig } from '../../models/config';
+import { Embedder, EmbedderFactory } from '../../../common/interfaces/embedder';
+import { EmbeddingConfig } from '../../stores/models/config';
 import { NomicEmbedder } from './nomic-embedder';
 
 /**

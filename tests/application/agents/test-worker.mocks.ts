@@ -6,7 +6,7 @@ import {
 } from '../../../src/application/models/async-control';
 import { AgentModelConfig } from '../../../src/application/models/config';
 import { Message } from '../../../src/application/models/messages';
-import { generateUniqueId } from '../../../src/utils/id-generator';
+import { generateUniqueId } from '../../../src/common/utils/id-generator';
 
 export class TestWorker extends BaseWorker {
     public mockMessages: Message[] = [];

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { SummarizerWorker } from '../../../src/application/agents/summarizer-worker';
-import { AgentExecutionParameters } from '../../../src/application/interfaces/agent';
+import { AgentExecutionParameters } from '../../../src/application/agents/interfaces/agent';
 import {
     TestWorker,
     createMockConfig,

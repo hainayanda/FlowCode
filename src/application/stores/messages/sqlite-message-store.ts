@@ -1,10 +1,10 @@
 import Database from 'better-sqlite3';
-import { MessageStore } from '../../interfaces/message-store';
-import { SessionManager } from '../../interfaces/session-manager';
-import { Message } from '../../models/messages';
-import { SessionChangeEvent } from '../../models/session-events';
-import { SessionInfo } from '../../models/sessions';
-import { MessageRow } from '../../models/sqlite-message';
+import { SessionManager } from '../../services/interfaces/session-manager';
+import { MessageStore } from '../interfaces/message-store';
+import { Message } from '../models/messages';
+import { SessionChangeEvent } from '../models/session-events';
+import { SessionInfo } from '../models/sessions';
+import { MessageRow } from '../models/sqlite-message';
 import { parseMessageFromRow } from './sqlite-message-parser';
 
 /**

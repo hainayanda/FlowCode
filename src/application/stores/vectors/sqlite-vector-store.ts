@@ -1,10 +1,10 @@
 import Database from 'better-sqlite3';
-import { VectorStore } from '../../interfaces/vector-store';
-import { SessionManager } from '../../interfaces/session-manager';
-import { VectorSearchResult } from '../../models/sqlite-message';
-import { SessionChangeEvent } from '../../models/session-events';
-import { SessionInfo } from '../../models/sessions';
-import { calculateCosineSimilarityFromBuffers } from '../../../utils/vector-similarity';
+import { calculateCosineSimilarityFromBuffers } from '../../../common/utils/vector-similarity';
+import { SessionManager } from '../../services/interfaces/session-manager';
+import { VectorStore } from '../interfaces/vector-store';
+import { SessionChangeEvent } from '../models/session-events';
+import { SessionInfo } from '../models/sessions';
+import { VectorSearchResult } from '../models/sqlite-message';
 
 /**
  * SQLite-based vector store implementation using custom SQLite functions for similarity search.

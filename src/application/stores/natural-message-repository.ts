@@ -1,7 +1,7 @@
-import { Embedder } from '../interfaces/embedder';
-import { MessageStore, NaturalMessageStore } from '../interfaces/message-store';
-import { VectorStore } from '../interfaces/vector-store';
-import { Message } from '../models/messages';
+import { Embedder } from '../../common/interfaces/embedder';
+import { MessageStore, NaturalMessageStore } from './interfaces/message-store';
+import { VectorStore } from './interfaces/vector-store';
+import { Message } from './models/messages';
 
 /**
  * Repository that combines vector search capabilities with message storage.

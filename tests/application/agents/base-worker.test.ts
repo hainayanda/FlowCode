@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { AgentExecutionParameters } from '../../../src/application/interfaces/agent';
+import { AgentExecutionParameters } from '../../../src/application/agents/interfaces/agent';
 import {
     TestWorker,
     createMockConfig,

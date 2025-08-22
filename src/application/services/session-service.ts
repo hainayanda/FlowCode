@@ -1,11 +1,11 @@
+import Database from 'better-sqlite3';
 import { EventEmitter } from 'events';
 import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
-import Database from 'better-sqlite3';
-import { SessionManager } from '../interfaces/session-manager';
-import { SessionChangeEvent } from '../models/session-events';
-import { SessionInfo } from '../models/sessions';
+import { SessionChangeEvent } from '../stores/models/session-events';
+import { SessionInfo } from '../stores/models/sessions';
+import { SessionManager } from './interfaces/session-manager';
 
 /**
  * Service for managing FlowCode sessions
