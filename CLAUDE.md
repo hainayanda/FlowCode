@@ -1,5 +1,17 @@
 # FlowCode Project Guidelines
 
+## Architecture Documentation
+
+When working on code in specific directories, ALWAYS check the README.md file in that directory first to understand the architecture, patterns, and conventions. Each major directory has comprehensive documentation:
+
+- `src/application/agents/README.md` - Agent system architecture and patterns
+- `src/application/stores/README.md` - Data persistence and repository patterns  
+- `src/application/tools/README.md` - Tool system and permission architecture
+- `src/application/services/README.md` - Service layer and business logic
+- `src/common/README.md` - Shared utilities and cross-cutting concerns
+
+**When modifying code in these areas, update the corresponding README.md if the architecture or patterns change.**
+
 ## Message Handling
 
 ### Message ID Behavior
