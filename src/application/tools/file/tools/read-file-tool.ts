@@ -134,7 +134,7 @@ export class ReadFileTool implements Tool {
 
             // Read file content
             const fileContent = await fs.readFile(resolvedPath, 'utf-8');
-            const lines = fileContent.split('\n');
+            const lines = fileContent === '' ? [] : fileContent.split('\n');
 
             // Calculate pagination
             const endLine = Math.min(startLine + lineCount - 1, lines.length);
@@ -145,7 +145,7 @@ export class ReadFileTool implements Tool {
                 .map((line, index) => `${startLine + index}→${line}`)
                 .join('\n');
 
-            const totalLines = lines.length;
+            const totalLines = fileContent === '' ? 1 : lines.length;
             const showing = `Showing lines ${startLine}-${endLine} of ${totalLines}`;
 
             const toolsMessage: ToolsMessage = {

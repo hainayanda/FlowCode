@@ -243,7 +243,7 @@ export class ReplaceFileTool implements Tool, ToolPromptSource {
             parameter.parameters as ReplaceFileParameter;
 
         const contentPreview =
-            content.length > 40 ? content.substring(0, 40) + '...' : content;
+            content.length > 42 ? content.substring(0, 39) + '...' : content;
 
         return `Allow agent to replace line ${lineNumber} in file "${filePath}" with: "${contentPreview}"?`;
     }

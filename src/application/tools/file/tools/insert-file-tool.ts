@@ -123,8 +123,8 @@ export class InsertFileTool implements Tool, ToolPromptSource {
                 lines = [];
             }
 
-            // Validate line number for existing files
-            if (fileExists && lineNumber > lines.length + 1) {
+            // Validate line number for existing files (allow reasonable padding up to 5 lines)
+            if (fileExists && lineNumber > lines.length + 5) {
                 const errorMessage: ErrorMessage = {
                     id: generateUniqueId('error'),
                     content: `Line number ${lineNumber} is beyond file end + 1 (${lines.length + 1} max)`,
@@ -240,7 +240,7 @@ export class InsertFileTool implements Tool, ToolPromptSource {
             parameter.parameters as InsertFileParameter;
 
         const contentPreview =
-            content.length > 40 ? content.substring(0, 40) + '...' : content;
+            content.length > 42 ? content.substring(0, 39) + '...' : content;
 
         const lines = content.split('\n').length;
         const lineText = lines === 1 ? 'line' : 'lines';

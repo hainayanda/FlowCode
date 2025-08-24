@@ -263,9 +263,9 @@ export class ReplaceFirstFileTool implements Tool, ToolPromptSource {
             parameter.parameters as ReplaceFirstFileParameter;
 
         const patternPreview =
-            pattern.length > 20 ? pattern.substring(0, 20) + '...' : pattern;
+            pattern.length > 25 ? pattern.substring(0, 22) + '...' : pattern;
         const contentPreview =
-            content.length > 20 ? content.substring(0, 20) + '...' : content;
+            content.length > 24 ? content.substring(0, 21) + '...' : content;
 
         return `Allow agent to replace first "${patternPreview}" with "${contentPreview}" in file "${filePath}"?`;
     }

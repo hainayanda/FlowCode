@@ -214,7 +214,7 @@ export class ReplaceAllFileTool implements Tool, ToolPromptSource {
                 completedReason: 'completed',
                 usage: {
                     inputTokens: fileContent.length,
-                    outputTokens: newContent.length - fileContent.length,
+                    outputTokens: newContent.length,
                     toolsUsed: 1,
                 },
             };
@@ -251,9 +251,9 @@ export class ReplaceAllFileTool implements Tool, ToolPromptSource {
             parameter.parameters as ReplaceAllFileParameter;
 
         const patternPreview =
-            pattern.length > 20 ? pattern.substring(0, 20) + '...' : pattern;
+            pattern.length > 25 ? pattern.substring(0, 22) + '...' : pattern;
         const contentPreview =
-            content.length > 20 ? content.substring(0, 20) + '...' : content;
+            content.length > 24 ? content.substring(0, 21) + '...' : content;
 
         return `Allow agent to replace all "${patternPreview}" with "${contentPreview}" in file "${filePath}"?`;
     }
